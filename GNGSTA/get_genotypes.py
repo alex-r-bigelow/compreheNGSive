@@ -86,7 +86,7 @@ individuals = set()
 outColumns = {}
 
 print "Loading %s..." % inPath
-vcfFile.parseVcfFile(inFile,functionToCall=mainCallback,callbackArgs={"listToKeep":variantList,"outColumns":outColumns,"individuals":individuals,"forceIndividuals":individualList},individualsToExclude=[],individualsToInclude=individualList,mask=None,returnFileObject=False,skipFiltered=True,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=True,includeAdditionalHeaderInfo=False,forceAlleleMatching=False)
+vcfFile.parseVcfFile(inFile,functionToCall=mainCallback,callbackArgs={"listToKeep":variantList,"outColumns":outColumns,"individuals":individuals,"forceIndividuals":individualList},individualsToExclude=[],individualsToInclude=individualList,mask=None,returnFileObject=False,skipFiltered=dropVCF,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=True,includeAdditionalHeaderInfo=False,forceAlleleMatching=False)
 inFile.close()
 
 print "Recalculating Allele Frequencies..."

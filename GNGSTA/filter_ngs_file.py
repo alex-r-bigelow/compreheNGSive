@@ -37,8 +37,8 @@ interface = unixInterface("filter_ngs_file.py",
                                                              "-s",
                                                              "string",
                                                              "Sort method: possible options include \"UNIX\" and \"NUMXYM\" \\n"+
-                                                             "Default is no sorting - some formats will attempt to preserve the "+
-                                                             "original order, but this cannot be guranteed.",
+                                                             "Default is no sorting - will attempt to preserve the "+
+                                                             "original order, but this cannot be guaranteed.",
                                                              numArgs = 1),
                                                unixParameter("--drop_filtered",
                                                              "-d",

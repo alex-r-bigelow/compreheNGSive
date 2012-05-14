@@ -42,10 +42,12 @@ class recursiveDict(dict):
 
 class RangeNode:
     def __init__(self, identifier, value):
-        self.idsWithValue = set(identifier)
+        self.idsWithValue = set()
+        self.idsWithValue.add(identifier)
+        self.population = 1
+        
         self.value = value
         
-        self.population = 1
         self.parent = None
         self.low = value
         self.lowerChildren = None
@@ -60,6 +62,7 @@ class RangeNode:
                 self.lowerChildren = newNode
             else:
                 self.lowerChildren.addChild(newNode)
+            self.population += newNode.population
         elif newNode.value > self.value:
             if newNode.value > self.high:
                 self.high = newNode.value
@@ -67,9 +70,13 @@ class RangeNode:
                 self.higherChildren = newNode
             else:
                 self.higherChildren.addChild(newNode)
+            self.population += newNode.population
         else:
-            self.idsWithValue += newNode.idsWithValue
-        self.population += len(newNode.idsWithValue)
+            myIds = len(self.idsWithValue)
+            newNodesIds = len(newNode.idsWithValue)
+            self.idsWithValue = self.idsWithValue.union(newNode.idsWithValue)
+            overlap = len(self.idsWithValue) - (myIds + newNodesIds)
+            self.population += newNode.population - overlap
     
     def getNextNode(self):
         if self.higherChildren != None:
@@ -106,31 +113,21 @@ class RangeIterator:
     
     def next(self):
         if self.currentNode == None:
-            return None
-        nextNode = self.currentNode.getNextNode()
-        if nextNode == None || nextNode.value > self.stop:
             raise StopIteration
-            return None
+        nextNode = self.currentNode.getNextNode()
+        if nextNode == None or nextNode.value > self.stop:
+            raise StopIteration
         else:
             self.currentNode = nextNode
             return self.currentNode.value
     
-    def previous(self):
-        if self.currentNode == None:
-            return None
-        previousNode = self.currentNode.getPreviousNode()
-        if previousNode == None || previousNode.value < self.stop:
-            raise StopIteration
-            return None
-        else:
-            self.currentNode = previousNode
-            return self.currentNode.value
-
 class RangeTree:
     def __init__(self):
         self.root = None
         self.cacheNode = None
-        self.undefinedIDs = Set()
+        self.undefinedIDs = set()
+        self.min = None
+        self.max = None
     
     def __len__(self):
         if self.root == None:
@@ -138,10 +135,15 @@ class RangeTree:
         else:
             return self.root.population
         
-    def addPoint(self, identifier, value):
-        if (value == None):
+    def add(self, identifier, value):
+        if value == None:
             self.undefinedIDs.add(identifier)
         else:
+            if self.min == None or value < min:
+                self.min = value
+            if self.max == None or value > max:
+                self.max = value
+            
             newNode = RangeNode(identifier, value)
             if self.root == None:
                 self.root = newNode
@@ -195,14 +197,37 @@ class RangeTree:
         while (temp != None and temp.value < min):
             temp = temp.getNextNode()   # move right if we need to
         
-        # If temp is null, we know it's zero, otherwise use temp's population as our guess;
-        # this estimate will always be exact or above the exact population
+        # Now were either in range, or we can return an empty set
         if temp == None:
-            return 0
-        else:
-            self.cacheNode = temp
-            return temp.population
-
+            return results
+        
+        results.rootNode = temp
+        self.cacheNode = temp
+        results.population = temp.population    # Here's our starting population estimate, now shave off stuff that isn't actually in range
+        
+        while temp.higherChildren != None:
+            if temp.higherChildren.value > max:
+                results.population -= temp.higherChildren.population
+                break
+            else:
+                temp = temp.higherChildren
+        results.lastNode = temp     # oh, and by the way, we just found the last node
+        temp = results.rootNode
+        while temp.lowerChildren != None:
+            if temp.lowerChildren.value < min:
+                results.population -= temp.lowerChildren.population
+                break
+            else:
+                temp = temp.lowerChildren
+        results.firstNode = temp     # oh, and by the way, we just found the first node
+        
+        # Like a rental VHS, be classy and rewind to the beginning before we return it
+        results.currentNode = results.firstNode
+        return results
+    
+    def __iter__(self):
+        # TODO: this is kind of inefficient... if I find myself iterating over the whole tree a lot, I should improve this
+        return self.select(self.min,self.max)
 
 
 
