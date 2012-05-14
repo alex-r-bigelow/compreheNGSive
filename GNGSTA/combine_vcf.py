@@ -20,7 +20,7 @@ def parserCallback(variant,resultingVCF):
 
 # Get command line parameters
 
-interface = unixInterface("combine_vcf.py",
+interface = unixInterface("combine_vcf",
                          "This program combines vcf files generated from the same sequencing data set (e.g. if indels and snps were called separately...).",
                          requiredParameters = [unixParameter("--in",
                                                              "-i",

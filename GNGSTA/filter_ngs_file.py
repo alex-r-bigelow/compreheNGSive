@@ -14,7 +14,7 @@ import os
 
 # Get command line parameters
 
-interface = unixInterface("filter_ngs_file.py",
+interface = unixInterface("filter_ngs_file",
                          "This program filters any of:  \\n .vcf .cdr .gff3 .bed .txt(phastcons) \\n" +
                          "to only contain items that are contained in/overlapped by regions specified in a bed file. " +
                          "The type will automatically be determined from the file extension.",
@@ -52,7 +52,7 @@ inPath = interface.getOption("--in","-i",optional=False)[0]
 bedPath = interface.getOption(tag="--filter",altTag="-f",optional=False)[0]
 
 sortMethod = interface.getOption(tag="--sort",altTag="-s",optional=True)
-if sortMethod != None and len(sortMethod) > 1:
+if sortMethod != None and len(sortMethod) > 0:
     sortMethod = sortMethod[0]
 else:
     sortMethod = None

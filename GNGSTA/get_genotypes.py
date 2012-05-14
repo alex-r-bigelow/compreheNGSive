@@ -24,7 +24,7 @@ def mainCallback(v,outColumns,individuals,listToKeep,forceIndividuals):
 
 # Get command line parameters
 
-interface = unixInterface("get_genotypes.py",
+interface = unixInterface("get_genotypes",
                          "This program extracts specific variants from a vcf file into tabular format. " +
                          "Genotypes and some basic statistics are included.",
                          requiredParameters = [unixParameter("--in",

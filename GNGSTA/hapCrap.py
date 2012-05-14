@@ -345,7 +345,7 @@ def getHaplotypeFrequency(target,population):
         return float(seen)/float(possible)
 
 if __name__ == "__main__":
-    interface = unixInterface("hapCrap.py",
+    interface = unixInterface("hapCrap",
                               "This program uses a risk haplotype and unassociated variants to prioritize candidate variants.",
                               requiredParameters = [unixParameter("--unassociated",
                                                                   "-u",

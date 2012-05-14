@@ -24,7 +24,7 @@ def mainCallback(variant,resultingVCF,listToKeep,strict):
 
 # Get command line parameters
 
-interface = unixInterface("intersect_vcf.py",
+interface = unixInterface("intersect_vcf",
                          "This program only includes variants from a .vcf file that are seen in one or more other .vcf files",
                          requiredParameters = [unixParameter("--filter",
                                                              "-f",

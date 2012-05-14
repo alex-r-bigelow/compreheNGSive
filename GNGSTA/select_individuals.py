@@ -13,7 +13,7 @@ from resources.utils import variant, vcfFile
 
 # Get command line parameters
 
-interface = unixInterface("select_individuals.py",
+interface = unixInterface("select_individuals",
                          "This program duplicates a .vcf file, only including a specific subset of individuals. Note: all meta data from "+
                          "the original .vcf file will be preserved; allele frequencies, etc. will probably be incorrect.",
                          requiredParameters = [unixParameter("--in",
@@ -50,7 +50,7 @@ inPath = interface.getOption("--in","-i",optional=False)[0]
 personList = interface.getOption(tag="--individuals",altTag="-p",optional=False)
 
 sortMethod = interface.getOption(tag="--sort",altTag="-s",optional=True)
-if sortMethod != None and len(sortMethod) > 1:
+if sortMethod != None and len(sortMethod) > 0:
     sortMethod = sortMethod[0]
 else:
     sortMethod = None
@@ -71,7 +71,7 @@ except:
     interface.die("ERROR: Couldn't write to %s" % outPath)
 
 print "Loading %s..." % inPath
-resultingFile = vcfFile.parseVcfFile(inFile,functionToCall=mainCallback,callbackArgs={"outFile":outFile},individualsToExclude=[],individualsToInclude=personList,mask=None,returnFileObject=True,skipFiltered=dropVCF,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=True,includeAdditionalHeaderInfo=True,forceAlleleMatching=False)
+resultingFile = vcfFile.parseVcfFile(inFile,functionToCall=None,callbackArgs=None,individualsToExclude=[],individualsToInclude=personList,mask=None,returnFileObject=True,skipFiltered=dropVCF,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=True,includeAdditionalHeaderInfo=True,forceAlleleMatching=False)
 print "Writing %s..." % outPath
 resultingFile.writeVcfFile(outFile,sortMethod=sortMethod)
 inFile.close()

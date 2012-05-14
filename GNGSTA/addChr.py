@@ -12,7 +12,7 @@ from resources.interfaces import unixInterface, unixParameter
 
 # Get command line parameters
 
-interface = unixInterface("addChr.py",
+interface = unixInterface("addChr",
                          "Adds \"chr\" to the beginning of every non-blank line that doesn't start with \"#\".",
                          requiredParameters = [unixParameter("--in",
                                                              "-i",

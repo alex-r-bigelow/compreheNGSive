@@ -3,18 +3,18 @@ import sys
 from resources.utils import recursiveDict
 from resources.utils import unixInterface, unixParameter
 
-interface = unixInterface("buildAnalyzeCovariateReport.py",
+interface = unixInterface("buildAnalyzeCovariateReport",
                           "Creates a LaTeX .tex file that consolidates all the output from AnalyzeCovariates.jar into a single pdf. "+
                           "After running this program, type pdflatex <your .tex file> to generate the actual pdf.",
                          requiredParameters = [unixParameter("--dir",
                                                              "-d",
                                                              "directory",
-                                                             "Root directory to iterate from. You should run AnalyzeCovariates.jar "+,
+                                                             "Root directory to iterate from. You should run AnalyzeCovariates.jar "+
                                                              "twice (before and after TableRecalibration) - please save the results in "+
                                                              "two separate directories. For example, if the current directory is /foo "+
                                                              "and the results before recalibration are in /foo/preRecalibration and the "+
                                                              "results after recalibration are in /foo/postRecalibration, the parameter "+
-                                                             "to give --dir would be \"/foo\"."
+                                                             "to give --dir would be \"/foo\".",
                                                              numArgs = 1),
                                                unixParameter("--out",
                                                              "-o",
