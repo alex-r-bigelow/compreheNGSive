@@ -41,20 +41,23 @@ class recursiveDict(dict):
             return temp
 
 class RangeNode:
-    def __init__(self, identifier, value):
+    def __init__(self, identifier, values, splitDimension):
         self.idsWithValue = set()
         self.idsWithValue.add(identifier)
         self.population = 1
+        self.splitDimension = splitDimension
+        self.numDimensions = len(values)
         
-        self.value = value
+        self.values = values
         
         self.parent = None
-        self.low = value
+        self.low = list(values)
         self.lowerChildren = None
-        self.high = value
+        self.high = list(values)
         self.higherChildren = None
     
     def addChild(self, newNode):
+        # TODO: update for multidimensionality
         if newNode.value < self.value:
             if newNode.value < self.low:
                 self.low = newNode.value
@@ -229,7 +232,17 @@ class RangeTree:
         # TODO: this is kind of inefficient... if I find myself iterating over the whole tree a lot, I should improve this
         return self.select(self.min,self.max)
 
-
-
+class KdNode:
+    def __init__(self,values,splitDimension):
+        self.population = 1
+        self.values = values
+        self.splitDimension = splitDimension
+        
+        self.parent = None
+        self.lows = list(values)    # clone...
+        self.lowerChildren = None
+        self.highs = list(values)   # clone...
+        self.higherChildren = None
+        
 
 

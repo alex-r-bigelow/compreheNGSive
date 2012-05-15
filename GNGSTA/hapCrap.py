@@ -356,7 +356,7 @@ if __name__ == "__main__":
                                                                   "rs123,T rs456,AGGGC",
                                                                   numArgs = -1),
                                                     unixParameter("--hap",
-                                                                  "-h",
+                                                                  "-s",
                                                                   "string,string pairs",
                                                                   "Variants (rs numbers) and risk alleles that are on the risk haplotype. " +
                                                                   "If rs123 and rs456 are the risk haplotype and their risk alleles are " +
@@ -368,7 +368,7 @@ if __name__ == "__main__":
                                                                   "file(s)",
                                                                   "Phased VCF file(s) containing case data.",
                                                                   numArgs = -1),
-                                                    unixParameter("--background_file(s)",
+                                                    unixParameter("--background_file",
                                                                   "-b",
                                                                   "file(s)",
                                                                   "Phased VCF file(s) containing background data.",
@@ -405,7 +405,7 @@ if __name__ == "__main__":
                                                                   numArgs = -1)])
     
     unassociatedList = interface.getOption(tag="--unassociated", altTag="-u", optional=False)
-    hapList = interface.getOption(tag="--hap", altTag="-h", optional=False)
+    hapList = interface.getOption(tag="--hap", altTag="-s", optional=False)
     
     for c in unassociatedList:
         unassociatedAlleles[c] = None
