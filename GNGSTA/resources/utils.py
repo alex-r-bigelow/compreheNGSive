@@ -522,14 +522,14 @@ class feature:
         
         for k,v in other.attributes.iteritems():
             if self.attributes.has_key(k):
-                if self.failOnMismatch and v != self.attributes[k]:
+                if v != self.attributes[k]:
                     return
             else:
                 newAttributes[k] = v
         
         for k,v in self.attributes.iteritems():
             if other.attributes.has_key(k):
-                if self.failOnMismatch and v != other.attributes[k]:
+                if v != other.attributes[k]:
                     return
             else:
                 newAttributes[k] = v
