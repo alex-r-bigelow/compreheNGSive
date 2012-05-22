@@ -1,3 +1,5 @@
+import math
+
 class recursiveDict(dict):
     def __init__(self, generateFrom=None):
         """
@@ -40,7 +42,7 @@ class recursiveDict(dict):
             temp[columns[0]] = recursiveDict.generateFromList(columns[1:])
             return temp
 
-class RangeNode:
+class TwoNode:
     def __init__(self, identifier, value):
         self.id = identifier
         self.population = 1
@@ -74,7 +76,45 @@ class RangeNode:
             else:
                 self.higherChildren.addChild(newNode)
     
-    def getNextNode(self):
+    def getSubselectionNoCheck(self):
+        results = set()
+        results.add(self.id)
+        if self.lowerChildren != None:
+            results.update(self.lowerChildren.getSubselectionNoCheck())
+        if self.higherChildren != None:
+            results.update(self.higherChildren.getSubselectionNoCheck())
+        return results
+    
+    def getSubselection(self, low, high):
+        if self.high < low or self.low > high:
+            return set()
+        if low <= self.low and high >= self.high:   # I am strictly within the range; can add myself and everything below me without checking anymore
+            return self.getSubselectionNoCheck()
+        results = set()
+        if self.value >= low and self.value <= high:
+            results.add(self.id)
+        if self.lowerChildren != None:
+            results.update(self.lowerChildren.getSubselection(low,high))
+        if self.higherChildren != None:
+            results.update(self.higherChildren.getSubselection(low,high))
+        return results
+    
+    def countPopulation(self, low, high):   # if all we care about is the size of the set, we can do it a little faster
+        if self.high < low or self.low > high:
+            return 0
+        if low <= self.low and high >= self.high:
+            return self.population
+        count = 0
+        if self.value >= low and self.value <= high:
+            count += 1
+        if self.lowerChildren != None:
+            count += self.lowerChildren.countPopulation(low,high)
+        if self.higherChildren != None:
+            count += self.higherChildren.countPopulation(low,high)
+        return count
+        
+    
+    '''def getNextNode(self):
         if self.higherChildren != None:
             return self.higherChildren
         elif self.cacheNext != None:    # this caching behavior will always work provided you can't remove nodes
@@ -96,9 +136,9 @@ class RangeNode:
             while (temp != None and temp.value > self.value):
                 temp = temp.parent
             self.cachePrevious = temp
-            return temp
+            return temp'''
 
-class RangeIterator:
+'''class TwoIterator:
     def __init__(self, start, stop):
         self.start = start
         self.stop = stop
@@ -120,16 +160,18 @@ class RangeIterator:
             raise StopIteration
         else:
             self.currentNode = nextNode
-            return (self.currentNode.value,self.currentNode.id)
+            return (self.currentNode.value,self.currentNode.id)'''
     
-class RangeTree:
+class TwoTree:
     def __init__(self, fromList=None):
         '''
         If a list is provided, each item should be an (id,value) tuple
         '''
         self.root = None
-        self.cacheNode = None
+        self.cacheNode = self.root
+        self.maskedIDs = set()
         self.undefinedIDs = set()
+        self.missingIDs = set()
         
         if fromList != None and len(fromList) > 0:
             median = len(fromList)/2
@@ -144,10 +186,17 @@ class RangeTree:
             return self.root.population
         
     def add(self, identifier, value):
+        # nan indicates that a variant has been masked because of how the minor allele was defined
+        # inf indicates values that are undefined
+        # None indicates values that are missing
         if value == None:
+            self.missingIDs.add(identifier)
+        elif math.isinf(value):
             self.undefinedIDs.add(identifier)
+        elif math.isnan(value):
+            self.maskedIDs.add(identifier)
         else:
-            newNode = RangeNode(identifier, value)
+            newNode = TwoNode(identifier, value)
             if self.root == None:
                 self.root = newNode
             else:
@@ -161,11 +210,52 @@ class RangeTree:
         self.addListChunk(data[:median])
         self.addListChunk(data[median+1:])
     
-    def select(self, low, high):
-        results = RangeIterator(low,high)
+    def select(self, low=None, high=None, includeMasked=False, includeUndefined=False, includeMissing=False):
+        results = set()
+        if low != None and high != None:
+            if low > high:
+                temp = high
+                high = low
+                low = temp
+            
+            if self.root != None:
+                results.update(self.root.getSubselection(low, high))
+        
+        if includeMasked:
+            results.update(self.maskedIDs)
+        if includeUndefined:
+            results.update(self.undefinedIDs)
+        if includeMissing:
+            results.update(self.missingIDs)
+        
+        return results
+    
+    def countPopulation(self, low=None, high=None, includeMasked=False, includeUndefined=False, includeMissing=False):
+        count = 0
+        if low != None and high != None:
+            if low > high:
+                temp = high
+                high = low
+                low = temp
+            
+            if self.root != None:
+                count += self.root.countPopulation(low, high)
+        
+        if includeMasked:
+            count += len(self.maskedIDs)
+        if includeUndefined:
+            count += len(self.undefinedIDs)
+        if includeMissing:
+            count += len(self.missingIDs)
+        
+        return count
+    
+    '''def select(self, low, high):
+        results = TwoIterator(low,high)
         if low > high:
-            print "WARNING: Attempted selection on RangeTree with low > high!"
-            return results
+            temp = high
+            high = low
+            low = temp
         
         # To improve performance, we cache the pointer that we used for the last selection or estimation; if we
         # query again in the same neighborhood, we'll want to start someplace similar
@@ -212,7 +302,7 @@ class RangeTree:
         # Like a rental VHS, be classy and rewind to the beginning before we return it - we need to start by pointing to the node BEFORE the first node
         results.currentNode = results.firstNode.getPreviousNode()
         if results.currentNode == None:
-            dummy = RangeNode(None,None)
+            dummy = TwoNode(None,None)
             dummy.higherChildren = results.firstNode
             results.currentNode = dummy
         
@@ -222,4 +312,297 @@ class RangeTree:
     
     def __iter__(self):
         # TODO: this is kind of inefficient... if I find myself iterating over the whole tree a lot, I should improve this
-        return self.select(self.root.low,self.root.high)
+        return self.select(self.root.low,self.root.high)'''
+
+
+class FourNode:
+    def __init__(self, identifier, x,y):
+        self.id = identifier
+        self.population = 1
+        
+        self.x = x
+        self.y = y
+        
+        self.parent = None
+        
+        self.lowerChildren = None
+        self.higherXChildren = None
+        self.higherYChildren = None
+        self.higherChildren = None
+        
+        self.lowX = x
+        self.highX = x
+        self.lowY = y
+        self.highY = y
+    
+    def addChild(self, newNode):
+        self.population += newNode.population
+        
+        if newNode.x < self.x:
+            if newNode.x < self.lowX:
+                self.lowX = newNode.x
+            
+            if newNode.y < self.y:
+                if newNode.y < self.lowY:
+                    self.lowY = newNode.y
+                
+                if self.lowerChildren == None:
+                    self.lowerChildren = newNode
+                else:
+                    self.lowerChildren.addChild(newNode)
+            else:   # lump greater than OR EQUAL in the same direction
+                if newNode.y > self.highY:
+                    self.highY = newNode.y
+                
+                if self.higherYChildren == None:
+                    self.higherYChildren = newNode
+                else:
+                    self.higherYChildren.addChild(newNode)
+        else:   # lump greater than OR EQUAL in the same direction
+            if newNode.x > self.highX:
+                self.highX = newNode.x
+            
+            if newNode.y < self.y:
+                if newNode.y < self.lowY:
+                    self.lowY = newNode.y
+                
+                if self.higherXChildren == None:
+                    self.higherXChildren = newNode
+                else:
+                    self.higherXChildren.addChild(newNode)
+            else:   # lump greater than OR EQUAL in the same direction
+                if newNode.y > self.highY:
+                    self.highY = newNode.y
+                
+                if self.higherChildren == None:
+                    self.higherChildren = newNode
+                else:
+                    self.higherChildren.addChild(newNode)
+    
+    def getSubselectionNoCheck(self):
+        results = set()
+        results.add(self.id)
+        if self.lowerChildren != None:
+            results.update(self.lowerChildren.getSubselectionNoCheck())
+        if self.higherXChildren != None:
+            results.update(self.higherXChildren.getSubselectionNoCheck())
+        if self.higherYChildren != None:
+            results.update(self.higherYChildren.getSubselectionNoCheck())
+        if self.higherChildren != None:
+            results.update(self.higherChildren.getSubselectionNoCheck())
+        return results
+    
+    def getSubselection(self, lowX, lowY, highX, highY):
+        if self.highX < lowX or self.lowX > highX or self.highY < lowY or self.lowY > highY:
+            return set()
+        if lowX <= self.lowX and highX >= self.highX and lowY <= self.lowY and highY >= self.highY:   # I am strictly within the range; can add myself and everything below me without checking anymore
+            return self.getSubselectionNoCheck()
+        results = set()
+        if self.x >= lowX and self.x <= highX and self.y >= lowY and self.y <= highY:
+            results.add(self.id)
+        if self.lowerChildren != None:
+            results.update(self.lowerChildren.getSubselection(lowX,lowY,highX,highY))
+        if self.higherXChildren != None:
+            results.update(self.higherXChildren.getSubselection(lowX,lowY,highX,highY))
+        if self.higherYChildren != None:
+            results.update(self.higherYChildren.getSubselection(lowX,lowY,highX,highY))
+        if self.higherChildren != None:
+            results.update(self.higherChildren.getSubselection(lowX,lowY,highX,highY))
+        return results
+    
+    def countPopulation(self, lowX, lowY, highX, highY):   # if all we care about is the size of the set, we can do it a little faster
+        if self.highX < lowX or self.lowX > highX or self.highY < lowY or self.lowY > highY:
+            return 0
+        if lowX <= self.lowX and highX >= self.highX and lowY <= self.lowY and highY >= self.highY:   # I am strictly within the range; can add myself and everything below me without checking anymore
+            return self.population
+        count = 0
+        if self.x >= lowX and self.x <= highX and self.y >= lowY and self.y <= highY:
+            count += 1
+        if self.lowerChildren != None:
+            count += self.lowerChildren.countPopulation(lowX,lowY,highX,highY)
+        if self.higherXChildren != None:
+            count += self.higherXChildren.countPopulation(lowX,lowY,highX,highY)
+        if self.higherYChildren != None:
+            count += self.higherYChildren.countPopulation(lowX,lowY,highX,highY)
+        if self.higherChildren != None:
+            count += self.higherChildren.countPopulation(lowX,lowY,highX,highY)
+        return count
+    
+class FourTree:
+    def __init__(self, fromList=None):
+        '''
+        If a list is provided, each item should be an (id,x,y) tuple
+        '''
+        self.root = None                    # points that are defined & unmasked in both dimensions
+        self.cacheNode = None
+        
+        exceptionTypes = ["Value","Null","Masked","Missing"]
+        exceptionTempList = []
+        self.exceptionGroups = {}
+        for t in exceptionTypes:
+            exceptionTempList.append("x" + t)
+        for x in exceptionTempList:
+            for y in exceptionTypes:
+                if x == "xValue":
+                    if y == "Value":
+                        continue    # if x and y have values, we want to store them in self.root
+                    else:
+                        self.exceptionGroups[x + "_y" + y] = TwoTree()  # x has a value but y doesn't
+                else:
+                    if y == "Value":
+                        self.exceptionGroups[x + "_yValue"] = TwoTree() # y has a value but x doesn't
+                    else:
+                        self.exceptionGroups[x + "_y" + y] = set()  # neither have values... a set will do the job
+        
+        if fromList != None and len(fromList) > 0:
+            median = len(fromList)/2
+            self.root = fromList[median]
+            self.addListChunk(fromList[:median])
+            self.addListChunk(fromList[median+1:])
+    
+    def __len__(self):
+        if self.root == None:
+            return 0
+        else:
+            return self.root.population
+        
+    def add(self, identifier, x, y):
+        # nan indicates that a variant has been masked because of how the minor allele was defined
+        # inf indicates values that are undefined
+        # None indicates values that are missing
+        
+        xIndex = None
+        if x == None:
+            xIndex = "xMissing"
+        elif math.isnan(x):
+            xIndex = "xMasked"
+        elif math.isinf(x):
+            xIndex = "xNull"
+        
+        yIndex = None
+        if y == None:
+            yIndex = "yMissing"
+        elif math.isnan(y):
+            yIndex = "yMasked"
+        elif math.isinf(y):
+            yIndex = "yNull"
+        
+        if xIndex == None and yIndex == None:
+            newNode = FourNode(identifier,x,y)
+            if self.root == None:
+                self.root = newNode
+            else:
+                self.root.addChild(newNode)
+        elif xIndex == None:
+            self.exceptionGroups["xValue_"+yIndex].add(identifier,x)
+        elif yIndex == None:
+            self.exceptionGroups[xIndex+"_yValue"].add(identifier,y)
+        else:
+            self.exceptionGroups[xIndex+"_"+yIndex].add(identifier)
+    
+    def addListChunk(self, data):
+        if len(data) == 0:
+            return
+        median = len(data)/2
+        self.add(data[median][0],data[median][1],data[median][2])
+        self.addListChunk(data[:median])
+        self.addListChunk(data[median+1:])
+    
+    def select(self, lowX=None, lowY=None, highX=None, highY=None, includeMaskedX=False, includeMaskedY=False, includeUndefinedX=False, includeUndefinedY=False, includeMissingX=False, includeMissingY=False):
+        results = set()
+        if lowX != None and lowY != None and highX != None and highY != None:
+            if lowX > highX:
+                temp = highX
+                highX = lowX
+                lowX = temp
+            if lowY > highY:
+                temp = highY
+                highY = lowY
+                lowY = temp
+            
+            if self.root != None:
+                results.update(self.root.getSubselection(lowX, lowY, highX, highY))
+        
+        xExceptionIndices = ["xValues"]
+        yExceptionIndices = ["yValues"]
+        
+        if includeMaskedX:
+            xExceptionIndices.append("xMasked")
+        if includeUndefinedX:
+            xExceptionIndices.append("xNull")
+        if includeMissingX:
+            xExceptionIndices.append("xMissing")
+        
+        if includeMaskedY:
+            yExceptionIndices.append("yMasked")
+        if includeUndefinedY:
+            yExceptionIndices.append("yNull")
+        if includeMissingY:
+            yExceptionIndices.append("yMissing")
+        
+        for x in xExceptionIndices:
+            for y in yExceptionIndices:
+                if x == "xValues":
+                    if y == "yValues":
+                        continue    # both have values - this will come from earlier selection from self.root
+                    elif lowX != None and highX != None:
+                        results.update(self.exceptionGroups["xValues_"+y].select(lowX,highX))
+                else:
+                    if y == "yValues":
+                        if lowY != None and highY != None:
+                            results.update(self.exceptionGroups[x+"_yValues"].select(lowY,highY))
+                    else:
+                        results.update(self.exceptionGroups[x+"_"+y])
+        
+        return results
+    
+    def countPopulation(self, lowX=None, lowY=None, highX=None, highY=None, includeMasked=False, includeUndefined=False, includeMissing=False):
+        count = 0
+        if lowX != None and lowY != None and highX != None and highY != None:
+            if lowX > highX:
+                temp = highX
+                highX = lowX
+                lowX = temp
+            if lowY > highY:
+                temp = highY
+                highY = lowY
+                lowY = temp
+            
+            if self.root != None:
+                count += self.root.countPopulation(lowX, lowY, highX, highY)
+        
+        if not includeMasked and not includeUndefined and not includeMissing:   # this is probably the most common scenario... save some time
+            return count
+        
+        xExceptionIndices = ["xValues"]
+        yExceptionIndices = ["yValues"]
+        
+        if includeMaskedX:
+            xExceptionIndices.append("xMasked")
+        if includeUndefinedX:
+            xExceptionIndices.append("xNull")
+        if includeMissingX:
+            xExceptionIndices.append("xMissing")
+        
+        if includeMaskedY:
+            yExceptionIndices.append("yMasked")
+        if includeUndefinedY:
+            yExceptionIndices.append("yNull")
+        if includeMissingY:
+            yExceptionIndices.append("yMissing")
+        
+        for x in xExceptionIndices:
+            for y in yExceptionIndices:
+                if x == "xValues":
+                    if y == "yValues":
+                        continue    # both have values - this will come from earlier selection from self.root
+                    elif lowX != None and highX != None:
+                        count += self.exceptionGroups["xValues_"+y].countPopulation(lowX,highX)
+                else:
+                    if y == "yValues":
+                        if lowY != None and highY != None:
+                            count += self.exceptionGroups[x+"_yValues"].countPopulation(lowY,highY)
+                    else:
+                        count += len(self.exceptionGroups[x+"_"+y])
+        
+        return count
