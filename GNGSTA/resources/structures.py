@@ -175,7 +175,7 @@ class TwoTree:
         
         if fromList != None and len(fromList) > 0:
             median = len(fromList)/2
-            self.root = fromList[median]
+            self.add(fromList[median][0],fromList[median][1])
             self.addListChunk(fromList[:median])
             self.addListChunk(fromList[median+1:])
     
@@ -456,7 +456,7 @@ class FourTree:
         
         if fromList != None and len(fromList) > 0:
             median = len(fromList)/2
-            self.root = fromList[median]
+            self.add(fromList[median][0],fromList[median][1],fromList[median][2])
             self.addListChunk(fromList[:median])
             self.addListChunk(fromList[median+1:])
     
