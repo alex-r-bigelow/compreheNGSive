@@ -4,6 +4,64 @@ from collections import defaultdict
 from structures import recursiveDict
 
 ####################
+# Helper constants #
+####################
+
+# Chromosome lengths and offsets for GRCh37.p8 (rCRS for chrM) 
+chrLengths =   {"chr1":249250621,
+                "chr2":243199373,
+                "chr3":198022430,
+                "chr4":191154276,
+                "chr5":180915260,
+                "chr6":171115067,
+                "chr7":159138663,
+                "chr8":146364022,
+                "chr9":141213431,
+                "chr10":135534747,
+                "chr11":135006516,
+                "chr12":133851895,
+                "chr13":115169878,
+                "chr14":107349540,
+                "chr15":102531392,
+                "chr16":90354753,
+                "chr17":81195210,
+                "chr18":78077248,
+                "chr19":59128983,
+                "chr20":63025520,
+                "chr21":48129895,
+                "chr22":51304566,
+                "chrX":155270560,
+                "chrY":59373566,
+                "chrM":16569}
+
+chrOffsets =   {"chr1":0,
+                "chr2":249250621,
+                "chr3":492449994,
+                "chr4":690472424,
+                "chr5":881626700,
+                "chr6":1062541960,
+                "chr7":1233657027,
+                "chr8":1392795690,
+                "chr9":1539159712,
+                "chr10":1680373143,
+                "chr11":1815907890,
+                "chr12":1950914406,
+                "chr13":2084766301,
+                "chr14":2199936179,
+                "chr15":2307285719,
+                "chr16":2409817111,
+                "chr17":2500171864,
+                "chr18":2581367074,
+                "chr19":2659444322,
+                "chr20":2718573305,
+                "chr21":2781598825,
+                "chr22":2829728720,
+                "chrX":2881033286,
+                "chrY":3036303846,
+                "chrM":3095677412,
+                }
+
+####################
 # Helper functions #
 ####################
 
@@ -154,6 +212,12 @@ class allele:
         self.attemptRepairsWhenComparing = attemptRepairsWhenComparing
     
     def __eq__(self, other):
+        '''
+        For now, alleles match if and only if their text lengths are the same and there are no possible letter conflicts;
+        the "?" wildcard will allow some mismatches (but the lengths must remain the same)
+        
+        TODO: do real regex comparisons, repairs
+        '''
         if other == None:
             return False
         if len(self.text) != len(other.text):
@@ -161,10 +225,11 @@ class allele:
         for i,c in enumerate(self.text):
             if c != other.text[i] and c != "?" and other.text[i] != "?":
                 return False
+        #self.repair(other)
         return True
     
     def repair(self, other):
-        if self.attemptRepairsWhenComparing:
+        if self.attemptRepairsWhenComparing and other.attemptRepairsWhenComparing:
             i = self.text.find("?")
             while i != -1:
                 if other.text[i] == "?":
@@ -196,24 +261,22 @@ class allele:
 class variant:
     """
     Options:
-    name: rs number, or chr_position_ref_alt will be used if None
-    shareNames, shareAttributes, shareGenotypes: if True, will attempt to share this information between variants whenever they are compared
-    and found to be equal (equal implies they have the same chromosome, position, reference, and at least one matching alternate allele - 
-    this can be modified, however, by setting exhaustiveCompare to True, which will ensure every piece of data associated with the variant
-    matches)
-    failOnMismatch: if True, will leave each variant untouched if they attempt to share information, but some mismatching data is encountered.
-    This will NOT change whether two variants are considered to be equal (for that, use exhaustiveCompare). False is pretty dangerous if you
-    care about keeping attributes or genotypes consistent - some data may be overwritten.
-    NOTE: if exhaustiveCompare is set to true, shareNames, shareAttributes, shareGenotypes, and failOnMismatch will automatically be set to
-    True regardless of parameters.
-    If speed is important, setting these four options to False may help
+    name: rs number, or chr_start_ref_alt will be used if None
+    ref: reference allele
+    alt: alternate allele
+    attemptRepairsWhenComparing: will attempt to repair missing information in the other variant if they are determined to be the same variant
+    forceAlleleMatching: by default, comparison will check alleles as well as genome position, but this can be bypassed by setting to False
     """
-    def __init__(self, chromosome, start, ref, alt, name=None, attemptRepairsWhenComparing=True, forceAlleleMatching=True):
+    def __init__(self, chromosome, start, ref="?", alt="?", name=None, attemptRepairsWhenComparing=True, forceAlleleMatching=True):
         if not chromosome.startswith("chr"):
             chromosome = "chr" + chromosome
+        if not chrOffsets.has_key(chromosome):
+            print "ERROR: unknown chromosome: %s" % chromosome
+            sys.exit(1)
         self.chromosome = chromosome
         self.start = int(start)
         self.stop = self.start + len(ref) - 1
+        self.genomePosition = self.start + chrOffsets[self.chromosome]
         self.ref = allele(ref)
         self.alt = []
         if isinstance(alt,list):
@@ -590,6 +653,65 @@ class bedFile:
     @staticmethod
     def composeBedLine(f):
         return "%s\t%i\t%i\t%s" % (f.chromosome,f.start-1,f.stop,f.name)  # the -1 converts back to BED coordinates
+
+class csvVariantFile:
+    def __init__(self):
+        self.fileAttributes = {}
+        self.variants = set()
+    
+    @staticmethod
+    def parseCsvVariantFile(fileObject,chromosomeHeader,startHeader,refHeader=None,altHeader=None,nameHeader=None,attemptRepairsWhenComparing=True,forceAlleleMatching=True,delimiter=",",functionToCall=None,callbackArgs={},mask=None,returnFileObject=True):
+        '''
+        Assuming every row in a .csv file, we create the same sort of functionality as if it were one of these other standard formats
+        '''
+        if returnFileObject:
+            newFileObject = csvVariantFile()
+        
+        headerMappings = {}
+        headers = []
+        firstLine = True
+        
+        for line in fileObject:
+            columns = line[:-1].split(delimiter)
+            if firstLine:
+                headers = columns
+                if chromosomeHeader not in headers or startHeader not in headers:
+                    print "ERROR: %s and %s headers required." % (chromosomeHeader,startHeader)
+                    sys.exit(1)
+                headerMappings[headers.index(chromosomeHeader)] = "chromosome"
+                headerMappings[headers.index(startHeader)] = "start"
+                
+                if refHeader != None and refHeader in headers:
+                    headerMappings[headers.index(refHeader)] = "ref"
+                if altHeader != None and altHeader in headers:
+                    headerMappings[headers.index(altHeader)] = "alt"
+                if nameHeader != None and nameHeader in headers:
+                    headerMappings[headers.index(nameHeader)] = "name"
+                firstLine = False
+            else:
+                varArgs = {"attemptRepairsWhenComparing":attemptRepairsWhenComparing,"forceAlleleMatching":forceAlleleMatching}
+                tempAttributes = {}
+                for i,c in enumerate(columns):
+                    if headerMappings.has_key(i):
+                        varArgs[headerMappings[i]] = c
+                    else:
+                        tempAttributes[headers[i]] = c
+                
+                newVariant = variant(**varArgs)
+                newVariant.attributes.update(tempAttributes)
+                
+                if mask != None and not mask.contains(chromosome=varArgs["chromosome"],position=varArgs["start"]):
+                    continue
+                if functionToCall != None:
+                    functionToCall(newVariant,**callbackArgs)
+                if returnFileObject:
+                    newFileObject.variants.add(newVariant)
+        if returnFileObject:
+            newFileObject.fileAttributes["HEADER_MAPPINGS"] = headerMappings
+            newFileObject.fileAttributes["ALL_HEADERS"] = headers
+            return newFileObject
+        else:
+            return {"HEADER_MAPPINGS":headerMappings,"ALL_HEADERS":headers}
 
 class vcfFile:
     def __init__(self):

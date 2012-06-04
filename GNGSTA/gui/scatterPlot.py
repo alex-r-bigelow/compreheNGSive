@@ -1,16 +1,18 @@
 import math
+from axes import scatterAxes
 from PySide.QtCore import *
 from PySide.QtGui import *
 
-class ScatterPlot(QWidget):
-    def __init__(self, parent = None, data = None, width = 500, height = 500, pointSize = 5, lighnessSteps = 5, selectionSize = 10):
+class scatterPlot(QWidget):
+    def __init__(self, controller, svg, parent = None, width = 500, height = 500, pointSize = 5, lighnessSteps = 5, selectionSize = 10):
         QWidget.__init__(self, parent)
         
         self.setWindowTitle(self.tr("scatterplot.py"))
         
         self.setMouseTracking(True)
         
-        self.data = data
+        self.controller = controller.scatterPlot
+        self.scatterAxes = scatterAxes()
         
         self.scatterWidth = width
         self.scatterHeight = height
@@ -38,11 +40,13 @@ class ScatterPlot(QWidget):
         self.setCursor(Qt.BlankCursor)
         
         self.dirty = True
+        self.progress = 0
+        self.currentXaxis = None
+        self.currentYaxis = None
                 
         self.drawingTimer = QTimer()
         self.drawingTimer.setSingleShot(True)
         self.connect(self.drawingTimer, SIGNAL("timeout()"), self.drawScatter)
-        self.drawingTimer.start(100)
         
         self.animationTimer = QTimer()
         self.animationTimer.setSingleShot(False)
@@ -51,6 +55,13 @@ class ScatterPlot(QWidget):
     
     def sizeHint(self):
         return QSize(self.scatterWidth, self.scatterHeight)
+    
+    def checkAxes(self):
+        if self.currentXaxis != self.controller.currentXaxis or self.currentYaxis != self.controller.currentYaxis:
+            self.currentXaxis = self.controller.currentXaxis
+            self.currentYaxis = self.controller.currentYaxis
+            self.dirty = True
+            self.drawingTimer.start(50)
     
     def paintEvent(self, event):
         painter = QPainter()
@@ -63,63 +74,29 @@ class ScatterPlot(QWidget):
             painter.drawPixmap(0,0,self.selectionOverlay)
         painter.end()
     
-    '''def resizeEvent(self, event):
-        self.drawingTimer.stop()
-        self.dirty = True
-        self.drawingTimer.start(1000)
-        
-    def checkSizes(self):
-        if self.width() != self.scatterWidth or self.height() != self.scatterHeight:
-            # might still be resizing... try again a second later
-            self.drawingTimer.stop()
-            self.scatterHeight = self.height()
-            self.scatterWidth = self.width()
-            
-            self.pointRadius = self.pointSize/(2.0*max(self.scatterWidth,self.scatterHeight))
-            self.selectionRadius = self.selectionSize/(2.0*max(self.scatterWidth,self.scatterHeight))
-            
-            self.drawingTimer.start(1000)
-            return False
-        else:
-            return True'''
-    
-    def drawScatter(self):
-        #if self.checkSizes():
-        #self.image = QPixmap(self.scatterWidth,self.scatterHeight)
-        #self.selectionOverlay = QPixmap(self.scatterWidth,self.scatterHeight)
-        self.image.fill(Qt.white)
-        
-        painter = QPainter()
-        painter.begin(self.image)
-        
-        #painter.setRenderHint(QPainter.Antialiasing)
-        
-        for y in xrange(self.scatterWidth):
-            for x in xrange(self.scatterHeight):
-                xVal,yVal = self.transformScreenCoordinates(x,y)
-                painter.setPen(self.getColor(xVal-self.pointRadius,yVal-self.pointRadius,xVal+self.pointRadius,yVal+self.pointRadius))
-                painter.drawPoint(x,y)
-        
-        painter.end()
-        
-        # that probably took a while... if by chance they resized again while we weren't looking, we'll have to do this again
-        #if self.checkSizes():
-        self.dirty = False
-    
     def animate(self):
+        self.checkAxes()
+        
         painter = QPainter()
+        
         if self.dirty:
             self.loadingImage.fill(Qt.white)
             painter.begin(self.loadingImage)
             
-            painter.drawText(0,0,self.width(),self.height(),Qt.AlignCenter | Qt.AlignHCenter,"Loading...")
+            outText = "Loading"
+            if self.progress >= 10:
+                self.progress = 0
+            for i in xrange(self.progress):
+                outText += "."
+            
+            painter.drawText(0,0,self.width(),self.height(),Qt.AlignCenter | Qt.AlignHCenter,outText)
             
             painter.end()
         else:
             self.selectionOverlay.fill(Qt.transparent)
             painter.begin(self.selectionOverlay)
             
-            for rsNumber in self.parent().selected:
+            for rsNumber in self.data.currentSelection.current:
                 painter.save()
                 x,y = self.transformDataCoordinates(self.data.getData(rsNumber,"CASES Allele Frequency"),self.data.getData(rsNumber,"CONTROLS Allele Frequency"))
                 painter.translate(x,y)
@@ -133,7 +110,7 @@ class ScatterPlot(QWidget):
                 painter.drawRect(self.selectionRect)
                 painter.restore()
             
-            for rsNumber in self.parent().highlighted:
+            for rsNumber in self.data.highlighted:
                 painter.save()
                 x,y = self.transformDataCoordinates(self.data.getData(rsNumber,"CASES Allele Frequency"),self.data.getData(rsNumber,"CONTROLS Allele Frequency"))
                 painter.translate(x,y)
@@ -143,8 +120,26 @@ class ScatterPlot(QWidget):
             painter.end()
         self.update()
     
+    def drawScatter(self):
+        self.image.fill(Qt.white)
+        
+        painter = QPainter()
+        painter.begin(self.image)
+        
+        #painter.setRenderHint(QPainter.Antialiasing)
+        
+        for y in xrange(self.scatterWidth):
+            for x in xrange(self.scatterHeight):
+                xVal,yVal = self.controller.transformScreenCoordinates(x,y)
+                painter.setPen(self.getColor(xVal-self.pointRadius,yVal-self.pointRadius,xVal+self.pointRadius,yVal+self.pointRadius))
+                painter.drawPoint(x,y)
+        
+        painter.end()
+        
+        self.dirty = False
+    
     def getColor(self, x, y, x2, y2):
-        population = self.data.scatter.countPopulation(x,y,x2,y2)
+        population = self.controller.countPopulation(x,y,x2,y2)
         
         if population > self.lightnessSteps:
             return QColor.fromRgbF(0.0,0.0,0.0,1.0)
@@ -156,25 +151,7 @@ class ScatterPlot(QWidget):
         self.mousex = event.x()
         self.mousey = event.y()
         
-        x,y = self.transformScreenCoordinates(self.mousex, self.mousey)
-        temp = self.data.scatter.select(x-self.selectionRadius,y-self.selectionRadius,x+self.selectionRadius,y+self.selectionRadius)
-        self.parent().highlight(temp)
+        '''self.handleEvent(event)
         
         if event.buttons() & Qt.LeftButton:
-            self.parent().select(temp)
-    
-    def transformScreenCoordinates(self, x, y):
-        x = x/float(self.scatterWidth)
-        y = y/float(self.scatterHeight)
-        
-        return (x,y)
-    
-    def transformDataCoordinates(self, x, y):
-        if x < 0.0 or x > 1.0:
-            x = 0.5
-        if y < 0.0 or y > 1.0:
-            y = 0.5
-        x = math.ceil(x*self.scatterWidth)
-        y = math.ceil(y*self.scatterHeight)
-        
-        return (x,y)
+            self.data.currentSelection.add(temp)'''
