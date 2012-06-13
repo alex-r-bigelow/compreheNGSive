@@ -17,6 +17,7 @@ class controller:
         self.app.bindController(self)
         
         self.axes = {}
+        print "...Adding axes",
         for att,ax in data.axes.iteritems():
             if ax.getDataType() == "number":
                 visArgs = app.parallelCoordinates.addAxis(att,"number")
@@ -25,6 +26,8 @@ class controller:
                 #self.axes[att] = stringAxis(ax)
             #elif ax.getDataType() == "genome"
                 #self.axes[att] = genomeAxis(ax)
+            print ".",
+        print ""
         
         self.scatterPlot = scatter(self.data, self.axes)
         
@@ -43,6 +46,17 @@ class controller:
     
     def getPoints(self, att, rsNumbers):
         return self.axes[att].getPixels(rsNumbers)
+    
+    
+    # TODO: these are higher-level event abstractions from svgHelpers - they should tell us what axes had what change to them
+    def mouseMoveEvent(self, event):
+        pass
+    
+    def mousePressEvent(self, event):
+        pass
+    
+    def mouseReleaseEvent(self, event):
+        pass
 
 class visRange:
     def __init__(self, low, high, pixelLow, pixelHigh):

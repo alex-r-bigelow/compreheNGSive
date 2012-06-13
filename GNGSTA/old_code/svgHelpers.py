@@ -1,3 +1,4 @@
+import sys
 from copy import deepcopy
 from pyquery import PyQuery as pq
 from scour.scour import scourString
@@ -54,6 +55,10 @@ dragDirection - can be 'x', 'y', 'none', 'both', 'inherit' (default)
                     Attempting to drag g will move c,d,e,f and g in the y direction only
                     Attempting to drag h will move b,c,d,e,f,g and h in the x direction only
                     Attempting to drag i will have no effect
+
+cursor - this exists in the full SVG spec, but here we actually use an existing SVG element in the same document
+         instead; supply the id as a parameter, and that element will be used as a cursor. 'none' can also be used to
+         revert to system behavior; all children will inherit the closest ancestor cursor.
 '''
 class SvgElement:
     def __init__(self, parent, id):
@@ -70,7 +75,7 @@ class SvgElement:
     
     def draw(self, painter, xOffset=None, yOffset=None):
         '''
-        If offsets are supplied, a shallow copy is drawn - mouse events, etc will not be possible
+        If offsets are supplied, a shallow copy is drawn - mouse locations, etc. will be wrong
         '''
         self.parent.drawElement(painter,self.id,xOffset,yOffset)
     
@@ -169,37 +174,90 @@ class SvgElement:
     
     def deselect(self, id):
         self.parent.isFlattened = False
-        self.getXml(id)(".highlighted").attr("visibility","hidden")
-        self.getXml(id)(".selected").attr("visibility","hidden")
-        self.getXml(id)(".normal").attr("visibility","visible")
+        me = self.getXml(id)
+        me.children(".highlighted").attr("visibility","hidden")
+        me.children(".selected").attr("visibility","hidden")
+        me.children(".normal").attr("visibility","visible")
     
     def highlight(self, id):
         self.parent.isFlattened = False
-        self.getXml(id)(".highlighted").attr("visibility","visible")
-        self.getXml(id)(".selected").attr("visibility","hidden")
-        self.getXml(id)(".normal").attr("visibility","hidden")
+        me = self.getXml(id)
+        me.children(".highlighted").attr("visibility","visible")
+        me.children(".selected").attr("visibility","hidden")
+        me.children(".normal").attr("visibility","hidden")
     
     def select(self, id):
         self.parent.isFlattened = False
-        self.getXml(id)(".highlighted").attr("visibility","hidden")
-        self.getXml(id)(".selected").attr("visibility","visible")
-        self.getXml(id)(".normal").attr("visibility","hidden")
+        me = self.getXml(id)
+        me.children(".highlighted").attr("visibility","hidden")
+        me.children(".selected").attr("visibility","visible")
+        me.children(".normal").attr("visibility","hidden")
+    
+    def deselectAll(self, xml):
+        if len(xml) == 0:
+            return
+        self.deselect(xml.attr('id'))
+        for child in xml.children():
+            self.deselectAll(pq(child))
+    
+    def findMousedLeaf(self, xml, x, y):
+        if len(xml) == 0:
+            return None
+        else:
+            for child in reversed(xml.children()):
+                deepQuery = self.findMousedLeaf(pq(child), x, y)
+                if deepQuery != None:
+                    return deepQuery
+            id = xml.attr('id')
+            if id == None or not self.getBounds(id).contains(x,y):
+                return None
+            else:
+                return id
+                
+    
+    def findMousedTargets(self, xml, att, inclusive):
+        if len(xml) == 0:
+            return []
+        attribute = xml.attr(att)
+        if attribute != None and attribute.lower() != 'inherit':
+            if inclusive:
+                return [xml.attr('id')]
+            else:
+                return []
+        results = []
+        for c in reversed(xml.children()):
+            results.extend(self.findMousedTargets(pq(c), att, False))   # exclusive when going down
+        p = xml.parents()
+        if len(p) > 0:
+            results.extend(self.findMousedTargets(p[-1], att, True))    # inclusive when going up
+        id = xml.attr('id')
+        if id != None:
+            results.append(id)
+        return results
         
 class SvgWrapper:
     def __init__(self, path):
         self.xmlObject = pq(filename=path)
+        
+        cleanedXml = scourString(str(self.xmlObject),).encode("UTF-8")
+        self.xmlObject = pq(cleanedXml)
+        
         self.children = {}
         self.root = self.getElement(self.xmlObject.attr("id"))
         self.flattenSVG()
+        self.deselectAll()
+        
+        self.mouseDown = False
+        self.targetElements = []
     
     def flattenSVG(self):
         # scrub any useless cruft, flatten transformations
-        newXml = scourString(str(self.xmlObject),).encode("UTF-8")
-        
+        #newXml = scourString(str(self.xmlObject),).encode("UTF-8")
+        newXml = str(self.xmlObject)
         #print newXml
         
         # give our xml object and svg renderer the new xml
-        self.xmlObject = pq(newXml)
+        #self.xmlObject = pq(newXml)
         self.svgObject = QSvgRenderer(QByteArray(newXml))
         
         #self.svgObject = QSvgRenderer(QByteArray(str(self.xmlObject)),self.parent)
@@ -216,8 +274,9 @@ class SvgWrapper:
     
     def getBoundaries(self, id):
         b = self.svgObject.boundsOnElement(id)
-        if id != self.root.id:
-            b = self.svgObject.matrixForElement(id).mapRect(b)
+        if self.svgObject.elementExists(id):
+            m = self.svgObject.matrixForElement(id)
+            b = m.mapRect(b)
         return b
     
     def drawElement(self, painter, id, xOffset=None, yOffset=None):
@@ -251,7 +310,39 @@ class SvgWrapper:
         return self.root.highlight(id)
     
     def deselect(self, id):
-        return self.root.highlight(id)
+        return self.root.deselect(id)
     
     def select(self, id):
-        return self.root.highlight(id)
+        return self.root.select(id)
+    
+    def deselectAll(self):
+        self.root.deselectAll(pq(self.root.xml))
+    
+    def findMousedLeaf(self, x, y):
+        return self.root.findMousedLeaf(self.xmlObject, x, y)
+    
+    def findMousedTargets(self, x, y, att):
+        '''
+        Returns a list of all affected elements in the manner described in the opening comment sorted from top to bottom and then back to front
+        '''
+        leaf = self.findMousedLeaf(x, y)
+        return self.root.findMousedTargets(self.xmlObject(leaf),att,inclusive=True)    # inclusive if leaf happens to have the tag - it will be the only one
+    
+    def mouseMoveEvent(self, event):
+        if self.mouseDown:
+            return None
+        else:
+            for id in self.targetElements:
+                self.deselect(id)
+            self.targetElements = self.findMousedTargets(event.x(), event.y(), 'highlightChildren')
+            print self.targetElements
+            for id in self.targetElements:
+                self.highlight(id)
+            # TODO: cursors
+            return "changesHappened"
+    
+    def mousePressEvent(self, event):
+        return None
+    
+    def mouseReleaseEvent(self, event):
+        return None
