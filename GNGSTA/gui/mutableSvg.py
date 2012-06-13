@@ -1,4 +1,5 @@
 from resources.structures import recursiveDict
+from scour.scour import scourString
 from pyquery import PyQuery as pq
 from PySide.QtCore import QByteArray, QRectF
 from PySide.QtSvg import QSvgRenderer
@@ -29,17 +30,17 @@ custom events:
                                 <g id='e' __eventCode="self.applyRelativeTranslation(event.deltaX,event.deltaY)"\>
                                 <g id='f'\>
                             <\g>
-                            <g id='g' __eventCode="signals = self.yieldEventToGroupParent(event=event,signals=signals)"\>
+                            <g id='g' __eventCode="signals = self.yieldEventToGroup(event=event,signals=signals)"\>
                         <\g>
                         <g id='h'\>
                     <\g>
-                    <g id='i' __eventCode="signals = self.yieldEventToGroupParent(event=event,signals=signals)"\>
+                    <g id='i' __eventCode="signals = self.yieldEventToGroup(event=event,signals=signals)"\>
                 <\g>
                 
                 No action is the default behavior for the root element. For all others, default behavior is
                 to yield the event to its closest ancestor that implements the __eventCode attribute, or
                 no action if no such ancestor exists:
-                "signals = self.yieldEventToGroupParent(event=event,signals=signals)"
+                "signals = self.yieldEventToGroup(event=event,signals=signals)"
                 
                 Therefore:
                 
@@ -81,12 +82,12 @@ custom events:
                 have a lot of minimally invasive custom code and performance is lagging.
                 
                 You should NOT include the return statement; whatever is in the signals dict will be returned. If you wish to
-                pass the event on to parent nodes as well as perform custom code locally, be sure to call self.yieldEventToGroupParent()
+                pass the event on to parent nodes as well as perform custom code locally, be sure to call self.yieldEventToGroup()
                 appropriately. You can also pass messages between nodes via the signals dict, though any signals from a parent
                 node that are meant for the controller should be copied by the child node from the return value of
-                self.yieldEventToGroupParent() to the signals dict, or they will not be preserved. A simple way to do this is:
+                self.yieldEventToGroup() to the signals dict, or they will not be preserved. A simple way to do this is:
                 
-                signals.update(self.yieldEventToGroupParent(event=event,signals=signals))
+                signals.update(self.yieldEventToGroup(event=event,signals=signals))
 
 child node attributes:
                 For performance reasons, it might be a good idea to store references to frequently used child elements in a
@@ -115,16 +116,17 @@ class mutableSvgNode:
     active = set()
     reset = set()
     lock = None
+    childProperites = {}
     
-    def __init__(self, document, xmlElement, parent=None, groupParent=None, cloneNumber=0):
+    def __init__(self, document, xmlElement, parent=None, groupRoot=None, cloneNumber=0):
         self.document = document
         self.xmlElement = xmlElement
         mutableSvgNode.nodeLookup[self.xmlElement] = self
         
         self.parent = parent
-        self.groupParent = groupParent
+        self.groupRoot = groupRoot
         self.cloneNumber = cloneNumber
-        self.callsGroupParent = False
+        self.callsGroupRoot = False
         self.children = []
         
         self.attributes = xmlElement.attrib
@@ -156,9 +158,9 @@ class mutableSvgNode:
                 raise SvgMapException("Node %s\nhas __preserveDrag without __eventCode" % (str(self)))
             self.preserveDrag = self.attributes['__preserveDrag'].strip().lower() == 'true'
         else:
-            # default: inherit from groupParent
-            if self.groupParent != None:
-                self.preserveDrag = self.groupParent.preserveDrag
+            # default: inherit from groupRoot
+            if self.groupRoot != None:
+                self.preserveDrag = self.groupRoot.preserveDrag
             else:
                 self.preserveDrag = False   # ...or don't preserve if root
         
@@ -172,10 +174,18 @@ class mutableSvgNode:
             if a == '__parentProperty':
                 if self.parent == None or not self.parent.fillNeed(v,self):
                     raise SvgMapException("Node %s\nhas a __parentProperty that filled no requirements" % (str(self)))
+            elif a == '__childProperty':
+                if mutableSvgNode.childProperites.has_key(v):
+                    raise SvgMapException("Two parent nodes:\n(%s and %s)\nattempted to fill the same __childProperty: %s" % (str(self),str(mutableSvgNode[v]),v))
+                mutableSvgNode.childProperites[v] = self
             elif v.startswith("__"):
-                if a == 'self' or a == 'event' or a == 'signals' or hasattr(self,a):
-                    raise SvgMapException("Node %s defines a reserved custom attribute %s" % (str(self),a))
-                self.needs[a] = v
+                if hasattr(self,a):
+                    raise SvgMapException("Node %s attempts to overwrite a reserved or existing property %s" % (str(self),a))
+                if mutableSvgNode.childProperites.has_key(v):
+                    self.needs[a] = mutableSvgNode.childProperites[v]
+                    setattr(self,a,mutableSvgNode.childProperites[v])
+                else:
+                    self.needs[a] = v
         
         # Custom init code
         if self.attributes.has_key('__initCode'):
@@ -191,10 +201,10 @@ class mutableSvgNode:
     # ****** TODO: make these private! ********
     
     def compileCode(self, code):
-        if 'self.yieldEventToGroupParent' in code:
-            self.callsGroupParent = True
+        if 'self.yieldEvent' in code:
+            self.callsGroupRoot = True
         else:
-            self.callsGroupParent = False
+            self.callsGroupRoot = False
         code = code.split("\\n ")
         code = "\n".join(code)
         
@@ -224,7 +234,7 @@ class mutableSvgNode:
         for a,v in self.attributes.iteritems():
             if v == value:
                 if not isinstance(self.needs[a],str):
-                    raise SvgMapException("Two child nodes (\n%s\nand\n%s\n) attempted to fill the same attribute %s with __parentProperty: %s" % (str(obj),str(self.needs[a]),a,v))
+                    raise SvgMapException("Two nodes:\n(%s and %s)\nattempted to fill the same attribute:\n(%s of node %s)\nwith __parentProperty or __childProperty:\n%s" % (str(obj),str(self.needs[a]),a,str(self),v))
                 self.needs[a] = obj
                 setattr(self,a,obj)
                 success = True
@@ -238,9 +248,10 @@ class mutableSvgNode:
         for c in self.children:
             c.verify()
     
-    def yieldEventToGroupParent(self,event,signals={},isBase=False):
-        if self.groupParent != None:
-            return self.groupParent.handleEvent(event,signals,isBase)
+    def yieldEventToGroup(self,event,signals={},isBase=False):
+        if self.groupRoot != None:
+            # first see if there's a cousin leaf behind me (visually) that should receive the event before my parent
+            return self.groupRoot.handleEvent(event,signals,isBase)
         else:
             return signals
     
@@ -271,7 +282,7 @@ class mutableSvgNode:
             
             return signals
         else:
-            return self.yieldEventToGroupParent(event,signals,isBase)   # default behavior is to yield to any groupParent's event handler - this is overridden if a node defines the __eventCode attribute
+            return self.yieldEventToGroup(event,signals,isBase)   # default behavior is to yield to any groupRoot's event handler - this is overridden if a node defines the __eventCode attribute
     
     def handleCustomEvent(self,event,signals={'__SVG__DIRTY__':True}):
         customNameSpace = {'self':self,
@@ -298,7 +309,7 @@ class mutableSvgNode:
     # ****** TODO: these are my API... rename them? ******
     
     def yieldEvent(self, event, signals={}):
-        return self.yieldEventToGroupParent(event, signals, False)
+        return self.yieldEventToGroup(event, signals, False)
     
     def resetAllAttributes(self):
         newKeys = set()
@@ -330,17 +341,28 @@ class mutableSvgNode:
     
     def parseTransforms(self, string):
         self.transforms = [1.0,0.0,0.0,1.0,0.0,0.0] # identity matrix
-        for t in string.split():
-            key,p,rightChunk = t.partition("(")
-            values = rightChunk[:rightChunk.rfind(")")].split(",")
+        transformList = string.split(")")
+        for t in transformList:
+            key,p,values = t.partition("(")
+            if "," in values:
+                values = values.split(",")
+            else:
+                values = values.split()
             if key == 'matrix':
                 self.matrix(float(values[0]),float(values[1]),float(values[2]),float(values[3]),float(values[4]),float(values[5]),applyImmediately=False)
             elif key == 'translate':
+                if len(values) == 1:
+                    values.append(0)
                 self.translate(float(values[0]),float(values[1]),applyImmediately=False)
+            elif key == 'scale':
+                if len(values) == 1:
+                    values.append(values[0])
+                self.scale(float(values[0]),float(values[1]),applyImmediately=False)
             # TODO: add other transforms
     
     def applyTransforms(self):
         self.attributes['transform'] = 'matrix(%f,%f,%f,%f,%f,%f)' % (self.transforms[0],self.transforms[1],self.transforms[2],self.transforms[3],self.transforms[4],self.transforms[5])
+        self.document.forceFreeze()
     
     def matrix(self,a,b,c,d,e,f,applyImmediately=True):
         # Per SVG spec, flatten by multiplying the new matrix to the left of the existing one
@@ -362,11 +384,40 @@ class mutableSvgNode:
         if applyImmediately:
             self.applyTransforms()
     
-    def drag(self, deltaX, deltaY, left, top, right, bottom):
+    def moveTo(self, x, y):
+        l,t,r,b = self.getBounds()
+        deltaX = x-l
+        deltaY = y-t
+        self.translate(deltaX, deltaY)
+    
+    def translateLimit(self, deltaX, deltaY, left, top, right, bottom):
         self.translate(deltaX,deltaY)
         self.document.forceFreeze()
         if not QRectF(left,top,right-left,bottom-top).contains(self.getRect()):
             self.translate(-deltaX,-deltaY)
+    
+    def scale(self, xFactor, yFactor, applyImmediately=True):
+        self.transforms[0] *= xFactor
+        self.transforms[3] *= yFactor
+        if applyImmediately:
+            self.applyTransforms()
+    
+    def stretch(self, fromLeft, fromTop, fromRight, fromBottom):
+        l,t,r,b = self.getBounds()
+        width = float(r-l)
+        height = float(b-t)
+        xGrowth = fromLeft + fromRight
+        yGrowth = fromTop + fromBottom
+        xFactor = (xGrowth + width)/width
+        yFactor = (yGrowth + height)/height
+        self.scale(xFactor,yFactor)
+        self.moveTo(l-fromLeft, t-fromTop)
+    
+    def hide(self):
+        self.setAttribute('visibility', 'hidden', True)
+    
+    def show(self):
+        self.setAttribute('visibility', 'visible', True)
     
     def getBounds(self):
         b = self.getRect()
@@ -414,7 +465,7 @@ class mutableSvgNode:
         
         self.xmlElement.getparent().append(twin)
         print 'added'
-        return mutableSvgNode(self.document,twin,self.parent,self.groupParent,newCloneNumber)
+        return mutableSvgNode(self.document,twin,self.parent,self.groupRoot,newCloneNumber)
     
     def setAttribute(self, att, value, force=True):
         if not self.attributes.has_key(att):
@@ -514,24 +565,28 @@ class mutableSvgNode:
 class mutableSvgRenderer:
     def __init__(self, path):
         self.queryObject = pq(filename=path)
+        #cleanedXml = scourString(str(self.queryObject),).encode("UTF-8")
+        #print cleanedXml
+        #self.queryObject = pq(cleanedXml)
         mutableSvgNode.queryObject = self.queryObject
         
         self.isFrozen = False
         self.freeze()
         
-        self.root = self.buildTree(self.queryObject.root.getroot(),parent=None,groupParent=None)
+        self.root = self.buildTree(self.queryObject.root.getroot(),parent=None,groupRoot=None,isGlobalRoot=True)
         self.root.verify()
         
         self.lastTarget = None
     
-    def buildTree(self, xmlObject,parent=None,groupParent=None):
-        newNode = mutableSvgNode(self,xmlObject,parent,groupParent)
+    def buildTree(self, xmlObject,parent=None,groupRoot=None,isGlobalRoot=False):
+        newNode = mutableSvgNode(self,xmlObject,parent,groupRoot)
+                
         for child in xmlObject.getchildren():
-            if newNode.eventProgram != None:
-                groupParent = newNode
+            if newNode.eventProgram != None or isGlobalRoot:
+                groupRoot = newNode
             else:
-                groupParent = newNode.groupParent
-            newChild = self.buildTree(child, newNode, groupParent)
+                groupRoot = newNode.groupRoot
+            newChild = self.buildTree(child, newNode, groupRoot)
             newNode.addChild(newChild)
         return newNode
     

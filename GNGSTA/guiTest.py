@@ -10,7 +10,7 @@ class GuiTest(layeredWidget):
         
         self.setWindowTitle(self.tr("guiTest.py"))
         
-        self.svgObject = mutableSvgRenderer(path='/Users/Home/Documents/Process Book/Nicki/Sketches/widgets/parallelCoordinates.svg')
+        self.svgObject = mutableSvgRenderer(path='gui/svg/parallelCoordinates.svg')
         self.svgLayer = mutableSvgLayer(self.svgObject)
         self.addLayer(self.svgLayer)
     
