@@ -209,7 +209,8 @@ class layeredWidget(QWidget):
         self.userState.buttons.discard(event.button().name)
     
     def keyPressEvent(self,event):
-        self.userState.keys.add(event.key().name)
+        # TODO: store string representations of keys, not just their numbers!
+        self.userState.keys.add(event.key())
     
     def keyReleaseEvent(self,event):
-        self.userState.keys.discard(event.key().name)
+        self.userState.keys.discard(event.key())

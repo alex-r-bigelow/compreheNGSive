@@ -130,6 +130,7 @@ class mutableSvgNode:
         self.children = []
         
         self.attributes = xmlElement.attrib
+        self.originalVisibility = self.attributes.get('visibility','visible')
         self.parseTransforms(self.attributes.get('transform',""))
         
         # Events
@@ -306,6 +307,15 @@ class mutableSvgNode:
             temp = temp.parent
         return self.document.getBoundaries(id)
     
+    def setSizeZero(self):
+        self.originalVisibility = self.attributes.get('visibility','visible')
+        self.hide()
+    
+    def unsetSizeZero(self):
+        if self.originalVisibility != None:
+            self.attributes['visibility'] = self.originalVisibility
+        self.originalVisibility = None
+    
     # ****** TODO: these are my API... rename them? ******
     
     def yieldEvent(self, event, signals={}):
@@ -408,8 +418,24 @@ class mutableSvgNode:
         height = float(b-t)
         xGrowth = fromLeft + fromRight
         yGrowth = fromTop + fromBottom
-        xFactor = (xGrowth + width)/width
-        yFactor = (yGrowth + height)/height
+        
+        xFactor = None
+        yFactor = None
+        if width + xGrowth <= 0:
+            self.setSizeZero()
+            xFactor = 1.0
+        elif self.originalVisibility != None:
+            self.unsetSizeZero()
+        if height + yGrowth <= 0:
+            self.setSizeZero()
+            yFactor = 1.0
+        elif self.originalVisibility != None and xFactor == None:
+            self.unsetSizeZero()
+        
+        if xFactor == None:
+            xFactor = (xGrowth + width)/width
+        if yFactor == None:
+            yFactor = (yGrowth + height)/height
         self.scale(xFactor,yFactor)
         self.moveTo(l-fromLeft, t-fromTop)
     
@@ -417,7 +443,10 @@ class mutableSvgNode:
         self.setAttribute('visibility', 'hidden', True)
     
     def show(self):
-        self.setAttribute('visibility', 'visible', True)
+        if self.originalVisibility != None:
+            self.originalVisibility = 'visible'
+        else:
+            self.setAttribute('visibility', 'visible', True)
     
     def getBounds(self):
         b = self.getRect()
@@ -565,9 +594,9 @@ class mutableSvgNode:
 class mutableSvgRenderer:
     def __init__(self, path):
         self.queryObject = pq(filename=path)
-        #cleanedXml = scourString(str(self.queryObject),).encode("UTF-8")
+        cleanedXml = scourString(str(self.queryObject),).encode("UTF-8")
         #print cleanedXml
-        #self.queryObject = pq(cleanedXml)
+        self.queryObject = pq(cleanedXml)
         mutableSvgNode.queryObject = self.queryObject
         
         self.isFrozen = False
