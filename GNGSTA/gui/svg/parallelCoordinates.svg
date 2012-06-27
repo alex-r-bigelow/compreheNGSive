@@ -10,11 +10,12 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="120"
-   height="500"
+   height="480"
    id="root"
    version="1.1"
    inkscape:version="0.48.2 r9819"
-   sodipodi:docname="parallelCoordinates.svg">
+   sodipodi:docname="parallelCoordinates.svg"
+   axis="__axis">
   <defs
      id="defs5469" />
   <sodipodi:namedview
@@ -24,17 +25,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.52"
-     inkscape:cx="164.23305"
-     inkscape:cy="244.7751"
+     inkscape:zoom="1.75"
+     inkscape:cx="376.35427"
+     inkscape:cy="237.32921"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1440"
-     inkscape:window-height="878"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
+     inkscape:window-width="1830"
+     inkscape:window-height="1156"
+     inkscape:window-x="90"
+     inkscape:window-y="348"
+     inkscape:window-maximized="0"
      fit-margin-top="0"
      fit-margin-left="0"
      fit-margin-right="0"
@@ -59,12 +60,14 @@
        style="color:#000000;fill:#000000;fill-opacity:0.03921569;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        id="spacer"
        width="120"
-       height="500"
+       height="480"
        x="0"
        y="2.9802266e-08" />
     <g
        id="g3803"
-       dataRange="__dataRange">
+       dataRange="__dataRange"
+       __parentProperty="__axis"
+       label="__label">
       <g
          id="g3862">
         <rect
@@ -163,8 +166,19 @@
            __preserveDrag="true"
            __eventCode="self.box.setAttribute('fill','#999999')\n
 if 'LeftButton' in event.buttons:\n
-      left,top,right,bottom = self.getRoot().getBounds()\n
-      self.parent.translateLimit(event.deltaX,0,left,top,right,bottom)"
+    left,top,right,bottom = self.getRoot().getBounds()\n
+    self.parent.translateLimit(event.deltaX,0,left,top,right,bottom)\n
+else:\n
+    myLeft = self.parent.left()\n
+    outerLeft = self.parent.parent.dataRange.left()\n
+    if myLeft != outerLeft + 10:\n
+        left,top,right,bottom = self.getRoot().getBounds()\n
+        self.parent.translateLimit(outerLeft + 10 - myLeft, 0, left, top, right, bottom)\n
+        width = self.parent.parent.dataRange.width()\n
+        axis1 = int(myLeft/width)\n
+        axis2 = int(outerLeft/width)\n
+        if axis1 != axis2:\n
+            signals['switchAxes'] = (axis1,axis2)"
            id="g3018">
           <path
              __parentProperty="__box"
@@ -179,7 +193,8 @@ if 'LeftButton' in event.buttons:\n
              x="810.08063"
              style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Gill Sans;-inkscape-font-specification:Gill Sans"
              xml:space="preserve"
-             transform="scale(0.99977697,1.0002231)">CASES AF</text>
+             transform="scale(0.99977697,1.0002231)"
+             __parentProperty="__label">CASES AF</text>
         </g>
         <path
            sodipodi:type="star"
@@ -216,16 +231,7 @@ if 'LeftButton' in event.buttons:\n
           <path
              __preserveDrag="true"
              __resetCode="self.setAttribute('fill','#000000')"
-             __eventCode="self.setAttribute('fill','#999999')\n
-if 'LeftButton' in event.buttons:\n
-    left,top,right,bottom = self.dataRange.getBounds()\n
-    top -= self.height()\n
-    top -= 1\n
-    bottom = self.parent.low.top()\n
-    bottom -= 1\n
-    y0 = self.bottom()\n
-    self.translateLimit(0,event.deltaY,left,top,right,bottom)\n
-    self.parent.bar.stretch(0,y0-self.bottom(),0,0)"
+             __eventCode="self.setAttribute('fill','#999999')\n if 'LeftButton' in event.buttons:\n     left,top,right,bottom = self.dataRange.getBounds()\n     top -= self.height()\n     top -= 1\n     bottom = self.parent.low.top()\n     bottom -= 1\n     y0 = self.bottom()\n     self.translateLimit(0,event.deltaY,left,top,right,bottom)\n     self.parent.bar.stretch(0,y0-self.bottom(),0,0)"
              __parentProperty="__high"
              style="color:#000000;fill:#000000;fill-opacity:0.39215686;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
              d="M 48,9.5 57,9.5 48,0.50000003 z"
@@ -240,16 +246,7 @@ if 'LeftButton' in event.buttons:\n
              id="bottom"
              d="M 48,390.5 57,390.5 48,399.5 z"
              style="color:#000000;fill:#000000;fill-opacity:0.39215686;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             __eventCode="self.setAttribute('fill','#999999')\n
-if 'LeftButton' in event.buttons:\n
-    left,top,right,bottom = self.dataRange.getBounds()\n
-    bottom += self.height()\n
-    bottom += 1\n
-    top = self.parent.high.bottom()\n
-    top += 1\n
-    y0 = self.top()\n
-    self.translateLimit(0,event.deltaY,left,top,right,bottom)\n
-    self.parent.bar.stretch(0,0,0,self.top()-y0)"
+             __eventCode="self.setAttribute('fill','#999999')\n if 'LeftButton' in event.buttons:\n     left,top,right,bottom = self.dataRange.getBounds()\n     bottom += self.height()\n     bottom += 1\n     top = self.parent.high.bottom()\n     top += 1\n     y0 = self.top()\n     self.translateLimit(0,event.deltaY,left,top,right,bottom)\n     self.parent.bar.stretch(0,0,0,self.top()-y0)"
              __resetCode="self.setAttribute('fill','#000000')"
              __preserveDrag="true"
              dataRange="__dataRange" />
@@ -261,14 +258,7 @@ if 'LeftButton' in event.buttons:\n
              width="5"
              id="rect3796"
              style="color:#000000;fill:#000000;fill-opacity:0.39215686;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             __eventCode="self.setAttribute('fill','#999999')\n
-if 'LeftButton' in event.buttons:\n
-    left,top,right,bottom = self.dataRange.getBounds()\n
-    y0 = self.top()\n
-    self.translateLimit(0,event.deltaY,left,top,right,bottom)\n
-    dy = self.top()-y0\n
-    self.parent.high.translate(0,dy)\n
-    self.parent.low.translate(0,dy)"
+             __eventCode="self.setAttribute('fill','#999999')\n if 'LeftButton' in event.buttons:\n     left,top,right,bottom = self.dataRange.getBounds()\n     y0 = self.top()\n     self.translateLimit(0,event.deltaY,left,top,right,bottom)\n     dy = self.top()-y0\n     self.parent.high.translate(0,dy)\n     self.parent.low.translate(0,dy)"
              __preserveDrag="true"
              __resetCode="self.setAttribute('fill','#000000')"
              dataRange="__dataRange" />

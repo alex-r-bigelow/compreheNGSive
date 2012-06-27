@@ -1,5 +1,6 @@
 from resources.utils import chrLengths, chrOffsets
 from resources.structures import recursiveDict, TwoTree, FourTree
+import operator
 
 class numberAxis:
     def __init__(self):
@@ -230,6 +231,59 @@ class variantData:
             self.data[variantObject.name].repair(variantObject)
         else:
             self.data[variantObject.name] = variantObject
+    
+    def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup=[], fallback="ALT"):
+        att = "%s Allele Frequency" % groupName
+        for variantObject in self.data.itervalues():
+            # First see if we can find a minor allele with stuff in basisGroup
+            alleleCounts = {}
+            for i in basisGroup:
+                if variantObject.genotypes.has_key(i):
+                    allele1 = variantObject.genotypes[i].allele1
+                    allele2 = variantObject.genotypes[i].allele2
+                    if allele1 != None:
+                        alleleCounts[allele1] = alleleCounts.get(allele1,0) + 1
+                    if allele2 != None:
+                        alleleCounts[allele2] = alleleCounts.get(allele2,0) + 1
+            if len(alleleCounts) > 1:
+                minorAllele = max(alleleCounts.iteritems(), key=operator.itemgetter(1))[0]
+            else:
+                # Okay, we don't have any data for our basisGroup (or our basisGroup is empty)... use the fallback
+                if fallback == None:
+                    # No minor allele found and no fallback - we've got a masked allele frequency!
+                    variantObject.attributes[att] = float('NaN')
+                    continue
+                elif fallback == "REF":
+                    minorAllele = variantObject.ref
+                elif fallback == "ALT":
+                    minorAllele = variantObject.alt[0]
+                else:
+                    index = int(fallback[4:])
+                    if index < len(variantObject.alt):
+                        minorAllele = variantObject.alt[index]
+                    else:
+                        # Tried to define minor allele as a nonexistent secondary allele
+                        variantObject.attributes[att] = float('NaN')
+                        continue
+            # Okay, we've found our alternate allele; now let's see how frequent it is
+            minorCount = 0
+            allCount = 0
+            for i in individuals:
+                if variantObject.genotypes.has_key(i):
+                    allele1 = variantObject.genotypes[i].allele1
+                    allele2 = variantObject.genotypes[i].allele2
+                    if allele1 != None:
+                        allCount += 1
+                        if allele1 == minorAllele:
+                            minorCount += 1
+                    if allele2 != None:
+                        allCount += 1
+                        if allele2 == minorAllele:
+                            minorCount += 1
+            if allCount == 0:
+                variantObject.attributes[att] = float('Inf')
+            else:
+                variantObject.attributes[att] = minorCount/float(allCount)
     
     def freeze(self, startingXaxis=None, startingYaxis=None):
         '''

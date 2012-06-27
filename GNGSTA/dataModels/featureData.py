@@ -1,4 +1,4 @@
-from ..resources.structures import TwoTree
+from resources.structures import TwoTree
 
 class featureData:
     def __init__(self):

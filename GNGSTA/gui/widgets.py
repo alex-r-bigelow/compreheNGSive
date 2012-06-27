@@ -1,12 +1,20 @@
-from svgHelpers import SvgWrapper
+from gui.mutableSvg import mutableSvgRenderer
 from PySide.QtCore import *
 from PySide.QtGui import *
 
+class SvgLayerException(Exception):
+    def __init__(self, value):
+        self.value = "\n" + value
+    def __str__(self):
+        return self.value
+
 class layer:
     def __init__(self, size, dynamic):
+        self.size = size
         self.image = QPixmap(size)
         self.dynamic = dynamic
         self.dirtyLayer = True
+        self.resized = False
     
     def drawLayer(self):
         self.image.fill(QColor.fromRgbF(0.0,0.0,0.0,0.0))
@@ -21,10 +29,15 @@ class layer:
     def setDirty(self):
         self.dirtyLayer = True
     
-    # Override this
     def resize(self, size):
+        self.size = size
         self.image = QPixmap(size)
         self.dirtyLayer = True
+        self.resized = True
+    
+    # Override this
+    def resizeEvent(self):
+        pass
     
     # Override this
     def handleFrame(self, event):
@@ -35,15 +48,18 @@ class layer:
         return None
 
 class mutableSvgLayer(layer):
-    def __init__(self, mutableSvg, size=None, dynamic=True):
-        self.svg = mutableSvg
+    def __init__(self, path, controller, size=None, dynamic=True):
+        self.svg = mutableSvgRenderer(path, controller)
         
         if size == None:
             temp = self.svg.getBoundaries()
             size = temp.size().toSize()
         
         layer.__init__(self, size, dynamic)
-        #self.setFixedSize(self.bounds.width(),self.bounds.height())
+    
+    def resize(self, size):
+        self.svg.forceFreeze()
+        layer.resize(self, self.svg.defaultSize())
     
     def handleFrame(self, event):
         result = self.svg.handleFrame(event)
@@ -61,7 +77,9 @@ class eventPacket:
         self.deltaX = 0
         self.deltaY = 0
         self.buttons = set()
+        self.lastButtons = set()
         self.keys = set()
+        self.lastKeys = set()
     
     def moveMouse(self, x, y):
         if self.x != -1:    # and self.y != -1... but they'll always go together
@@ -69,6 +87,12 @@ class eventPacket:
             self.deltaY += y-self.y
         self.x = x
         self.y = y
+    
+    def prepForNextFrame(self):
+        self.deltaX = 0
+        self.deltaY = 0
+        self.lastButtons = set(self.buttons)    # copy each set
+        self.lastKeys = set(self.keys)
 
 class layeredWidget(QWidget):
     '''
@@ -93,14 +117,18 @@ class layeredWidget(QWidget):
     layer should generate these objects).
     '''
     
-    def __init__(self, title = "Abstract Layered Widget", parent = None, controller = None):
+    def __init__(self, controller = None, parent = None):
         QWidget.__init__(self, parent)
-        self.setWindowTitle(self.tr(title))
-        
         self.loadingImage = QPixmap(self.size())
         self.layers = []
         
         self.controller = controller
+        if self.controller != None:
+            if not hasattr(self.controller,'setWidget'):
+                raise SvgLayerException("Controller %s has no setWidget function." % str(self.controller))
+            if not hasattr(self.controller,'handleEvents'):
+                raise SvgLayerException("Controller %s has no handleEvents function." % str(self.controller))
+            self.controller.setWidget(self)
         
         self.userState = eventPacket()
         self.setMouseTracking(True)
@@ -123,9 +151,6 @@ class layeredWidget(QWidget):
         
         self.setDirty()
     
-    def sizeHint(self):
-        return self.bounds.size().toSize()
-    
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
@@ -136,12 +161,7 @@ class layeredWidget(QWidget):
             for l in self.layers:
                 painter.drawPixmap(0,0,l.image)
         painter.end()
-    
-    def resizeEvent(self, event):
-        self.loadingImage = QPixmap(self.size())
-        for l in self.layers:
-            l.resize(self.size())
-    
+        
     def setDirty(self):
         self.isDirty = True
         self.drawingTimer.start(25)
@@ -166,15 +186,14 @@ class layeredWidget(QWidget):
             
             painter.end()
         else:
-            eventResults = []
+            eventResults = {}
             for l in self.layers:
-                eventResults.append(l.handleFrame(self.userState))
-                if l.dynamic:
+                eventResults.update(l.handleFrame(self.userState))
+                if l.dynamic and not l.resized:
                     l.drawLayer()
-                elif l.dirtyLayer:
+                elif l.dirtyLayer or l.resized:
                     self.setDirty()
-            self.userState.deltaX = 0
-            self.userState.deltaY = 0
+            self.userState.prepForNextFrame()
             if self.controller != None:
                 self.controller.handleEvents(eventResults)
         self.update()
@@ -185,9 +204,34 @@ class layeredWidget(QWidget):
             self.progress = 0
     
     def drawStatic(self):
-        for layer in self.layers:
-            if not layer.dynamic and layer.dirtyLayer:
-                layer.drawLayer()
+        lowX = None
+        lowY = None
+        highX = None
+        highY = None
+        for l in self.layers:
+            lx,ly,hx,hy = l.image.rect().getCoords()
+            if lowX == None:
+                lowX = lx
+            else:
+                lowX = min(lowX,lx)
+            if lowY == None:
+                lowY = ly
+            else:
+                lowY = min(lowY,ly)
+            if highX == None:
+                highX = hx
+            else:
+                highX = max(highX,hx)
+            if highY == None:
+                highY = hy
+            else:
+                highY = max(highY,hy)
+            l.resized = False
+        if lowX != None and lowY != None and highX != None and highY != None:
+            self.setFixedSize(highX-lowX,highY-lowY)
+        for l in self.layers:
+            if not l.dynamic and l.dirtyLayer:
+                l.drawLayer()
         self.isDirty = False
         self.progressTimer.stop()
     
@@ -196,7 +240,19 @@ class layeredWidget(QWidget):
             self.layers.append(newLayer)
         else:
             self.layers.insert(index, newLayer)
-        
+    
+    def setLayer(self, newLayer, index=None):
+        if index == None:
+            if len(self.layers) == 0:
+                self.addLayer(newLayer)
+            else:
+                self.layers[len(self.layers)-1] = newLayer
+        else:
+            self.layers[index] = newLayer
+    
+    def clearAllLayers(self):
+        self.layers = []
+    
     def mouseMoveEvent(self, event):
         self.userState.moveMouse(event.x(),event.y())
     

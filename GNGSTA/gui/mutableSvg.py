@@ -3,7 +3,7 @@ from scour.scour import scourString
 from pyquery import PyQuery as pq
 from PySide.QtCore import QByteArray, QRectF
 from PySide.QtSvg import QSvgRenderer
-import sys
+import sys, math
 from copy import deepcopy
 
 '''
@@ -106,28 +106,25 @@ clone function
 
 class SvgMapException(Exception):
     def __init__(self, value):
-        self.value = value
+        self.value = "\n" + value
     def __str__(self):
-        return repr(self.value)
+        return self.value
 
 class mutableSvgNode:
-    nodeLookup = {}
-    queryObject = None
-    active = set()
-    reset = set()
-    lock = None
-    childProperites = {}
-    
-    def __init__(self, document, xmlElement, parent=None, groupRoot=None, cloneNumber=0):
+    def __init__(self, document, controller, xmlElement, parent=None, groupRoot=None, isClone=False):
         self.document = document
+        self.controller = controller
         self.xmlElement = xmlElement
-        mutableSvgNode.nodeLookup[self.xmlElement] = self
+        self.document.nodeLookup[self.xmlElement] = self
         
         self.parent = parent
         self.groupRoot = groupRoot
-        self.cloneNumber = cloneNumber
         self.callsGroupRoot = False
         self.children = []
+        
+        self.isClone = isClone
+        if isClone:
+            self.document.numClones += 1
         
         self.attributes = xmlElement.attrib
         self.originalVisibility = self.attributes.get('visibility','visible')
@@ -135,23 +132,17 @@ class mutableSvgNode:
         
         # Events
         if self.attributes.has_key('__eventCode'):
-            self.eventCode = self.attributes['__eventCode']
-            self.eventProgram = self.compileCode(self.eventCode)
-            self.attributes['__eventCode'] = "_COMPILED__"
+            self.eventProgram = self.compileCode(self.attributes['__eventCode'],isEvent=True)
         else:
             self.eventProgram = None
-            self.eventCode = None
         
         # Resets
         if self.attributes.has_key('__resetCode'):
             if self.eventProgram == None:
                 raise SvgMapException("Node %s\nhas __resetCode without __eventCode" % (str(self)))
-            self.resetCode = self.attributes['__resetCode']
-            self.resetProgram = self.compileCode(self.resetCode)
-            self.attributes['__resetCode'] = "_COMPILED__"
+            self.resetProgram = self.compileCode(self.attributes['__resetCode'])
         else:
             self.resetProgram = None
-            self.resetCode = None
         
         # Preserve drag
         if self.attributes.has_key('__preserveDrag'):
@@ -174,42 +165,44 @@ class mutableSvgNode:
         for a,v in self.attributes.iteritems():
             if a == '__parentProperty':
                 if self.parent == None or not self.parent.fillNeed(v,self):
-                    raise SvgMapException("Node %s\nhas a __parentProperty that filled no requirements" % (str(self)))
+                    raise SvgMapException("Node %s\nhas a __parentProperty %s that filled no requirements" % (str(self),v))
             elif a == '__childProperty':
-                if mutableSvgNode.childProperites.has_key(v):
-                    raise SvgMapException("Two parent nodes:\n(%s and %s)\nattempted to fill the same __childProperty: %s" % (str(self),str(mutableSvgNode[v]),v))
-                mutableSvgNode.childProperites[v] = self
+                if self.document.childProperites.has_key(v):
+                    raise SvgMapException("Two parent nodes:\n(%s and %s)\nattempted to fill the same __childProperty: %s" % (str(self),str(self.document.childProperites[v]),v))
+                self.document.childProperites[v] = self
+            elif a == '__globalProperty':
+                if self.document.globalProperties.has_key(v):
+                    raise SvgMapException("Two nodes:\n(%s and %s)\nattempted to fill the same __globalProperty: %s" % (str(self),str(self.document.globalProperties[v]),v))
+                self.document.globalProperties[v] = self
             elif v.startswith("__"):
                 if hasattr(self,a):
                     raise SvgMapException("Node %s attempts to overwrite a reserved or existing property %s" % (str(self),a))
-                if mutableSvgNode.childProperites.has_key(v):
-                    self.needs[a] = mutableSvgNode.childProperites[v]
-                    setattr(self,a,mutableSvgNode.childProperites[v])
+                if self.document.childProperites.has_key(v):
+                    self.needs[a] = self.document.childProperites[v]
+                    setattr(self,a,self.document.childProperites[v])
                 else:
                     self.needs[a] = v
         
         # Custom init code
         if self.attributes.has_key('__initCode'):
-            self.initCode = self.attributes['__initCode']
-            self.initProgram = self.compileCode(self.initCode)
-            self.attributes['__initCode'] = "_COMPILED__"
+            self.initProgram = self.compileCode(self.attributes['__initCode'])
             customNameSpace = {'self':self}
             exec self.initProgram in {},customNameSpace
         else:
             self.initProgram = None
-            self.initCode = None
     
     # ****** TODO: make these private! ********
     
-    def compileCode(self, code):
-        if 'self.yieldEvent' in code:
-            self.callsGroupRoot = True
-        else:
-            self.callsGroupRoot = False
-        code = code.split("\\n ")
-        code = "\n".join(code)
+    def compileCode(self, code, isEvent=False):
+        if isEvent:
+            if 'self.yieldEvent' in code:
+                self.callsGroupRoot = True
+            else:
+                self.callsGroupRoot = False
+        temp = code.split("\\n ")
+        temp = "\n".join(temp)
         
-        return compile(code,'<string>','exec')
+        return compile(temp,'<string>','exec')
     
     def addChild(self, c):
         self.children.append(c)
@@ -251,22 +244,21 @@ class mutableSvgNode:
     
     def yieldEventToGroup(self,event,signals={},isBase=False):
         if self.groupRoot != None:
-            # first see if there's a cousin leaf behind me (visually) that should receive the event before my parent
             return self.groupRoot.handleEvent(event,signals,isBase)
         else:
             return signals
     
     def handleEvent(self,event,signals={},isBase=False):
-        if self.eventProgram != None:
+        if self.eventProgram != None and self.getAttribute('visibility') != 'hidden':
             if isBase:
                 if self.preserveDrag and 'LeftButton' in event.buttons:
-                    mutableSvgNode.lock = self
+                    self.document.lock = self
                 else:
-                    mutableSvgNode.lock = None
+                    self.document.lock = None
             
             if self.resetProgram != None:
-                mutableSvgNode.active.add(self)
-                mutableSvgNode.reset.add(self)
+                self.document.active.add(self)
+                self.document.reset.add(self)
             
             if not signals.has_key('__SVG__DIRTY__'):
                 oldDirtiness = True
@@ -339,14 +331,14 @@ class mutableSvgNode:
     
     def globalSearch(self, queryString):
         results = []
-        for x in mutableSvgNode.queryObject(queryString):
-            results.append(mutableSvgNode.nodeLookup[x])
+        for x in self.document.queryObject(queryString):
+            results.append(self.document.nodeLookup[x])
         return results
     
     def localSearch(self, queryString):
         results = []
-        for x in mutableSvgNode.queryObject(self.xmlElement).find(queryString):
-            results.append(mutableSvgNode.nodeLookup[x])
+        for x in self.document.queryObject(self.xmlElement).find(queryString):
+            results.append(self.document.nodeLookup[x])
         return results
     
     def parseTransforms(self, string):
@@ -368,6 +360,10 @@ class mutableSvgNode:
                 if len(values) == 1:
                     values.append(values[0])
                 self.scale(float(values[0]),float(values[1]),applyImmediately=False)
+            elif key == 'rotate':
+                while len(values) < 3:
+                    values.append(0)
+                self.rotate(float(values[0]),float(values[1]),float(values[2]),applyImmediately=False)
             # TODO: add other transforms
     
     def applyTransforms(self):
@@ -439,6 +435,25 @@ class mutableSvgNode:
         self.scale(xFactor,yFactor)
         self.moveTo(l-fromLeft, t-fromTop)
     
+    def setSize(self, width, height):
+        l,t,r,b = self.getBounds()
+        self.stretch(0, 0, width-(r-l), height-(b-t))
+    
+    def rotate(self, degrees, offsetX=0, offsetY=0, applyImmediately=True):
+        #print "1 %s %s %s" % (self.attributes.get('id','noid'),str(self.transforms),str(self.getBounds()))
+        b = self.getRect()
+        offsetX += b.left()+b.width()/2
+        offsetY += b.top()+b.height()/2
+        self.translate(-offsetX, -offsetY, applyImmediately)
+        #print "2 %s %s %s" % (self.attributes.get('id','noid'),str(self.transforms),str(self.getBounds()))
+        r = math.radians(degrees)
+        c = math.cos(r)
+        s = math.sin(r)
+        self.matrix(c,s,-s,c,0,0, applyImmediately)
+        #print "3 %s %s %s" % (self.attributes.get('id','noid'),str(self.transforms),str(self.getBounds()))
+        self.translate(offsetX, offsetY, applyImmediately)
+        #print "4 %s %s %s" % (self.attributes.get('id','noid'),str(self.transforms),str(self.getBounds()))
+    
     def hide(self):
         self.setAttribute('visibility', 'hidden', True)
     
@@ -482,25 +497,47 @@ class mutableSvgNode:
         return self.getRect().contains(x,y)
     
     def clone(self):
+        if self.parent == None:
+            raise SvgMapException("Attempted to clone parentless node: %s\n(probably the root, which is not allowed)" % str(self))
         twin = deepcopy(self.xmlElement)
-        newCloneNumber = self.cloneNumber + 1
         for node in twin.iter():
-            if node.attrib.has_key('id'):
-                if newCloneNumber == 1:
-                    node.attrib['id'] += "_%i" % newCloneNumber
-                else:
-                    temp = twin.attrib['id']
-                    node.attrib['id'] = temp[:temp.rfind("_")] + "_%i" % newCloneNumber
-        
+            appendText = "_%i" % self.document.numClones
+            if node.attrib.has_key('__globalProperty'):
+                del node.attrib['__globalProperty']
+            for att in node.attrib.iterkeys():
+                if att == 'id' or att == '__parentProperty' or att == '__childProperty' or node.attrib[att].startswith("__"):
+                    if not self.isClone:
+                        node.attrib[att] += appendText
+                    else:
+                        temp = node.attrib[att]
+                        node.attrib[att] = temp[:temp.rfind("_")] + appendText
+                            
         self.xmlElement.getparent().append(twin)
-        print 'added'
-        return mutableSvgNode(self.document,twin,self.parent,self.groupRoot,newCloneNumber)
+        result = self.document.buildTree(twin,self.parent,self.groupRoot,isGlobalRoot=False,buildClones=True)
+        self.parent.addChild(result)
+        self.document.forceFreeze()
+        return result
+    
+    def delete(self):
+        # remove ourself completely from the SVG
+        if self.parent != None:
+            self.parent.children.remove(self)
+        self.xmlElement.getparent().remove(self.xmlElement)
+        self.document.forceFreeze()
+    
+    def setText(self, text):
+        self.xmlElement.text = text
+        self.document.forceFreeze()
+    
+    def getText(self):
+        return self.xmlElement.text
     
     def setAttribute(self, att, value, force=True):
         if not self.attributes.has_key(att):
             success = self.setCSS(att,value,force=False)
         else:
-            success = False
+            self.attributes[att] = str(value)
+            success = True
         
         if not success and force:
             self.attributes[att] = str(value)
@@ -510,13 +547,19 @@ class mutableSvgNode:
             if att == 'transform':
                 self.parseTransforms[self.attributes['transform']]
             elif att == "__eventCode":
-                self.eventCode = self.attributes['__eventCode']
-                self.eventProgram = self.compileCode(self.eventCode)
-                self.attributes['__eventCode'] = "_COMPILED__"
+                if self.attributes['__eventCode'] == "":
+                    del self.attributes['__eventCode']
+                    self.eventProgram = None
+                    self.callsGroupRoot = False
+                else:
+                    self.eventProgram = self.compileCode(self.attributes['__eventCode'],isEvent=True)
             elif att == '__resetCode':
-                self.resetCode = self.attributes['__resetCode']
-                self.resetProgram = self.compileCode(self.resetCode)
-                self.attributes['__resetCode'] = "_COMPILED__"
+                if self.attributes['__resetCode'] == "":
+                    del self.attributes['__resetCode']
+                    self.resetProgram = None
+                else:
+                    self.resetProgram = self.compileCode(self.attributes['__resetCode'])
+            # elif att == '__initCode': only clones of me could ever experience this... and they'll recompile it on their own anyway. don't bother compiling
             elif att in self.needs.iterkeys():
                 raise SvgMapException("TODO: I have not yet implemented resetting of custom attributes...")
         return success     
@@ -554,22 +597,17 @@ class mutableSvgNode:
                 return False
     
     def getAttribute(self, att):
-        if att == '__eventCode':
-            return self.eventCode
-        elif att == '__resetCode':
-            return self.resetCode
-        else:
-            value = self.attributes.get(att,self.getCSS(att))
-            if value == None:
-                return None
+        value = self.attributes.get(att,self.getCSS(att))
+        if value == None:
+            return None
+        try:
+            value = int(value)
+        except ValueError:
             try:
-                value = int(value)
+                value = float(value)
             except ValueError:
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
-            return value
+                pass
+        return value
     
     def getCSS(self, att):
         css = self.attributes.get('style',None)
@@ -592,24 +630,34 @@ class mutableSvgNode:
             return value
 
 class mutableSvgRenderer:
-    def __init__(self, path):
+    def __init__(self, path, controller):
+        self.controller = controller
+        
+        self.nodeLookup = {}
+        self.queryObject = None
+        self.active = set()
+        self.reset = set()
+        self.lock = None
+        self.childProperites = {}
+        self.globalProperties = {}
+        self.numClones = 0
+        
         self.queryObject = pq(filename=path)
-        cleanedXml = scourString(str(self.queryObject),).encode("UTF-8")
-        #print cleanedXml
-        self.queryObject = pq(cleanedXml)
-        mutableSvgNode.queryObject = self.queryObject
+        #cleanedXml = scourString(str(self.queryObject),).encode("UTF-8")
+        #self.queryObject = pq(cleanedXml)
         
         self.isFrozen = False
-        self.freeze()
         
         self.root = self.buildTree(self.queryObject.root.getroot(),parent=None,groupRoot=None,isGlobalRoot=True)
         self.root.verify()
         
+        self.freeze()
+        
         self.lastTarget = None
     
-    def buildTree(self, xmlObject,parent=None,groupRoot=None,isGlobalRoot=False):
-        newNode = mutableSvgNode(self,xmlObject,parent,groupRoot)
-                
+    def buildTree(self, xmlObject,parent=None,groupRoot=None,isGlobalRoot=False,buildClones=False):
+        newNode = mutableSvgNode(self,self.controller,xmlObject,parent,groupRoot,isClone=buildClones)
+        
         for child in xmlObject.getchildren():
             if newNode.eventProgram != None or isGlobalRoot:
                 groupRoot = newNode
@@ -619,10 +667,18 @@ class mutableSvgRenderer:
             newNode.addChild(newChild)
         return newNode
     
+    def getElement(self, key):
+        return self.globalProperties[key]
+    
     def freeze(self):
         if self.isFrozen:
             return
         self.renderer = QSvgRenderer(QByteArray(str(self.queryObject)))
+        if self.root != None:
+            b = self.getBoundaries()
+            self.renderer.setViewBox(b)
+            self.root.setAttribute('width', b.width())
+            self.root.setAttribute('height', b.height())
         self.isFrozen = True
     
     def forceFreeze(self):
@@ -634,25 +690,25 @@ class mutableSvgRenderer:
     
     def handleFrame(self, userState, node=None):
         if node == None:
-            if mutableSvgNode.lock != None:   # We're in dragging mode - we don't care what's moused over, just fire the event on the base element that was active before
-                results = mutableSvgNode.lock.handleEvent(userState,{'__SVG__DIRTY__':True},isBase=True)
+            if self.lock != None:   # We're in dragging mode - we don't care what's moused over, just fire the event on the base element that was active before
+                results = self.lock.handleEvent(userState,{'__SVG__DIRTY__':True},isBase=True)
                 # By definition, only an element and the group parents it calls will be in the active set; we only need to fire the event on
                 # the base event receiver, and everything else will be handled.
             else:
-                mutableSvgNode.active = set()   # empty out the active set... afterward, anything that's in reset that isn't in active will need to have reset called
+                self.active = set()   # empty out the active set... afterward, anything that's in reset that isn't in active will need to have reset called
                 results = self.handleFrame(userState, self.root)
                 
                 if results == None:
-                    results = {'__SVG__DIRTY__':False}    # If at the highest level we were still out of bounds, there's no signal,
-                                                          # and things got dirty only if there's a reset; we'll find out if that
+                    results = {'__SVG__DIRTY__':False}    # If at the highest level we were still out of bounds, and there's no signal,
+                                                          # things got dirty only if there's a reset; we'll find out if that
                                                           # happened next
                 # Run any resets...
-                needReset = mutableSvgNode.reset.difference(mutableSvgNode.active)
+                needReset = self.reset.difference(self.active)
                 for n in needReset:
                     temp = results.get('__SVG__DIRTY__',True)
                     results['__SVG__DIRTY__'] = True
                     n.handleReset(userState,results)
-                    mutableSvgNode.reset.discard(n)
+                    self.reset.discard(n)
                     results['__SVG__DIRTY__'] = results['__SVG__DIRTY__'] or temp  # again, we want to let it be clean only if every call explicitly marks it clean
             
             # Okay, we're finally done - we need to check if something dirtified the SVG:
@@ -692,9 +748,20 @@ class mutableSvgRenderer:
             id = self.root.attributes['id']
         b = self.renderer.boundsOnElement(id)
         if self.renderer.elementExists(id):
-            b = self.renderer.matrixForElement(id).mapRect(b)
+            m = self.renderer.matrixForElement(id)
+            #print "id: %s b: %s m: %s" % (id,b,m)
+            b = m.mapRect(b)
         return b
     
+    def getVisibleBoundaries(self, id=None):
+        objBounds = self.getBoundaries(id)
+        viewBounds = self.renderer.viewBoxF()
+        objBounds.setLeft(max(objBounds.left(),viewBounds.left()))
+        objBounds.setTop(max(objBounds.top(),viewBounds.top()))
+        objBounds.setRight(min(objBounds.right(),viewBounds.right()))
+        objBounds.setBottom(min(objBounds.bottom(),viewBounds.bottom()))
+        return objBounds
+        
     def eventInElement(self, event, id):
         self.freeze()
         if self.renderer.elementExists(id):
@@ -705,14 +772,17 @@ class mutableSvgRenderer:
     def render(self, painter, queryString=None):
         self.freeze()
         if queryString == None:
-            self.renderer.render(painter)
+            self.renderer.render(painter,self.renderer.viewBox())
         else:
             id = self.queryObject(queryString).attr('id')
             if id == None:
-                self.renderer.render(painter)
+                self.renderer.render(painter,self.renderer.viewBox())
             else:
-                self.renderer.render(painter,id,self.getBoundaries(id))
+                self.renderer.render(painter,id,self.getVisibleBoundaries(id))
     
+    def defaultSize(self):
+        self.forceFreeze()
+        return self.renderer.defaultSize()
     
     
     
