@@ -111,15 +111,13 @@ class SvgMapException(Exception):
         return self.value
 
 class mutableSvgNode:
-    def __init__(self, document, controller, xmlElement, parent=None, groupRoot=None, isClone=False):
+    def __init__(self, document, controller, xmlElement, parent=None, isClone=False):
         self.document = document
         self.controller = controller
         self.xmlElement = xmlElement
         self.document.nodeLookup[self.xmlElement] = self
         
         self.parent = parent
-        self.groupRoot = groupRoot
-        self.callsGroupRoot = False
         self.children = []
         
         self.isClone = isClone
@@ -127,7 +125,7 @@ class mutableSvgNode:
             self.document.numClones += 1
         
         self.attributes = xmlElement.attrib
-        self.originalVisibility = self.attributes.get('visibility','visible')
+        self.originalVisibility = None
         self.parseTransforms(self.attributes.get('transform',""))
         
         # Events
@@ -143,18 +141,6 @@ class mutableSvgNode:
             self.resetProgram = self.compileCode(self.attributes['__resetCode'])
         else:
             self.resetProgram = None
-        
-        # Preserve drag
-        if self.attributes.has_key('__preserveDrag'):
-            if self.eventProgram == None:
-                raise SvgMapException("Node %s\nhas __preserveDrag without __eventCode" % (str(self)))
-            self.preserveDrag = self.attributes['__preserveDrag'].strip().lower() == 'true'
-        else:
-            # default: inherit from groupRoot
-            if self.groupRoot != None:
-                self.preserveDrag = self.groupRoot.preserveDrag
-            else:
-                self.preserveDrag = False   # ...or don't preserve if root
         
         self.resetAttributes = {}
         for k,v in self.attributes.iteritems():
@@ -183,7 +169,7 @@ class mutableSvgNode:
                 else:
                     self.needs[a] = v
         
-        # Custom init code
+        # run custom init code
         if self.attributes.has_key('__initCode'):
             self.initProgram = self.compileCode(self.attributes['__initCode'])
             customNameSpace = {'self':self}
@@ -242,54 +228,31 @@ class mutableSvgNode:
         for c in self.children:
             c.verify()
     
-    def yieldEventToGroup(self,event,signals={},isBase=False):
-        if self.groupRoot != None:
-            return self.groupRoot.handleEvent(event,signals,isBase)
-        else:
-            return signals
-    
-    def handleEvent(self,event,signals={},isBase=False):
-        if self.eventProgram != None and self.getAttribute('visibility') != 'hidden':
-            if isBase:
-                if self.preserveDrag and 'LeftButton' in event.buttons:
-                    self.document.lock = self
-                else:
-                    self.document.lock = None
-            
-            if self.resetProgram != None:
-                self.document.active.add(self)
-                self.document.reset.add(self)
-            
-            if not signals.has_key('__SVG__DIRTY__'):
-                oldDirtiness = True
-            else:
-                oldDirtiness = signals['__SVG__DIRTY__']
-            
-            signals['__SVG__DIRTY__'] = True
-            self.handleCustomEvent(event,signals)
-            
-            if signals.get('__SVG__DIRTY__',True) == False and not oldDirtiness:  # Allow it to stay clean only if it came in clean and the custom code explicitly marked it as untouched
-                signals['__SVG__DIRTY__'] = False
-            else:
-                signals['__SVG__DIRTY__'] = True
-            
-            return signals
-        else:
-            return self.yieldEventToGroup(event,signals,isBase)   # default behavior is to yield to any groupRoot's event handler - this is overridden if a node defines the __eventCode attribute
-    
-    def handleCustomEvent(self,event,signals={'__SVG__DIRTY__':True}):
+    def runCustomEvent(self,event,signals):
+        inDirty = signals.get('__SVG__DIRTY__',True)
+        signals['__SVG__DIRTY__'] = True
+        signals['__EVENT__ABSORBED__'] = True
         customNameSpace = {'self':self,
                            'event':event,
                            'signals':signals}
         exec self.eventProgram in {},customNameSpace
-        return customNameSpace['signals']
+        signals = customNameSpace['signals']
+        signals['__SVG__DIRTY__'] = inDirty or signals.get('__SVG__DIRTY__',True)
+        signals['__EVENT__ABSORBED__'] = signals.get('__EVENT__ABSORBED__',True)
+        return signals
     
-    def handleReset(self,event,signals={'__SVG__DIRTY__':True}):
+    def runReset(self,event,signals):
+        inDirty = signals.get('__SVG__DIRTY__',True)
+        signals['__SVG__DIRTY__'] = True
+        signals['__EVENT__ABSORBED__'] = True
         customNameSpace = {'self':self,
                            'event':event,
                            'signals':signals}
         exec self.resetProgram in {},customNameSpace
-        return customNameSpace['signals']
+        signals = customNameSpace['signals']
+        signals['__SVG__DIRTY__'] = inDirty or signals.get('__SVG__DIRTY__',True)
+        signals['__EVENT__ABSORBED__'] = signals.get('__EVENT__ABSORBED__',True)
+        return signals
     
     def getRect(self):
         id = self.attributes.get('id',None)
@@ -300,19 +263,19 @@ class mutableSvgNode:
         return self.document.getBoundaries(id)
     
     def setSizeZero(self):
-        self.originalVisibility = self.attributes.get('visibility','visible')
+        if self.originalVisibility == None:
+            self.originalVisibility = self.getAttribute('visibility')
+            if self.originalVisibility == None:
+                self.originalVisibility = 'visible'
         self.hide()
     
     def unsetSizeZero(self):
         if self.originalVisibility != None:
-            self.attributes['visibility'] = self.originalVisibility
+            self.setAttribute('visibility', self.originalVisibility, True)
         self.originalVisibility = None
     
     # ****** TODO: these are my API... rename them? ******
-    
-    def yieldEvent(self, event, signals={}):
-        return self.yieldEventToGroup(event, signals, False)
-    
+        
     def resetAllAttributes(self):
         newKeys = set()
         for k in self.attributes.iterkeys():
@@ -513,7 +476,7 @@ class mutableSvgNode:
                         node.attrib[att] = temp[:temp.rfind("_")] + appendText
                             
         self.xmlElement.getparent().append(twin)
-        result = self.document.buildTree(twin,self.parent,self.groupRoot,isGlobalRoot=False,buildClones=True)
+        result = self.document.buildTree(twin,self.parent,buildClones=True)
         self.parent.addChild(result)
         self.document.forceFreeze()
         return result
@@ -648,22 +611,18 @@ class mutableSvgRenderer:
         
         self.isFrozen = False
         
-        self.root = self.buildTree(self.queryObject.root.getroot(),parent=None,groupRoot=None,isGlobalRoot=True)
+        self.root = self.buildTree(self.queryObject.root.getroot(),parent=None)
         self.root.verify()
         
         self.freeze()
         
         self.lastTarget = None
     
-    def buildTree(self, xmlObject,parent=None,groupRoot=None,isGlobalRoot=False,buildClones=False):
-        newNode = mutableSvgNode(self,self.controller,xmlObject,parent,groupRoot,isClone=buildClones)
+    def buildTree(self, xmlObject,parent=None,buildClones=False):
+        newNode = mutableSvgNode(self,self.controller,xmlObject,parent,isClone=buildClones)
         
         for child in xmlObject.getchildren():
-            if newNode.eventProgram != None or isGlobalRoot:
-                groupRoot = newNode
-            else:
-                groupRoot = newNode.groupRoot
-            newChild = self.buildTree(child, newNode, groupRoot)
+            newChild = self.buildTree(child, newNode)
             newNode.addChild(newChild)
         return newNode
     
@@ -690,33 +649,27 @@ class mutableSvgRenderer:
     
     def handleFrame(self, userState, node=None):
         if node == None:
-            if self.lock != None:   # We're in dragging mode - we don't care what's moused over, just fire the event on the base element that was active before
-                results = self.lock.handleEvent(userState,{'__SVG__DIRTY__':True},isBase=True)
-                # By definition, only an element and the group parents it calls will be in the active set; we only need to fire the event on
-                # the base event receiver, and everything else will be handled.
-            else:
-                self.active = set()   # empty out the active set... afterward, anything that's in reset that isn't in active will need to have reset called
-                results = self.handleFrame(userState, self.root)
-                
-                if results == None:
-                    results = {'__SVG__DIRTY__':False}    # If at the highest level we were still out of bounds, and there's no signal,
-                                                          # things got dirty only if there's a reset; we'll find out if that
-                                                          # happened next
-                # Run any resets...
-                needReset = self.reset.difference(self.active)
-                for n in needReset:
-                    temp = results.get('__SVG__DIRTY__',True)
-                    results['__SVG__DIRTY__'] = True
-                    n.handleReset(userState,results)
-                    self.reset.discard(n)
-                    results['__SVG__DIRTY__'] = results['__SVG__DIRTY__'] or temp  # again, we want to let it be clean only if every call explicitly marks it clean
+            self.reset = set(self.active)
+            self.active = set()   # empty out the active set... afterward, anything that's in reset that isn't in active will need to have reset called
+            results = self.handleFrame(userState, self.root)
+            
+            # Run any resets...
+            needReset = self.reset.difference(self.active)
+            for n in needReset:
+                temp = results.get('__SVG__DIRTY__',True)
+                results['__SVG__DIRTY__'] = True
+                n.runReset(userState,results)
+                self.reset.discard(n)
+                results['__SVG__DIRTY__'] = results['__SVG__DIRTY__'] or temp  # again, we want to let it be clean only if every call explicitly marks it clean
             
             # Okay, we're finally done - we need to check if something dirtified the SVG:
             if results.get('__SVG__DIRTY__',True):
                 self.thaw()
-            # Clean up our little internal flag
+            # Clean up our little internal flags
             if results.has_key('__SVG__DIRTY__'):
                 del results['__SVG__DIRTY__']
+            if results.has_key('__EVENT__ABSORBED__'):
+                del results['__EVENT__ABSORBED__']
             return results
         else:
             id = node.attributes.get('id',None)
@@ -726,22 +679,18 @@ class mutableSvgRenderer:
                 inBounds = True # If there's no id, we'll have to check the children...
                                 # If there's no id there, we'll have to assume the frontmost, deepest child is in bounds.
                                 # This isn't ideal, but the SVG is screwed up so this is the best we can do
-            
-            results = None
-            
+            results = {'__EVENT__ABSORBED__':False,'__SVG__DIRTY__':False}
             if inBounds:
                 for child in reversed(node.children):   # DFS, using the frontmost elements first
                     results = self.handleFrame(userState, child)
-                    if results != None:
+                    if results.get('__EVENT__ABSORBED__',True) == True:
                         break
                 
-                if results == None:# Okay, no child gave me answers... so I'm the base node that gets the event
-                    results = node.handleEvent(userState,signals={'__SVG__DIRTY__':False},isBase=True) # we'll start by assuming it's clean; provided no custom code touches the appearance, this will come back intact
-                
-                return results
-            else:
-                # We're out of bounds; let our caller know we couldn't find anything in range
-                return None
+                # Okay, no child has absorbed the event yet... so I actually get to call my event if I'm visible and I have one
+                if node.eventProgram != None and node.getAttribute('visibility') != 'hidden' and results.get('__EVENT__ABSORBED__',True) == False:
+                    results = node.runCustomEvent(userState,signals=results) # we'll start by assuming it's clean; provided no custom code touches the appearance, this will come back intact
+                    self.active.add(node)
+            return results
     
     def getBoundaries(self, id=None):
         if id == None:

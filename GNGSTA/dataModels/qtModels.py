@@ -40,9 +40,9 @@ class group:
         return results
 
 class fileObj:
-    def __init__(self, path, vData, fData):
+    def __init__(self, path, nameAppend, vData, fData):
         self.path = path
-        self.name = os.path.split(path)[1]
+        self.name = os.path.split(path)[1] + nameAppend
         self.format = os.path.splitext(path)[1]
         self.attributes = {}            # {attribute str:included bool}
         self.checkable = True
@@ -124,7 +124,12 @@ class svOptionsModel:
         self.fileOrder = []     # file name
     
     def loadFile(self, path):
-        newFile = fileObj(path, self.vData, self.fData)
+        nameAppend = ""
+        i = 1
+        while self.files.has_key(os.path.split(path)[1] + nameAppend):
+            i += 1
+            nameAppend = " (%i)" % i
+        newFile = fileObj(path, nameAppend, self.vData, self.fData)
         self.files[newFile.name] = newFile
         self.fileOrder.insert(0,newFile.name)
         
