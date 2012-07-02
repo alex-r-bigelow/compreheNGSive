@@ -660,6 +660,20 @@ class csvVariantFile:
         self.variants = set()
     
     @staticmethod
+    def extractVariantAttributesInFile(fileObject,delimiter=',',*args,**kwargs):
+        for line in fileObject:
+            results = line[:-1].split(delimiter)
+            break
+        
+        for a in args:
+            if a in results:
+                results.remove(a)
+        for a in kwargs.itervalues():
+            if a in results:
+                results.remove(a)
+        return results
+    
+    @staticmethod
     def parseCsvVariantFile(fileObject,chromosomeHeader,startHeader,refHeader=None,altHeader=None,nameHeader=None,attemptRepairsWhenComparing=True,forceAlleleMatching=True,delimiter=",",functionToCall=None,callbackArgs={},mask=None,returnFileObject=True):
         '''
         Assuming every row in a .csv file, we create the same sort of functionality as if it were one of these other standard formats
@@ -749,6 +763,25 @@ class vcfFile:
                 columns = line.split()
                 return columns[9:]
         return None
+    
+    @staticmethod
+    def extractVariantAttributesInFile(fileObject):
+        results = []
+        for line in fileObject:
+            if len(line) <= 1:
+                continue
+            elif line.startswith("##"):
+                line = line.strip()[2:]
+                if line.startswith("FILTER") and 'FILTER' not in results:
+                    results.append('FILTER')
+                elif line.startswith("INFO"):
+                    text = line[6:-1]
+                    temp = text[text.find("ID=")+3:]
+                    temp = temp[:temp.find(",")]
+                    results.append(temp)
+            else:
+                break
+        return results
     
     @staticmethod
     def parseVcfFile(fileObject,functionToCall=None,callbackArgs={},individualsToExclude=[],individualsToInclude=[],mask=None,returnFileObject=True,skipFiltered=True,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=False,includeAdditionalHeaderInfo=False,forceAlleleMatching=True):

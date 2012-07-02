@@ -1,6 +1,6 @@
-from gui.parallelCoordinates import parallelCoordinateWidget, parallelCoordinateController
-from gui.treeViews import treeTagController, treeTagWidget, treeSelectionController, treeSelectionWidget
-from dataModels.qtModels import *
+from gui.treeSelectionWidget import treeSelectionWidget
+from gui.treeTagWidget import treeTagWidget
+from dataModels.setupData import *
 from PySide.QtCore import *
 from PySide.QtGui import *
 from PySide.QtUiTools import *
@@ -21,41 +21,31 @@ class setupApp:
         # data model for setup
         self.svOptions = svOptionsModel()
         
-        self.selectionController = treeSelectionController(self.svOptions)
-        #self.tagController = treeTagController(self.svOptions)
-        self.window.svFileScrollArea.setWidget(treeSelectionWidget(controller=self.selectionController,parent=self.window.svFileScrollArea))
-        #self.window.svGroupScrollArea.setWidget(treeTagWidget(controller=self.tagController,parent=self.window.svGroupScrollArea))
+        self.selectionView = treeSelectionWidget(data=self.svOptions, parent=self.window.svFileScrollArea)
+        self.window.svFileScrollArea.setWidget(self.selectionView)
+        self.tagView = treeTagWidget(data=self.svOptions, parent=self.window.svGroupScrollArea)
+        self.window.svGroupScrollArea.setWidget(self.tagView)
         ##########
         # Events #
         ##########
         
-        # connecting events: SV
+        # connecting events
         self.window.runSVbutton.clicked.connect(self.runSV)
-        self.window.addFilesButton.clicked.connect(self.loadFiles)
+        self.window.addFilesButton.clicked.connect(self.addFiles)
         self.window.groupLineEdit.textChanged.connect(self.updateGroupButtons)
         self.window.createNewGroupButton.clicked.connect(self.addGroup)
-        
-        # connecting events: OR
-        self.window.runORbutton.clicked.connect(self.runOR)
-        
-        # connecting events: AND
-        self.window.runANDbutton.clicked.connect(self.runAND)
-        
-        # other events:
         self.window.Quit.clicked.connect(self.closeApp)
-        self.window.Quit_2.clicked.connect(self.closeApp)
-        self.window.Quit_3.clicked.connect(self.closeApp)
         
         ##########
         self.runningApp = None
         self.window.show()
     
-    def loadFiles(self):
+    def addFiles(self):
         newPaths = QFileDialog.getOpenFileNames(filter='Variant, attribute, and/or feature files (*.vcf *.gvf *.csv *.tsv *.bed *.gff3)')
         for path in newPaths[0]:
-            self.svOptions.loadFile(path)
-        self.selectionController.updateList()
-        #self.tagController.updateList()
+            self.svOptions.addFile(path)
+        self.selectionView.updateList()
+        self.tagView.updateList()
     
     def updateGroupButtons(self):
         text = self.window.groupLineEdit.text()
@@ -76,32 +66,31 @@ class setupApp:
             self.svOptions.removeGroup(text)
         else:
             self.svOptions.addGroup(text)
-        self.tagController.updateList()
+        self.tagView.updateList()
         self.updateGroupButtons()
         
     def runSV(self):
         self.window.hide()
-        # TODO: recalculate Allele Frequencies
-        self.runningApp = singleVariantApp(self.svOptions)
-    
-    def runOR(self):
-        pass
-    
-    def runAND(self):
-        pass
-    
+        # TODO: show loading screen?
+        vData,fData = options.buildDataObjects()
+        self.runningApp = singleVariantApp(vData,fData)
+        
     def closeApp(self):
         self.window.reject()
 
 class singleVariantApp:
-    def __init__(self, options):
+    def __init__(self, vData,fData):
         loader = QUiLoader()
         infile = QFile("gui/ui/SingleVariant.ui")
         infile.open(QFile.ReadOnly)
         self.window = loader.load(infile, None)
-        self.pcController = parallelCoordinateController(options.vData)
-        self.window.pcScrollArea.setWidget(parallelCoordinateWidget(controller=self.pcController,parent=self.window.pcScrollArea))
-        self.window.show()
+        
+        self.vData = vData
+        self.fData = fData
+        
+        #self.pc = parallelCoordinateWidget(data=vData,parent=self.window.pcScrollArea)
+        #self.window.pcScrollArea.setWidget(self.pc)
+        #self.window.show()
 
 def runProgram():
     app = QApplication(sys.argv)

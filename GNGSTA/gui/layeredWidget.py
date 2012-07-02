@@ -35,17 +35,17 @@ class layer:
         self.dirtyLayer = True
         self.resized = True
     
-    # Override this
+    # Optionally override this
     def resizeEvent(self):
         pass
     
     # Override this
-    def handleFrame(self, event):
-        return None
+    def handleFrame(self, event, signals):
+        raise NotImplementedError("You should never directly instantiate a layer, and all subclasses must implement the handleFrame(event,signals) method.")
     
     # Override this
     def draw(self, painter):
-        return None
+        raise NotImplementedError("You should never directly instantiate a layer, and all subclasses must implement the draw(painter) method.")
 
 class mutableSvgLayer(layer):
     def __init__(self, path, controller, size=None, dynamic=True):
@@ -61,8 +61,8 @@ class mutableSvgLayer(layer):
         self.svg.forceFreeze()
         layer.resize(self, self.svg.defaultSize())
     
-    def handleFrame(self, event):
-        result = self.svg.handleFrame(event)
+    def handleFrame(self, event, signals):
+        result = self.svg.handleFrame(event, results=signals)
         if not self.svg.isFrozen:
             self.setDirty()
         return result
@@ -96,7 +96,7 @@ class eventPacket:
 
 class layeredWidget(QWidget):
     '''
-    This abstracts away much of the Qt drawing and userState
+    This abstracts away much of the Qt drawing and event
     components; subclasses should call addLayer and pass
     in their own instances that are subclasses of layer.
     Layers will be drawn in the order that they are
@@ -117,19 +117,13 @@ class layeredWidget(QWidget):
     layer should generate these objects).
     '''
     
-    def __init__(self, controller = None, parent = None):
+    def __init__(self, parent = None):
         QWidget.__init__(self, parent)
-        self.loadingImage = QPixmap(self.size())
+        self.loadingImage = QPixmap(QSize(1,1))
+        self.loadingImage.fill(QColor.fromRgbF(0.0,0.0,0.0,0.0))
+        self.loadingMode = False
         self.layers = []
-        
-        self.controller = controller
-        if self.controller != None:
-            if not hasattr(self.controller,'setWidget'):
-                raise SvgLayerException("Controller %s has no setWidget function." % str(self.controller))
-            if not hasattr(self.controller,'handleEvents'):
-                raise SvgLayerException("Controller %s has no handleEvents function." % str(self.controller))
-            self.controller.setWidget(self)
-        
+                
         self.userState = eventPacket()
         self.setMouseTracking(True)
         
@@ -141,37 +135,35 @@ class layeredWidget(QWidget):
         self.animationTimer.setSingleShot(False)
         self.connect(self.animationTimer, SIGNAL("timeout()"), self.animate)
         self.animationTimer.start(25)
-        
-        self.progress = 0
-        self.progressTimer = QTimer()
-        self.progressTimer.setSingleShot(False)
-        self.connect(self.progressTimer, SIGNAL("timeout()"), self.incrementProgress)
-        self.progressTimer.setInterval(10000000)
-        self.progressTimer.start(25)
-        
+                
         self.setDirty()
     
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        if self.isDirty:
-            painter.drawPixmap(0,0,self.loadingImage)
-        else:
-            for l in self.layers:
-                painter.drawPixmap(0,0,l.image)
+        #if self.isDirty:
+        #    painter.drawPixmap(0,0,self.loadingImage)
+        #else:
+        for l in self.layers:
+            painter.drawPixmap(0,0,l.image)
         painter.end()
-        
+    
     def setDirty(self):
         self.isDirty = True
         self.drawingTimer.start(25)
-        self.progressTimer.start(50)
     
     def animate(self):
         if self.isDirty or len(self.layers) == 0:
-            painter = QPainter()
+            # TODO: keep flattened version of everything in self.loadingImage to get rid of the blink
+            '''painter = QPainter()
             
-            self.loadingImage.fill(QColor.fromRgbF(0.0,0.0,0.0,0.5))
+            if self.parentWidget() != 0:
+                self.loadingImage = QPixmap(self.parentWidget().size())
+            else:
+                self.loadingImage = QPixmap(self.size())
+            
+            self.loadingImage.fill(QColor.fromRgbF(0.0,0.0,0.0,1.0))
             painter.begin(self.loadingImage)
             
             if len(self.layers) == 0:
@@ -182,34 +174,44 @@ class layeredWidget(QWidget):
                     outText += "."
             
             painter.setPen(QColor.fromRgbF(1.0,1.0,1.0,1.0))
-            painter.drawText(0,0,self.width(),self.height(),Qt.AlignCenter | Qt.AlignHCenter,outText)
+            painter.drawText(0,0,self.loadingImage.width(),self.loadingImage.height(),Qt.AlignCenter | Qt.AlignHCenter,outText)
             
-            painter.end()
+            painter.end()'''
+            pass
         else:
-            eventResults = {}
+            eventResults = {'__EVENT__ABSORBED__':False}
             for l in self.layers:
-                eventResults.update(l.handleFrame(self.userState))
+                if not eventResults.get('__EVENT__ABSORBED__',True):
+                    eventResults.update(l.handleFrame(self.userState,signals=eventResults))
                 if l.dynamic and not l.resized:
                     l.drawLayer()
                 elif l.dirtyLayer or l.resized:
                     self.setDirty()
             self.userState.prepForNextFrame()
-            if self.controller != None:
-                self.controller.handleEvents(eventResults)
+            if eventResults.get('__EVENT__ABSORBED__',True):
+                if eventResults.has_key('__EVENT__ABSORBED__'):
+                    del eventResults['__EVENT__ABSORBED__']
+                self.handleEvents(eventResults)
         self.update()
     
-    def incrementProgress(self):
-        self.progress += 1
-        if self.progress > 10:
-            self.progress = 0
+    def handleEvents(self, signals):
+        raise NotImplementedError("You should never directly instantiate a layeredWidget, and all subclasses must implement the handleEvents(signals) method.")
     
     def drawStatic(self):
         lowX = None
         lowY = None
         highX = None
         highY = None
+        rects = []
+        
+        #if self.parentWidget() != 0:
+        #    rects.append(self.parentWidget().rect())
         for l in self.layers:
-            lx,ly,hx,hy = l.image.rect().getCoords()
+            rects.append(l.image.rect())
+            l.resized = False
+        
+        for r in rects:
+            lx,ly,hx,hy = r.getCoords()
             if lowX == None:
                 lowX = lx
             else:
@@ -226,15 +228,17 @@ class layeredWidget(QWidget):
                 highY = hy
             else:
                 highY = max(highY,hy)
-            l.resized = False
         if lowX != None and lowY != None and highX != None and highY != None:
-            self.setFixedSize(highX-lowX,highY-lowY)
+            newSize = QSize(highX-lowX,highY-lowY)
+            self.setFixedSize(newSize)
+        else:
+            pass # TODO
+        
         for l in self.layers:
             if not l.dynamic and l.dirtyLayer:
                 l.drawLayer()
         self.isDirty = False
-        self.progressTimer.stop()
-    
+        
     def addLayer(self, newLayer, index=None):
         if index == None:
             self.layers.append(newLayer)

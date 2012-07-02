@@ -403,6 +403,7 @@ class mutableSvgNode:
         self.stretch(0, 0, width-(r-l), height-(b-t))
     
     def rotate(self, degrees, offsetX=0, offsetY=0, applyImmediately=True):
+        '''
         #print "1 %s %s %s" % (self.attributes.get('id','noid'),str(self.transforms),str(self.getBounds()))
         b = self.getRect()
         offsetX += b.left()+b.width()/2
@@ -413,9 +414,11 @@ class mutableSvgNode:
         c = math.cos(r)
         s = math.sin(r)
         self.matrix(c,s,-s,c,0,0, applyImmediately)
+        # Qt does some funky messing with coordinates right here... rotate doesn't work yet!
         #print "3 %s %s %s" % (self.attributes.get('id','noid'),str(self.transforms),str(self.getBounds()))
         self.translate(offsetX, offsetY, applyImmediately)
         #print "4 %s %s %s" % (self.attributes.get('id','noid'),str(self.transforms),str(self.getBounds()))
+        '''
     
     def hide(self):
         self.setAttribute('visibility', 'hidden', True)
@@ -486,6 +489,8 @@ class mutableSvgNode:
         if self.parent != None:
             self.parent.children.remove(self)
         self.xmlElement.getparent().remove(self.xmlElement)
+        self.document.reset.discard(self)
+        self.document.active.discard(self)
         self.document.forceFreeze()
     
     def setText(self, text):
@@ -600,7 +605,7 @@ class mutableSvgRenderer:
         self.queryObject = None
         self.active = set()
         self.reset = set()
-        self.lock = None
+        self.locks = set()
         self.childProperites = {}
         self.globalProperties = {}
         self.numClones = 0
@@ -647,18 +652,30 @@ class mutableSvgRenderer:
     def thaw(self):
         self.isFrozen = False
     
-    def handleFrame(self, userState, node=None):
+    def handleFrame(self, userState, node=None, results={'__EVENT__ABSORBED__':False,'__SVG__DIRTY__':False}, runLocks=False):
         if node == None:
             self.reset = set(self.active)
             self.active = set()   # empty out the active set... afterward, anything that's in reset that isn't in active will need to have reset called
-            results = self.handleFrame(userState, self.root)
+            
+            # First run on all locked nodes
+            for n in self.locks:
+                temp = results.get('__SVG__DIRTY__',True)
+                if n.eventProgram != None:
+                    results['__SVG__DIRTY__'] = True
+                    results = self.handleFrame(userState, n, results, runLocks=True)
+                results['__SVG__DIRTY__'] = results['__SVG__DIRTY__'] or temp
+            
+            if not results.get('__EVENT__ABSORBED__',True):
+                results = self.handleFrame(userState, self.root, results)
             
             # Run any resets...
             needReset = self.reset.difference(self.active)
+            needReset = needReset.difference(self.locks)
             for n in needReset:
                 temp = results.get('__SVG__DIRTY__',True)
-                results['__SVG__DIRTY__'] = True
-                n.runReset(userState,results)
+                if n.resetProgram != None:
+                    results['__SVG__DIRTY__'] = True
+                    n.runReset(userState,results)
                 self.reset.discard(n)
                 results['__SVG__DIRTY__'] = results['__SVG__DIRTY__'] or temp  # again, we want to let it be clean only if every call explicitly marks it clean
             
@@ -668,10 +685,10 @@ class mutableSvgRenderer:
             # Clean up our little internal flags
             if results.has_key('__SVG__DIRTY__'):
                 del results['__SVG__DIRTY__']
-            if results.has_key('__EVENT__ABSORBED__'):
-                del results['__EVENT__ABSORBED__']
             return results
         else:
+            if results.get('__EVENT__ABSORBED__',True):
+                return results
             id = node.attributes.get('id',None)
             if id != None:
                 inBounds = self.eventInElement(userState,id)
@@ -679,10 +696,11 @@ class mutableSvgRenderer:
                 inBounds = True # If there's no id, we'll have to check the children...
                                 # If there's no id there, we'll have to assume the frontmost, deepest child is in bounds.
                                 # This isn't ideal, but the SVG is screwed up so this is the best we can do
-            results = {'__EVENT__ABSORBED__':False,'__SVG__DIRTY__':False}
-            if inBounds:
+            if inBounds or runLocks:
                 for child in reversed(node.children):   # DFS, using the frontmost elements first
-                    results = self.handleFrame(userState, child)
+                    if not runLocks and child in self.locks:
+                        continue
+                    results = self.handleFrame(userState, child, results)
                     if results.get('__EVENT__ABSORBED__',True) == True:
                         break
                 
@@ -690,6 +708,12 @@ class mutableSvgRenderer:
                 if node.eventProgram != None and node.getAttribute('visibility') != 'hidden' and results.get('__EVENT__ABSORBED__',True) == False:
                     results = node.runCustomEvent(userState,signals=results) # we'll start by assuming it's clean; provided no custom code touches the appearance, this will come back intact
                     self.active.add(node)
+                    if results.get('__LOCK__',False):
+                        self.locks.add(node)
+                    else:
+                        self.locks.discard(node)
+                    if results.has_key('__LOCK__'):
+                        del results['__LOCK__']
             return results
     
     def getBoundaries(self, id=None):
