@@ -883,7 +883,10 @@ class vcfFile:
                     for a in temp:
                         if "=" in a:
                             temp2 = a.split("=")
-                            newVariant.attributes[temp2[0]] = temp2[1]
+                            temp3 = temp2[1]
+                            if "," in temp3:
+                                temp3 = temp3.split(',')
+                            newVariant.attributes[temp2[0]] = temp3
                         else:
                             newVariant.attributes[a] = a
                 # Handle sample columns

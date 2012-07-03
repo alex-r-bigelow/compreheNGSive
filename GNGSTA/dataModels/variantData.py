@@ -2,49 +2,113 @@ from resources.utils import chrLengths, chrOffsets
 from resources.structures import recursiveDict, TwoTree, FourTree
 import operator
 
-class numberAxis:
+class mixedAxis:
     def __init__(self):
         self.tree = None
-        self.rsValuePairs = []
         self.rsValues = {}
+        self.rsValuePairs = []
+        self.rsLabels = {}
+        self.labels = {}
+        self.labelOrder = []
+        self.treeLabelIndex = None
+        
+        self.isfinished = False
     
     def add(self, id, value):
-        if self.tree != None:
-            self.tree = None
-        self.rsValuePairs.append((id,value))
-        self.rsValues[id] = value
-
-    def finish(self):
-        self.rsValuePairs.sort(key=lambda i: i[1])
-        self.tree = TwoTree(self.rsValuePairs)
+        self.isfinished = False
+        
+        if value == None:
+            value = 'inf'
+        if isinstance(value,list):
+            value = ",".join(value)
+        
+        try:
+            value = float(value)
+            self.rsValuePairs.append((id,value))
+            self.rsValues[id] = value
+        except ValueError:
+            self.rsLabels[id] = value
+            if not self.labels.has_key(value):
+                self.labels[value] = set()
+            self.labels[value].add(id)
     
-    def select(self, low, high, includeMissing=False, includeMasked=False):
-        if self.tree == None:
+    def finish(self):
+        if len(self.rsValuePairs) > 0:
+            self.rsValuePairs.sort(key=lambda i: i[1])
+            self.tree = TwoTree(self.rsValuePairs)
+        else:
+            self.tree = None
+        
+        if len(self.labelOrder) == 0:
+            self.labelOrder = sorted(self.labels.iterkeys())
+            if self.tree != None:
+                self.treeLabelIndex = 0
+                self.labelOrder.insert(0,(self.getMin(),self.getMax()))
+        else:
+            if self.tree != None:
+                if self.treeLabelIndex == None:
+                    self.treeLabelIndex = 0
+                self.labelOrder[self.treeLabelIndex] = (self.getMin(),self.getMax())
+            elif self.treeLabelIndex != None:
+                del self.labelOrder[self.treeLabelIndex]
+            
+            for l in sorted(self.labels.iterkeys()):
+                if l not in self.labelOrder:
+                    self.labelOrder.append(l)
+        self.isfinished = True
+    
+    def select(self, labels=set(), low=None, high=None, includeMissing=False, includeMasked=False):
+        if not self.isfinished:
             print "ERROR: Attempted to query unfinished axis"
             sys.exit(1)
-        
-        return self.tree.select(low,high,includeMasked=includeMasked,includeUndefined=includeMissing,includeMissing=includeMissing)
-    
-    def getLabels(self, values):
-        results = []
-        for v in values:
-            results.append("%.4f" % v)
+        if self.tree != None:
+            results = self.tree.select(low,high,includeMasked=includeMasked,includeUndefined=includeMissing,includeMissing=includeMissing)
+        else:
+            results = set()
+        for l in labels:
+            results.add(self.labels[l])
         return results
+    
+    def getLabels(self):
+        if not self.isfinished:
+            print "ERROR: Attempted to get labels of unfinished axis"
+            sys.exit(1)
+        return self.labelOrder
+    
+    def reorder(self, remove, insertAfter):
+        if not self.isfinished:
+            print "ERROR: Attempted to reorder unfinished axis"
+            sys.exit(1)
+        self.labelOrder.remove(remove)
+        target = self.labelOrder.index(insertAfter)+1
+        self.labelOrder.insert(target,remove)
     
     def getValues(self, rsNumbers):
         results = []
         for rs in rsNumbers:
-            results.append(self.rsValues.get(rs,None))
+            if self.rsLabels.has_key(rs):
+                results.append(self.rsLabels[rs])
+            else:
+                results.append(self.rsValues.get(rs,None))
         return results
     
+    def getValue(self, rsNumber):
+        if self.rsLabels.has_key(rsNumber):
+            return self.rsLabels[rsNumber]
+        else:
+            return self.rsValues.get(rsNumber,None)
+    
     def getMin(self):
-        return self.tree.root.low
+        if self.tree == None or self.tree.root == None:
+            return None
+        else:
+            return self.tree.root.low
     
     def getMax(self):
-        return self.tree.root.high
-    
-    def getDataType(self):
-        return "number"
+        if self.tree == None or self.tree.root == None:
+            return None
+        else:
+            return self.tree.root.high
     
     def hasMasked(self):
         if len(self.tree.maskedIDs) == 0:
@@ -57,140 +121,59 @@ class numberAxis:
             return False
         else:
             return True
-
-class genomeAxis(numberAxis):
-    def select(self, chromosome, low, high):
-        return self.select(chrOffsets[chromosome]+low,chrOffsets[chromosome]+high)
     
-    def getLabels(self, values):
-        results = []
-        for v in values:
-            chr = "chr?"
-            pos = -1
-            lastPos = 0
-            for c,p in chrOffsets:
-                if v < p:
-                    pos = value-lastPos
-                    break
-                chr = c
-                lastPos = p
-            if pos == -1:
-                results.append("chr?:?")
+    def crossSection(self, other):
+        if not self.isfinished:
+            print "ERROR: Attempted to get cross section from unfinished axis"
+        scatter = FourTree()
+        myLabelAxes = {}
+        otherLabelAxes = {}
+        
+        for rs,v in self.rsValues.iteritems():
+            if other.rsLabels.has_key(rs):
+                ov = other.rsLabels[rs]
+                if not otherLabelAxes.has_key(ov):
+                    otherLabelAxes[ov] = mixedAxis()
+                otherLabelAxes[ov].add(rs,v)
             else:
-                results.append("%s:%i" % (chr,pos))
-        return results
-    
-    def getDataType(self):
-        return "genome"
-
-class stringAxis:
-    def __init__(self):
-        self.values = []
-        self.rsToIndex = {}
-        self.valueToIndex = {}  # just used for adding
-        self.unsortedFrom = -1
-        self.missingValues = set()
+                scatter.add(rs,v,other.rsValues.get(rs,None))
         
-    def add(self, id, value):
-        if value == None:
-            self.missingValues.add(id)
-        if not self.valueToIndex.has_key(value):
-            index = len(self.values)
-            self.valueToIndex[value] = index
-            if self.unsortedFrom == -1:
-                self.unsortedFrom = index
-            self.values.append((value,set()))
-        index = self.valueToIndex[value]
-        self.rsToIndex[id] = index
-        self.values[index][1].add(id)
-    
-    def finish(self):
-        if self.unsortedFrom != -1:
-            self.values[self.unsortedFrom:] = sorted(self.values[self.unsortedFrom:])
-            self.fixIndices()
-    
-    def fixIndices(self, limit=None):
-        if limit == None:
-            limit = len(self.values)
-        for i,valuePair in enumerate(self.values[self.unsortedFrom:limit]):
-            value = valuePair[0]
-            rsSet = valuePair[1]
-            index = i + self.unsortedFrom
-            self.valueToIndex[value] = index
-            for rs in rsSet:
-                self.rsToIndex[rs] = index
-        self.unsortedFrom = -1
-    
-    def reorder(self, sourceIndex, endIndex):
-        if sourceIndex < endIndex:
-            temp = self.values[sourceIndex]
-            index = sourceIndex
-            while (index < endIndex):
-                self.values[index] = self.values[index+1]
-            self.values[endIndex] = temp
-            self.unsortedFrom = sourceIndex
-            self.fixIndices(endIndex+1)
-        elif sourceIndex > endIndex:
-            temp = self.values[sourceIndex]
-            index = sourceIndex
-            while (index > endIndex):
-                self.values[index] = self.values[index-1]
-            self.values[endIndex] = temp
-            self.unsortedFrom = endIndex
-            self.fixIndices(sourceIndex+1)
-
-    def select(self, indices, includeMissing=False, includeMasked=False):
-        if not self.unsortedFrom == -1:
-            print "ERROR: Attempted to query unfinished axis"
-            sys.exit(1)
+        for rs,v in self.rsLabels.iteritems():
+            if other.rsLabels.has_key(rs):
+                ov = other.rsLabels[rs]
+                if not otherLabelAxes.has_key(ov):
+                    otherLabelAxes[ov] = mixedAxis()
+                otherLabelAxes[ov].add(rs,v)
+                if not myLabelAxes.has_key(v):
+                    myLabelAxes[v] = mixedAxis()
+                myLabelAxes[v].add(rs,ov)
+            else:
+                ov = other.rsValues.get(rs,None)
+                if not myLabelAxes.has_key(v):
+                    myLabelAxes[v] = mixedAxis()
+                myLabelAxes[v].add(rs,ov)
         
-        results = set()
-        for i in indices:
-            set.update(self.values[i][1])
-        if includeMissing:  # ignore includeMasked
-            set.update(self.missingValues)
-        return results
-    
-    def getLabels(self, indices):
-        if not self.unsortedFrom == -1:
-            print "ERROR: Attempted to get labels from unfinished axis"
-            sys.exit(1)
+        for a in myLabelAxes.itervalues():
+            a.finish()
+        for a in otherLabelAxes.itervalues():
+            a.finish()
         
-        results = []
-        for i in indices:
-            results.append(self.values[i][0])
-        return results
-    
-    def getValues(self, rsNumbers):
-        results = []
-        for rs in rsNumbers:
-            results.append(self.rsToIndex.get(rs,None))
-        return results
-    
-    def getMin(self):
-        return 0
-    
-    def getMax(self):
-        return len(self.values)-1
-    
-    def hasMasked(self):
-        return False    # impossible for strings
-    
-    def hasMissing(self):
-        return len(self.missingValues) != 0
-    
-    def getDataType(self):
-        return "string"
+        return (scatter,myLabelAxes,otherLabelAxes)
+        
 
 class variantData:
     def __init__(self):
-        self.data = {}
+        self.data = {}  # {rsNumber : variant object}
         self.axes = None
-        self.scatter = None
+        
+        self.scatter = None # current scatterplot of intersection of all numerical data
+        self.scatterXs = None   # current 1d scatterplots for all non-numerical labels on the x axis
+        self.scatterYs = None   # current 1d scatterplots for all non-numerical labels on the y axis
+        
         self.currentXattribute = None
         self.currentYattribute = None
         
-        self.attributeTypes = {}
+        self.axisLabels = set()
         
         self.isFrozen = False
     
@@ -202,35 +185,17 @@ class variantData:
             print "ERROR: \"Genome Position\" column header is reserved."
             sys.exit(1)
         
-        for att,val in variantObject.attributes.iteritems():
-            if val == "":
-                variantObject.attributes[att] = None
-            else:
-                if not self.attributeTypes.has_key(att):
-                    try:
-                        dummy = int(val)
-                        self.attributeTypes[att] = 1
-                    except ValueError:
-                        try:
-                            dummy = float(val)
-                            self.attributeTypes[att] = 2
-                        except ValueError:
-                            self.attributeTypes[att] = 3
-                dataType = self.attributeTypes[att]
-                if dataType == 1:
-                    try:
-                        variantObject.attributes[att] = int(val)
-                    except ValueError:
-                        variantObject.attributes[att] = float(val)  # it's possible to get an int first, and find out it's a float later. This doesn't really affect the TwoTree much, but it's good to know in advance
-                        self.attributeTypes[att] = 2
-                elif dataType == 2:
-                    variantObject.attributes[att] = float(val)
-                # else # already a string - don't do anything
+        self.axisLabels.update(variantObject.attributes.iterkeys())
         
         if self.data.has_key(variantObject.name):
             self.data[variantObject.name].repair(variantObject)
         else:
             self.data[variantObject.name] = variantObject
+    
+    def discardAttribute(self, att):
+        if self.isFrozen:
+            self.thaw()
+        self.axisLabels.discard(att)
     
     def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup=[], fallback="ALT"):
         att = "%s Allele Frequency" % groupName
@@ -293,13 +258,10 @@ class variantData:
             return
         self.isFrozen = True
         print "...Freezing",
-        self.axes = {"Genome Position":genomeAxis()}
+        self.axes = {"Genome Position":mixedAxis()}
         
-        for att,type in self.attributeTypes.iteritems():
-            if type == 1 or type == 2:
-                self.axes[att] = numberAxis()
-            else:
-                self.axes[att] = stringAxis()
+        for att in self.axisLabels:
+            self.axes[att] = mixedAxis()
             
             if startingXaxis == None:
                 startingXaxis = att
@@ -308,8 +270,8 @@ class variantData:
         
         for v in self.data.itervalues():
             self.axes["Genome Position"].add(v.name,v.genomePosition)
-            for att,val in v.attributes.iteritems():
-                self.axes[att].add(v.name, val) # ints and floats have been converted already
+            for att in self.axisLabels:
+                self.axes[att].add(v.name, v.attributes.get(att,None))
         
         for a in self.axes.itervalues():
             print ".",
@@ -331,7 +293,6 @@ class variantData:
     def setScatterAxes(self, attribute1, attribute2):
         '''
         Builds a FourTree for drawing the scatterplot - maybe could be sped up by some kind of sorting...
-        WARNING: this will need to be re-called every time someone reorders a string axis if the string axis is in the scatterplot
         '''
         print "...Setting scatter axes"
         if not self.isFrozen:
@@ -347,38 +308,19 @@ class variantData:
         self.currentXattribute = attribute1
         self.currentYattribute = attribute2
         
-        xtype = 0
-        ytype = 0
-        if self.attributeTypes[attribute1] == 3:
-            if attribute1 == "Genome Position":
-                xtype = 2
-            xtype = 1
-        if self.attributeTypes[attribute1] == 3:
-            if attribute1 == "Genome Position":
-                ytype = 2
-            ytype = 1
+        self.scatter,self.scatterXs,self.scatterYs = self.axes[attribute1].crossSection(self.axes[attribute2])
         
-        self.scatter = FourTree()
-        
-        for rsNumber,v in self.data.iteritems():
-            if xtype == 2:
-                x = v.genomePosition
-            else:
-                x = v.attributes.get(attribute1,None)
-                if xtype == 1:
-                    x = self.axes[attribute1].valueToIndex[x]
-            if ytype == 2:
-                y = v.genomePosition
-            else:
-                y = v.attributes.get(attribute2,None)
-                if ytype == 1:
-                    y = self.axes[attribute2].valueToIndex[y]
-            self.scatter.add(rsNumber,x,y)
+    def getData(self, rsNumbers, att):
+        return self.axes[att].getValues(rsNumbers)
     
-    def getData(self, rsNumber, att):
-        return self.data[rsNumber].attributes.get(att,None)
+    def getDatum(self, rsNumber, att):
+        return self.axes[att].getValue(rsNumber)
     
-    def get2dData(self, rsNumber, att1, att2):
-        return (self.data[rsNumber].attributes.get(att1,None),self.data[rsNumber].attributes.get(att2,None))
+    def get2dData(self, rsNumbers, att1, att2):
+        rsNumbers = list(rsNumbers) # ensure the order is the same
+        return zip(self.axes[att1].getValues(rsNumbers),self.axes[att2].getValues(rsNumbers))
+    
+    def get2dDatum(self, rsNumber, att1, att2):
+        return (self.axes[att1].getValue(rsNumber),self.axes[att2].getValue(rsNumber))
 
         

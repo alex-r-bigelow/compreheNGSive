@@ -11,8 +11,8 @@ Special extensions to the .svg standard:
 Qt doesn't support anything beyond SVG Tiny (which makes sense), but for what we're doing
 we need some kind of interaction mechanisms. For anything beyond extremely basic interaction,
 SVG Full relies on javascript anyway - the purpose of this code is to provide a python
-abstraction layer for manipulating SVG. In the future, I would probably want a more
-direct jquery-like interface; this incorporates some compreheNGSive-specific stuff:
+abstraction layer for manipulating SVG. This is a really hacked-together approach; I'm messing
+with this API as I go.
 
 custom events:
                 The most precise selected element will initially be be the only element that receives an event
@@ -24,18 +24,20 @@ custom events:
                 document; whether it will receive the event or not is explained as follows:
                 
                 <g id='a'>
-                    <g id='b' __eventCode="self.applyRelativeTranslation(event.deltaX,0)">
-                        <g id='c' __eventCode="self.applyRelativeTranslation(0,event.deltaY)">
+                    <g id='b' __eventCode="self.translate(event.deltaX,0)">
+                        <g id='c' __eventCode="self.translate(0,event.deltaY)">
                             <g id='d' __eventCode="">
-                                <g id='e' __eventCode="self.applyRelativeTranslation(event.deltaX,event.deltaY)"\>
+                                <g id='e' __eventCode="self.translate(event.deltaX,event.deltaY)"\>
                                 <g id='f'\>
                             <\g>
-                            <g id='g' __eventCode="signals = self.yieldEventToGroup(event=event,signals=signals)"\>
+                            <g id='g'\>
                         <\g>
                         <g id='h'\>
                     <\g>
-                    <g id='i' __eventCode="signals = self.yieldEventToGroup(event=event,signals=signals)"\>
+                    <g id='i'\>
                 <\g>
+                
+                TODO: event is propagated to overlapping siblings...
                 
                 No action is the default behavior for the root element. For all others, default behavior is
                 to yield the event to its closest ancestor that implements the __eventCode attribute, or
@@ -56,7 +58,8 @@ custom events:
                     Moving the mouse over i will have no effect
                 
                 (of course a more practical implementation would include checks to see if the mouse button was down before
-                translating, which would give us simple dragging functionality - but for readability I left that out)
+                translating, which would give us simple dragging functionality - but for readability I left that out. For
+                better dragging, you probably should also set the __LOCK__ signal as True)
                 
                 Python implementation namespace:
                 Implement custom events as if you were filling in this stub with no accessible global variables:
@@ -67,33 +70,50 @@ custom events:
                     
                     return signals
                 
-                self is a mutableSvgNode object; you can use this to query/manipulate it or other SVG elements that it can
-                access via the globalSearch() and localSearch() methods.
+                self is a mutableSvgNode object; you can use this to query/manipulate it or other SVG elements that it can access
                 
-                event is a QtEventPacket object; with it you can access details about the state of the user's actions in the
-                last frame (e.g. which keys/mouse buttons are down, the current mouse location, and the movement of the mouse
-                since the previous frame)
+                event is an eventPacket object (see gui/layeredWidget.py for its code); with it you can access details about the
+                state of the user's actions in the current and previous frame (e.g. which keys/mouse buttons are down, the current
+                mouse location, and the movement of the mouse since the previous frame)
                 
                 signals is a dictionary object that you can use to pass high-level interpretations to your controller
-                (e.g. signals['toy_icon_was_dragged']=(event.deltaX(),event.deltaY()) ). The final signal dict will be returned from *****TODO: fill this in*****
-                There is one reserved signal: '__SVG__DIRTY__' that will be removed from the dict before it is returned from *****;
-                this is used to notify the renderer that the view needs to be updated. Only set this to False if your custom code does
-                not modify the appearance of the resulting SVG. You should really only bother setting this to False if you
-                have a lot of minimally invasive custom code and performance is lagging.
+                (e.g. signals['toy_icon_was_dragged']=(event.deltaX(),event.deltaY()) ). You can access the final signals dict
+                from the parameter that is passed into your overridden handleEvents() function in your widget class that inherits from
+                gui/layeredWidget.
                 
                 You should NOT include the return statement; whatever is in the signals dict will be returned. If you wish to
-                pass the event on to parent nodes as well as perform custom code locally, be sure to call self.yieldEventToGroup()
-                appropriately. You can also pass messages between nodes via the signals dict, though any signals from a parent
-                node that are meant for the controller should be copied by the child node from the return value of
-                self.yieldEventToGroup() to the signals dict, or they will not be preserved. A simple way to do this is:
-                
-                signals.update(self.yieldEventToGroup(event=event,signals=signals))
+                yield the event on to other nodes as well as perform custom code locally, be sure to set the __EVENT__ABSORBED__
+                signal
+                appropriately. You can also pass messages between nodes via the signals dict, though remember that children
+                will access this before ancestors or lower(z-coordinate) siblings. A better way to do this (especially
+                considering the complications that could arise from the clone() method) is to use local/global references.
 
-child node attributes:
+    __eventCode
+    
+    __resetCode
+
+signals:
+    __SVG__DIRTY__ ******TODO
+                used to notify the renderer that the view needs to be updated. Only set this to False if your custom code does
+                not modify the appearance of the resulting SVG. You should really only bother setting this to False if you
+                have a lot of minimally visually invasive custom code and it's affecting performance (though if this is the
+                case, it's probably a sign that you should reconsider where you put your code - in theory __eventCode should
+                ONLY affect visual components and abstract high-level events in the signals dict for handling in your
+                controller).
+    __EVENT__ABSORBED__
+    
+    __LOCK__
+
+local/global references:
                 For performance reasons, it might be a good idea to store references to frequently used child elements in a
                 node's attributes for easy access. To do this, begin a parameter value with "__". For example:
                 
                 *** TODO ***
+__globalProperty
+
+__parentProperty
+
+__childProperty
 
 '''
 
@@ -658,7 +678,7 @@ class mutableSvgRenderer:
             self.active = set()   # empty out the active set... afterward, anything that's in reset that isn't in active will need to have reset called
             
             # First run on all locked nodes
-            for n in self.locks:
+            for n in set(self.locks):   # make a copy - this will be edited as we iterate, but we really only care about what was in it in the first place
                 temp = results.get('__SVG__DIRTY__',True)
                 if n.eventProgram != None:
                     results['__SVG__DIRTY__'] = True

@@ -229,6 +229,9 @@ class svOptionsModel:
         
         for fName,fObj in self.files.iteritems():
             fObj.load(vData,fData)
+            for att,checked in fObj.attributes.iteritems():
+                if not checked:
+                    vData.discardAttribute(att)
         
         for gName,gObj in self.groups.iteritems():
             individuals = gObj.getCheckedIndividualNames()

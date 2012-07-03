@@ -1,5 +1,6 @@
 from gui.treeSelectionWidget import treeSelectionWidget
 from gui.treeTagWidget import treeTagWidget
+from gui.svApp import parallelCoordinateWidget,scatterplotWidget
 from dataModels.setupData import *
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -71,8 +72,15 @@ class setupApp:
         
     def runSV(self):
         self.window.hide()
-        # TODO: show loading screen?
-        vData,fData = options.buildDataObjects()
+        loader = QUiLoader()
+        infile = QFile("gui/ui/loading.ui")
+        infile.open(QFile.ReadOnly)
+        splash = loader.load(infile,None)
+        splash.show()
+        # TODO: update loading screen
+        vData,fData = self.svOptions.buildDataObjects()
+        vData.freeze()
+        splash.close()
         self.runningApp = singleVariantApp(vData,fData)
         
     def closeApp(self):
@@ -88,9 +96,12 @@ class singleVariantApp:
         self.vData = vData
         self.fData = fData
         
-        #self.pc = parallelCoordinateWidget(data=vData,parent=self.window.pcScrollArea)
-        #self.window.pcScrollArea.setWidget(self.pc)
-        #self.window.show()
+        self.pc = parallelCoordinateWidget(data=vData,parent=self.window.pcScrollArea)
+        self.window.pcScrollArea.setWidget(self.pc)
+        
+        self.scatter = scatterplotWidget(data=vData,parent=self.window.scatterWidget)
+        
+        self.window.show()
 
 def runProgram():
     app = QApplication(sys.argv)
