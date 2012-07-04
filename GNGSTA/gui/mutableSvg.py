@@ -442,12 +442,16 @@ class mutableSvgNode:
     
     def hide(self):
         self.setAttribute('visibility', 'hidden', True)
+        for c in self.children:
+            c.hide()
     
     def show(self):
         if self.originalVisibility != None:
             self.originalVisibility = 'visible'
         else:
             self.setAttribute('visibility', 'visible', True)
+        for c in self.children:
+            c.show()
     
     def getBounds(self):
         b = self.getRect()
@@ -683,7 +687,7 @@ class mutableSvgRenderer:
                 if n.eventProgram != None:
                     results['__SVG__DIRTY__'] = True
                     results = self.handleFrame(userState, n, results, runLocks=True)
-                results['__SVG__DIRTY__'] = results['__SVG__DIRTY__'] or temp
+                results['__SVG__DIRTY__'] = results.get('__SVG__DIRTY__',True) or temp
             
             if not results.get('__EVENT__ABSORBED__',True):
                 results = self.handleFrame(userState, self.root, results)
@@ -697,7 +701,7 @@ class mutableSvgRenderer:
                     results['__SVG__DIRTY__'] = True
                     n.runReset(userState,results)
                 self.reset.discard(n)
-                results['__SVG__DIRTY__'] = results['__SVG__DIRTY__'] or temp  # again, we want to let it be clean only if every call explicitly marks it clean
+                results['__SVG__DIRTY__'] = results.get('__SVG__DIRTY__',True) or temp  # again, we want to let it be clean only if every call explicitly marks it clean
             
             # Okay, we're finally done - we need to check if something dirtified the SVG:
             if results.get('__SVG__DIRTY__',True):

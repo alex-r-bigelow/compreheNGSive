@@ -91,7 +91,7 @@ class treeTagWidget(layeredWidget):
         
         self.addLayer(self.svgLayer)
     
-    def handleEvents(self, signals):
+    def handleEvents(self, event, signals):
         changed = False
         if signals.has_key('groupOpened'):
             groupName = signals['groupOpened'].getAttribute('___associatedGroup')

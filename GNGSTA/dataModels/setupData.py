@@ -184,7 +184,7 @@ class fileObj:
         for att,include in self.attributes.iteritems():
             if variantObject.attributes.has_key(att):
                 if include:
-                    variantObject.attributes[self.name + "\n" + att] = variantObject.attributes[att]
+                    variantObject.attributes[att + " (" + self.name + ")"] = variantObject.attributes[att]
                 del variantObject.attributes[att]
         vData.addVariant(variantObject)
     
@@ -223,16 +223,29 @@ class svOptionsModel:
         self.files = {}         # {file name : fileObj}
         self.fileOrder = []     # file name
     
-    def buildDataObjects(self):
+    def buildDataObjects(self, progressWidget):
+        progressWidget.reset()
+        progressWidget.setMinimum(0)
+        progressWidget.setMaximum(len(self.files) + len(self.groups))
+        progressWidget.show()
+        index = 0
+        
         vData = variantData()
         fData = featureData()
         
+        progressWidget.setLabelText('Loading Files')
         for fName,fObj in self.files.iteritems():
             fObj.load(vData,fData)
             for att,checked in fObj.attributes.iteritems():
                 if not checked:
                     vData.discardAttribute(att)
+            
+            if progressWidget.wasCanceled():
+                return None
+            index += 1
+            progressWidget.setValue(index)
         
+        progressWidget.setLabelText('Recalculating Allele Frequencies')
         for gName,gObj in self.groups.iteritems():
             individuals = gObj.getCheckedIndividualNames()
             if gObj.alleleBasisGroup == None:
@@ -240,6 +253,11 @@ class svOptionsModel:
             else:
                 basisGroup = gObj.alleleBasisGroup.getCheckedIndividualNames()
             vData.recalculateAlleleFrequencies(individuals, gName, basisGroup, gObj.fallback)
+            
+            if progressWidget.wasCanceled():
+                return None
+            index += 1
+            progressWidget.setValue(index)
         
         return (vData,fData)
     

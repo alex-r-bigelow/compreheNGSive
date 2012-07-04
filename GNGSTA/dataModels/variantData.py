@@ -1,6 +1,6 @@
 from resources.utils import chrLengths, chrOffsets
 from resources.structures import recursiveDict, TwoTree, FourTree
-import operator
+import operator, math
 
 class mixedAxis:
     def __init__(self):
@@ -8,29 +8,36 @@ class mixedAxis:
         self.rsValues = {}
         self.rsValuePairs = []
         self.rsLabels = {}
-        self.labels = {}
-        self.labelOrder = []
-        self.treeLabelIndex = None
+        self.labels = {'Missing':set(),'Allele Masked':set()}
+        self.labelOrder = ['Numeric','Missing','Allele Masked']
         
         self.isfinished = False
     
     def add(self, id, value):
         self.isfinished = False
         
-        if value == None:
-            value = 'inf'
         if isinstance(value,list):
             value = ",".join(value)
         
-        try:
-            value = float(value)
-            self.rsValuePairs.append((id,value))
-            self.rsValues[id] = value
-        except ValueError:
-            self.rsLabels[id] = value
-            if not self.labels.has_key(value):
-                self.labels[value] = set()
-            self.labels[value].add(id)
+        if value == None:
+            self.labels['Missing'].add(value)
+        else:
+            try:
+                value = float(value)
+                if math.isinf(value):
+                    self.labels['Missing'].add(value)
+                elif math.isnan(value):
+                    self.labels['Allele Masked'].add(value)
+                else:
+                    self.rsValuePairs.append((id,value))
+                    self.rsValues[id] = value
+            except ValueError:
+                if value == 'Numeric' or value == 'Missing' or value == 'Allele Masked':
+                    value += ' (file attribute)'
+                self.rsLabels[id] = value
+                if not self.labels.has_key(value):
+                    self.labels[value] = set()
+                self.labels[value].add(id)
     
     def finish(self):
         if len(self.rsValuePairs) > 0:
@@ -39,48 +46,32 @@ class mixedAxis:
         else:
             self.tree = None
         
-        if len(self.labelOrder) == 0:
-            self.labelOrder = sorted(self.labels.iterkeys())
-            if self.tree != None:
-                self.treeLabelIndex = 0
-                self.labelOrder.insert(0,(self.getMin(),self.getMax()))
-        else:
-            if self.tree != None:
-                if self.treeLabelIndex == None:
-                    self.treeLabelIndex = 0
-                self.labelOrder[self.treeLabelIndex] = (self.getMin(),self.getMax())
-            elif self.treeLabelIndex != None:
-                del self.labelOrder[self.treeLabelIndex]
-            
-            for l in sorted(self.labels.iterkeys()):
-                if l not in self.labelOrder:
-                    self.labelOrder.append(l)
+        if len(self.labelOrder) <= 3:
+            self.labelOrder = ['Numeric','Missing','Allele Masked']
+        
+        for l in sorted(self.labels.iteritems()):
+            if l not in self.labelOrder:
+                self.labelOrder.append(l)
         self.isfinished = True
     
-    def select(self, labels=set(), low=None, high=None, includeMissing=False, includeMasked=False):
-        if not self.isfinished:
-            print "ERROR: Attempted to query unfinished axis"
-            sys.exit(1)
+    def select(self, labels=set(), ranges=set(), includeMissing=False, includeMasked=False):
+        assert self.isfinished
+        results = set()
         if self.tree != None:
-            results = self.tree.select(low,high,includeMasked=includeMasked,includeUndefined=includeMissing,includeMissing=includeMissing)
-        else:
-            results = set()
+            for low,high in ranges:
+                results.update(self.tree.select(low,high,includeMasked=includeMasked,includeUndefined=includeMissing,includeMissing=includeMissing))
         for l in labels:
             results.add(self.labels[l])
         return results
     
     def getLabels(self):
-        if not self.isfinished:
-            print "ERROR: Attempted to get labels of unfinished axis"
-            sys.exit(1)
+        assert self.isfinished
         return self.labelOrder
     
-    def reorder(self, remove, insertAfter):
-        if not self.isfinished:
-            print "ERROR: Attempted to reorder unfinished axis"
-            sys.exit(1)
+    def reorder(self, remove, insertBefore):
+        assert self.isfinished
         self.labelOrder.remove(remove)
-        target = self.labelOrder.index(insertAfter)+1
+        target = self.labelOrder.index(insertBefore)
         self.labelOrder.insert(target,remove)
     
     def getValues(self, rsNumbers):
@@ -111,55 +102,10 @@ class mixedAxis:
             return self.tree.root.high
     
     def hasMasked(self):
-        if len(self.tree.maskedIDs) == 0:
-            return False
-        else:
-            return True
+        return len(self.labels['Allele Masked']) != 0
     
     def hasMissing(self):
-        if len(self.tree.undefinedIDs) == 0 and len(self.tree.missingIDs) == 0:
-            return False
-        else:
-            return True
-    
-    def crossSection(self, other):
-        if not self.isfinished:
-            print "ERROR: Attempted to get cross section from unfinished axis"
-        scatter = FourTree()
-        myLabelAxes = {}
-        otherLabelAxes = {}
-        
-        for rs,v in self.rsValues.iteritems():
-            if other.rsLabels.has_key(rs):
-                ov = other.rsLabels[rs]
-                if not otherLabelAxes.has_key(ov):
-                    otherLabelAxes[ov] = mixedAxis()
-                otherLabelAxes[ov].add(rs,v)
-            else:
-                scatter.add(rs,v,other.rsValues.get(rs,None))
-        
-        for rs,v in self.rsLabels.iteritems():
-            if other.rsLabels.has_key(rs):
-                ov = other.rsLabels[rs]
-                if not otherLabelAxes.has_key(ov):
-                    otherLabelAxes[ov] = mixedAxis()
-                otherLabelAxes[ov].add(rs,v)
-                if not myLabelAxes.has_key(v):
-                    myLabelAxes[v] = mixedAxis()
-                myLabelAxes[v].add(rs,ov)
-            else:
-                ov = other.rsValues.get(rs,None)
-                if not myLabelAxes.has_key(v):
-                    myLabelAxes[v] = mixedAxis()
-                myLabelAxes[v].add(rs,ov)
-        
-        for a in myLabelAxes.itervalues():
-            a.finish()
-        for a in otherLabelAxes.itervalues():
-            a.finish()
-        
-        return (scatter,myLabelAxes,otherLabelAxes)
-        
+        return len(self.labels['Missing']) != 0
 
 class variantData:
     def __init__(self):
@@ -167,8 +113,9 @@ class variantData:
         self.axes = None
         
         self.scatter = None # current scatterplot of intersection of all numerical data
-        self.scatterXs = None   # current 1d scatterplots for all non-numerical labels on the x axis
-        self.scatterYs = None   # current 1d scatterplots for all non-numerical labels on the y axis
+        self.scatterXs = None   # current 1d scatterplot for all non-numerical values on the x axis
+        self.scatterYs = None   # current 1d scatterplot for all non-numerical values on the y axis
+        self.scatterNones = None    # current set of all non-numerical values in both directions
         
         self.currentXattribute = None
         self.currentYattribute = None
@@ -250,14 +197,23 @@ class variantData:
             else:
                 variantObject.attributes[att] = minorCount/float(allCount)
     
-    def freeze(self, startingXaxis=None, startingYaxis=None):
+    def freeze(self, startingXaxis=None, startingYaxis=None, progressWidget=None):
         '''
         Builds query axes; prevents from loading more data. This is the longest process in the whole program - do this as little as possible (aka ONCE!)
         '''
         if self.isFrozen:
-            return
+            return True     # indicates that we weren't interrrupted
         self.isFrozen = True
-        print "...Freezing",
+        
+        if progressWidget != None:
+            progressWidget.reset()
+            progressWidget.setMinimum(0)
+            progressWidget.setMaximum(len(self.axisLabels))
+            progressWidget.show()
+            
+            index = 0
+            progressWidget.setLabelText('Filling in Holes')
+        
         self.axes = {"Genome Position":mixedAxis()}
         
         for att in self.axisLabels:
@@ -273,11 +229,19 @@ class variantData:
             for att in self.axisLabels:
                 self.axes[att].add(v.name, v.attributes.get(att,None))
         
+        if progressWidget != None:
+            progressWidget.setLabelText('Building Axes')
+        
         for a in self.axes.itervalues():
-            print ".",
             a.finish()
-        print ""
-        self.setScatterAxes(startingXaxis, startingYaxis)
+            if progressWidget != None:
+                if progressWidget.wasCanceled():
+                    return False
+                
+                index += 1
+                progressWidget.setValue(index)
+        
+        return self.setScatterAxes(startingXaxis, startingYaxis, progressWidget)
     
     def thaw(self):
         '''
@@ -290,25 +254,77 @@ class variantData:
         self.currentXattribute = None
         self.currentYattribute = None
     
-    def setScatterAxes(self, attribute1, attribute2):
+    def setScatterAxes(self, attribute1, attribute2, progressWidget=None):
         '''
         Builds a FourTree for drawing the scatterplot - maybe could be sped up by some kind of sorting...
         '''
-        print "...Setting scatter axes"
         if not self.isFrozen:
-            self.freeze(attribute1,attribute2)
+            self.freeze(attribute1,attribute2,progressWidget)
             return
         
-        if not self.axes.has_key(attribute1):
-            raise ValueError("Attempted to set non-existent axis to scatterplot: %s" % attribute1)
+        if progressWidget != None:
+            divisions = 100
+            increment = max(1,int(len(self.data)/divisions))
+            
+            progressWidget.reset()
+            progressWidget.setMinimum(0)
+            progressWidget.setMaximum(increment)
+            progressWidget.show()
+            
+            index = 0
+            threshold = increment
+            
+            progressWidget.setLabelText('Building K-d Tree')
+                
+        axis1 = self.axes[attribute1]
+        assert axis1.isfinished
+        axis2 = self.axes[attribute2]
+        assert axis2.isfinished
         
-        if not self.axes.has_key(attribute2):
-            raise ValueError("Attempted to set non-existent axis to scatterplot: %s" % attribute2)
+        originalXattribute = self.currentXattribute
+        originalYattribute = self.currentYattribute
         
         self.currentXattribute = attribute1
         self.currentYattribute = attribute2
         
-        self.scatter,self.scatterXs,self.scatterYs = self.axes[attribute1].crossSection(self.axes[attribute2])
+        originalScatter = self.scatter
+        originalScatterXs = self.scatterXs
+        originalScatterYs = self.scatterYs
+        originalScatterNones = self.scatterNones
+        
+        self.scatter = FourTree()
+        self.scatterXs = mixedAxis()
+        self.scatterYs = mixedAxis()
+        self.scatterNones = set()
+        
+        for rs in self.data.iterkeys():
+            if axis1.rsValues.has_key(rs):
+                if axis2.rsValues.has_key(rs):
+                    self.scatter.add(rs,axis1.rsValues[rs],axis2.rsValues[rs])
+                else:
+                    self.scatterXs.add(rs,axis1.rsValues.get(rs,None))
+            else:
+                if axis2.rsValues.has_key(rs):
+                    self.scatterYs.add(rs,axis2.rsValues.get(rs,None))
+                else:
+                    self.scatterNones.add(rs)
+            index += 1
+            if index > threshold:
+                threshold += increment
+                if progressWidget != None:
+                    if progressWidget.wasCanceled():
+                        self.currentXattribute = originalXattribute
+                        self.currentYattribute = originalYattribute
+                        
+                        self.scatter = originalScatter
+                        self.scatterXs = originalScatterXs
+                        self.scatterYs = originalScatterYs
+                        self.scatterNones = originalScatterNones
+                        return False
+                    progressWidget.setValue(index/divisions)
+        if progressWidget != None:
+            progressWidget.setValue(increment)
+        return True
         
     def getData(self, rsNumbers, att):
         return self.axes[att].getValues(rsNumbers)

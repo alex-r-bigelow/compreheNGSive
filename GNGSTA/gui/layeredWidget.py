@@ -59,7 +59,7 @@ class mutableSvgLayer(layer):
     
     def resize(self, size):
         self.svg.forceFreeze()
-        layer.resize(self, self.svg.defaultSize())
+        layer.resize(self, size)
     
     def handleFrame(self, event, signals):
         result = self.svg.handleFrame(event, results=signals)
@@ -80,6 +80,7 @@ class eventPacket:
         self.lastButtons = set()
         self.keys = set()
         self.lastKeys = set()
+        self.contextRequested = False
     
     def moveMouse(self, x, y):
         if self.x != -1:    # and self.y != -1... but they'll always go together
@@ -93,6 +94,7 @@ class eventPacket:
         self.deltaY = 0
         self.lastButtons = set(self.buttons)    # copy each set
         self.lastKeys = set(self.keys)
+        self.contextRequested = False
 
 class layeredWidget(QWidget):
     '''
@@ -129,14 +131,18 @@ class layeredWidget(QWidget):
         
         self.drawingTimer = QTimer()
         self.drawingTimer.setSingleShot(True)
-        self.connect(self.drawingTimer, SIGNAL("timeout()"), self.drawStatic)
         
         self.animationTimer = QTimer()
         self.animationTimer.setSingleShot(False)
-        self.connect(self.animationTimer, SIGNAL("timeout()"), self.animate)
-        self.animationTimer.start(25)
-                
+        
+        self.connectEvents()
+        
         self.setDirty()
+    
+    def connectEvents(self):
+        self.connect(self.drawingTimer, SIGNAL("timeout()"), self.drawStatic)
+        self.connect(self.animationTimer, SIGNAL("timeout()"), self.animate)
+        self.animationTimer.start(100)
     
     def paintEvent(self, event):
         painter = QPainter()
@@ -151,7 +157,7 @@ class layeredWidget(QWidget):
     
     def setDirty(self):
         self.isDirty = True
-        self.drawingTimer.start(25)
+        self.drawingTimer.start(100)
     
     def animate(self):
         if self.isDirty or len(self.layers) == 0:
@@ -187,15 +193,15 @@ class layeredWidget(QWidget):
                     l.drawLayer()
                 elif l.dirtyLayer or l.resized:
                     self.setDirty()
-            self.userState.prepForNextFrame()
             if eventResults.get('__EVENT__ABSORBED__',True):
                 if eventResults.has_key('__EVENT__ABSORBED__'):
                     del eventResults['__EVENT__ABSORBED__']
-                self.handleEvents(eventResults)
+                self.handleEvents(self.userState,eventResults)
+            self.userState.prepForNextFrame()
         self.update()
     
-    def handleEvents(self, signals):
-        raise NotImplementedError("You should never directly instantiate a layeredWidget, and all subclasses must implement the handleEvents(signals) method.")
+    def handleEvents(self, event, signals):
+        raise NotImplementedError("You should never directly instantiate a layeredWidget, and all subclasses must implement the handleEvents(event, signals) method.")
     
     def drawStatic(self):
         lowX = None
@@ -274,3 +280,6 @@ class layeredWidget(QWidget):
     
     def keyReleaseEvent(self,event):
         self.userState.keys.discard(event.key())
+    
+    def contextMenuEvent(self,event):
+        self.userState.contextRequested = True
