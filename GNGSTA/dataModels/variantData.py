@@ -1,16 +1,23 @@
 from resources.utils import chrLengths, chrOffsets
 from resources.structures import recursiveDict, TwoTree, FourTree
-import operator, math
+from copy import deepcopy
+import operator, math, re
+
+selectionLabelRegex = re.compile('\(\d+\)')
 
 class mixedAxis:
     def __init__(self):
         self.tree = None
         self.rsValues = {}
         self.rsValuePairs = []
+        self.selectedValueRanges = set()   # set(tuple(low,high))
+        
         self.rsLabels = {}
         self.labels = {'Missing':set(),'Allele Masked':set()}
-        self.labelOrder = ['Numeric','Missing','Allele Masked']
+        self.selectedLabels = {}    # {label:bool}
         
+        self.labelOrder = ['Numeric','Missing','Allele Masked']
+        self.visibleLabels = {}
         self.isfinished = False
     
     def add(self, id, value):
@@ -40,29 +47,79 @@ class mixedAxis:
                 self.labels[value].add(id)
     
     def finish(self):
+        self.visibleLabels = {}
         if len(self.rsValuePairs) > 0:
             self.rsValuePairs.sort(key=lambda i: i[1])
             self.tree = TwoTree(self.rsValuePairs)
+            self.findNaturalMinAndMax()
+            if len(self.selectedValueRanges) == 0:
+                self.selectedValueRanges.add((self.getMin(),self.getMax()))
+            self.visibleLabels['Numeric']=True
+            self.selectedLabels['Numeric']=True
         else:
             self.tree = None
+            self.selectedValueRanges = set()
+            self.visibleLabels['Numeric']=None
+            self.selectedLabels['Numeric']=False
         
         if len(self.labelOrder) <= 3:
             self.labelOrder = ['Numeric','Missing','Allele Masked']
+            miss = self.hasMissing()
+            mask = self.hasMasked()
+            self.selectedLabels['Missing'] = miss
+            self.selectedLabels['Allele Masked'] = mask
+            if not miss:
+                miss = None
+            if not mask:
+                mask = None
+            self.visibleLabels['Missing'] = miss
+            self.visibleLabels['Allele Masked'] = mask
         
-        for l in sorted(self.labels.iteritems()):
+        for l in sorted(self.labels.iterkeys()):
             if l not in self.labelOrder:
                 self.labelOrder.append(l)
+                self.selectedLabels[l] = True
+                self.visibleLabels[l] = True
         self.isfinished = True
     
-    def select(self, labels=set(), ranges=set(), includeMissing=False, includeMasked=False):
+    def getSelected(self):
         assert self.isfinished
         results = set()
         if self.tree != None:
-            for low,high in ranges:
-                results.update(self.tree.select(low,high,includeMasked=includeMasked,includeUndefined=includeMissing,includeMissing=includeMissing))
-        for l in labels:
-            results.add(self.labels[l])
+            for low,high in self.selectedValueRanges:
+                results.update(self.tree.select(low,high,includeMasked=False,includeUndefined=False,includeMissing=False))  # I actually implement the missing/masked stuff outside the tree(s)
+        for l,include in self.selectedLabels.iteritems():
+            if include:
+                results.add(self.labels[l])
         return results
+    
+    def simplifyNumericSelections(self):
+        while True:
+            numSelections = len(self.selectedValueRanges)
+            
+            newValueRanges = []
+            for low,high in self.selectedValueRanges:
+                for pair in newValueRanges:
+                    if (low >= pair[0] and low <= pair[1]) or (high >= pair[0] and high <= pair[1]):
+                        pair[0] = min(low,pair[0])
+                        pair[1] = max(high,pair[1])
+                    else:
+                        newValueRanges.append((low,high))
+            self.selectedValueRanges = set(newValueRanges)
+            
+            if len(self.selectedValueRanges) == numSelections:
+                return
+    
+    def modifyNumericSelection(self, oldLow, oldHigh, newLow, newHigh):
+        self.selectedValueRanges.remove((oldLow,oldHigh))
+        self.selectedValueRanges.add((newLow,newHigh))
+    
+    def modifyLabelSelection(self, label, include):
+        self.selectedLabels[label] = include
+        if include:
+            self.visibleLabels[label] = None
+        else:
+            self.visibleLabels[label] = True
     
     def getLabels(self):
         assert self.isfinished
@@ -89,23 +146,268 @@ class mixedAxis:
         else:
             return self.rsValues.get(rsNumber,None)
     
-    def getMin(self):
+    def findNaturalMinAndMax(self):
         if self.tree == None or self.tree.root == None:
-            return None
+            self.minimum = None
+            self.maximum = None
+            return
         else:
-            return self.tree.root.low
+            self.minimum = self.tree.root.low
+            self.maximum = self.tree.root.high
+            if self.minimum == self.maximum:
+                self.minimum = 0
+                if self.maximum == 0:
+                    self.maximum = 1
+            '''span = self.maximum - self.minimum
+            if self.maximum > 0:
+                nearestTenMax = 10**math.ceil(math.log10(self.maximum))
+            elif self.maximum == 0:
+                nearestTenMax = 0
+            else:
+                nearestTenMax = -10**math.floor(math.log10(-self.maximum))
+            
+            if self.minimum > 0:
+                nearestTenMin = 10**math.floor(math.log10(self.minimum))
+            elif self.minimum == 0:
+                nearestTenMin = 0
+            else:
+                try:
+                    nearestTenMin = -10**math.ceil(math.log10(-self.minimum))
+                except:
+                    print self.minimum
+                    sys.exit(1)
+            
+            # prefer nearestTenMax if the gap between it and self.maximum is less than 25% the span of the data; otherwise just add a 5% margin to the top
+            if nearestTenMax - self.maximum < 0.25*span:
+                self.maximum = nearestTenMax
+            else:
+                self.maximum += 0.05*span
+            # prefer zero if the gap between it and self.minimum is less than 50% the span of the data, then 25% for nearestTenMin, otherwise 5% margin to the bottom
+            if self.minimum > 0.0 and self.minimum < 0.5*span:
+                self.minimum = 0.0
+            elif nearestTenMin < 0.25*span:
+                self.minimum = nearestTenMin
+            else:
+                self.minimum -= 0.05*span'''
+    
+    def getMin(self):
+        return self.minimum
     
     def getMax(self):
-        if self.tree == None or self.tree.root == None:
-            return None
-        else:
-            return self.tree.root.high
+        return self.maximum
+    
+    def hasNumeric(self):
+        return self.tree != None
     
     def hasMasked(self):
         return len(self.labels['Allele Masked']) != 0
     
     def hasMissing(self):
         return len(self.labels['Missing']) != 0
+
+class operation:
+    def __init__(self, name):
+        self.name = name
+        self.applied = True
+        self.isFirstOp = True
+        
+        self.previousOp = None
+        self.nextOp = None
+        
+        self.result = set()
+        self.preview = set()
+    
+    def updatePreview(self):
+        self.preview = set()
+    
+    def apply(self, allData):
+        return self
+    
+    def undo(self):
+        return self
+    
+class setOperation(operation):
+    def __init__(self, name, previousOps, op="UNION"):
+        self.name = name
+        self.applied = False
+        self.isFirstOp = False
+        
+        self.nextOp = None
+        assert len(previousOps) > 0
+        self.previousOps = previousOps
+        for o in previousOps:
+            assert o.applied == True
+            o.nextOp = self
+        
+        self.result = set()
+        self.preview = set()
+        
+        self.updatePreview()
+        
+        self.op = op
+    
+    def adjust(self, opToAdd=None, opToRemove=None):
+        assert self.applied == False
+        if opToRemove != None and opToAdd == None and len(self.previousOps) <= 1:
+            return
+        if opToRemove != None:
+            assert opToRemove.applied == True
+            self.previousOps.remove(opToRemove)
+            opToRemove.nextOp = None
+        if opToAdd != None:
+            assert opToAdd.applied == True
+            self.previousOps.append(opToAdd)
+            opToAdd.nextOp = self
+        self.updatePreview()
+    
+    def updatePreview(self):
+        self.preview = set()
+        for o in self.previousOps:
+            self.preview.update(o.result)
+    
+    def apply(self, allData):
+        self.applied = True
+        
+        if self.op == "UNION" or self.op == "COMPLEMENT":
+            self.result = set()
+            for o in self.previousOps:
+                assert o.applied
+                self.result.update(o.result)
+        elif self.op == "INTERSECTION":
+            self.result = None
+            for o in self.previousOps:
+                if self.result == None:
+                    self.result = set(o.result)
+                else:
+                    self.result.intersection_update(o.result)
+        elif self.op == "DIFFERENCE":
+            self.result = None
+            for o in self.previousOps:
+                if self.result == None:
+                    self.result = set(o.result)
+                else:
+                    self.result.difference_update(o.result)
+        
+        if self.op == "COMPLEMENT":
+            temp = set(allData.data.iterkeys())
+            temp.difference_update(self.result)
+            self.result = temp
+        
+        self.preview = set(self.result)
+        
+        return self
+    
+    def undo(self):
+        self.applied = False
+        self.result = set()
+        return list(self.previousOps)
+    
+    def abort(self):
+        for o in self.previousOps:
+            o.nextOp = None
+        
+class numericOperation(operation):
+    def __init__(self, name, previousOp, axis, lowStart, highStart):
+        self.name = name
+        self.applied = False
+        self.isFirstOp = False
+        
+        self.nextOp = None
+        self.previousOp = previousOp
+        
+        assert previousOp.applied == True
+        previousOp.nextOp = self
+        
+        self.result = self.previousOp.result
+        self.startPreview = self.axis.getSelected()
+        self.preview = set()
+        
+        self.oldRanges = set(axis.selectedValueRanges)
+        
+        self.axis = axis
+        self.lowStart = lowStart
+        self.highStart = highStart
+        self.low = lowStart
+        self.high = highStart
+    
+    def adjust(self, deltaLow, deltaHigh):
+        assert self.applied == False
+        self.low += deltaLow
+        self.high += deltaHigh
+        self.updatePreview()
+    
+    def updatePreview(self):
+        newSet = set()
+        if self.axis.tree != None:
+            newSet.update(self.axis.tree.select(self.low,self.high,includeMasked=False,includeUndefined=False,includeMissing=False))
+        self.preview = self.startPreview.difference(newSet)
+    
+    def apply(self, allData):
+        self.applied = True
+        if self.low == self.lowStart and self.high == self.highStart:
+            self.axis.selectedValueRanges.add((self.low,self.high))
+            self.axis.simplifyNumericSelections()
+        else:
+            self.axis.modifyNumericSelection(self.lowStart,self.highStart,self.low,self.high)
+            self.axis.simplifyNumericSelections()
+        
+        self.result = self.axis.getSelected()
+        for a in allData.axes.itervalues():
+            if len(a) == 0:
+                break
+            if a != self.axis:
+                self.result.intersection_update(a.getSelected())
+        
+        self.preview = set(self.result)
+        return self
+        
+    def undo(self):
+        self.applied = False
+        self.result = self.previousOp.result
+        self.axis.selectedValueRanges = set(self.oldRanges)
+        if self.low == self.lowStart and self.high == self.highStart:
+            self.axis.selectedValueRanges.remove((self.low,self.high))
+        else:
+            self.axis.modifyNumericSelection(self.low,self.high,self.lowStart,self.highStart)
+        return self.previousOp
+
+class labelOperation(operation):
+    def __init__(self, name, previousOp, axis, label, checked=True):
+        self.name = name
+        self.applied = False
+        self.isFirstOp = False
+        
+        self.axis = axis
+        self.label = label
+        self.checked = checked
+        
+        self.previousOp = previousOp
+        assert previousOp.applied == True
+        self.previousOp.nextOp = self
+        self.nextOp = None
+        
+        self.result = previousOp.result
+        self.preview = self.axis.labels[label]
+        
+    def apply(self, allData):
+        self.applied = True
+        self.axis.modifyLabelSelection(self.label, self.checked)
+        
+        self.result = self.axis.getSelected()
+        for a in allData.axes.itervalues():
+            if len(a) == 0:
+                break
+            if a != self.axis:
+                self.result.intersection_update(a.getSelected())
+        
+        return self
+    
+    def undo(self):
+        self.applied = False
+        self.result = self.previousOp.result
+        self.axis.modifyLabelSelection(self.label, not self.checked)
+        
+        return self.previousOp
 
 class variantData:
     def __init__(self):
@@ -122,7 +424,108 @@ class variantData:
         
         self.axisLabels = set()
         
+        self.activeSelection = None
+        self.nonPreviewSetOps = []
+        self.selectionOrder = []
+        self.selections = {}
+        self.newSelectionNumber = 1
+        self.multipleSelected = False
+        self.newSelection()
+        
         self.isFrozen = False
+    
+    def getSelectionList(self):
+        pass    # need a list of all selections in order, with flags for which are selected and which one was the first selection
+    
+    def getCurrentPreview(self):
+        return self.activeSelection.preview
+    
+    def getCurrentSelection(self):
+        return self.activeSelection.result
+    
+    def addSelection(self, new, changeToNew = True):
+        self.selectionOrder.append(new.name)
+        self.selections[new.name] = new
+        if changeToNew:
+            self.changeSelection(new.name)
+    
+    def changeSelection(self, name):
+        if self.multipleSelected:
+            self.activeSelection.abort()
+            self.nonPreviewSetOps = []
+        
+        self.activeSelection = self.selections[name]
+    
+    def newSelection(self):
+        new = operation('Selection %s' % self.newSelectionNumber)
+        self.newSelectionNumber += 1
+        self.addSelection(new)
+        
+    def duplicateSelection(self, name=None):
+        if name == None:
+            name = self.activeSelection.name
+        if self.multipleSelected:
+            for o in self.nonPreviewSetOps:
+                self.duplicateSelection(o.name)
+            self.changeSelection(self.selectionOrder[-1])
+        else:
+            new = deepcopy(self.selections[name])
+            m = selectionLabelRegex.search(new.name)
+            if m == None:
+                new.name += " (2)"
+            else:
+                new.name = new.name[:m.start()] + "(%i)" % (int(new.name[m.start()+1:m.end()-1])+1) + new.name[m.end():]
+            
+            if name == self.activeSelection.name:
+                self.addSelection(new)
+            else:
+                self.addSelection(new, False)
+    
+    def deleteSelection(self, name=None):
+        if name == None:
+            name = self.activeSelection.name
+        if self.multipleSelected:
+            for o in self.nonPreviewSetOps:
+                self.deleteSelection(o.name)
+            self.nonPreviewSetOps = []
+        
+        del self.selections[name]
+        self.selectionOrder.remove(name)
+        
+        if name == self.activeSelections.name:
+            if len(self.selectionOrder) == 0:
+                self.newSelection()
+            else:
+                self.changeSelection(self.selectionOrder[-1])
+    
+    def previewSetOp(self, name):
+        if self.multipleSelected:
+            if name in self.nonPreviewSetOps:
+                if len(self.activeSelection.previousOps) > 1:
+                    self.activeSelection.adjust(opToRemove=self.selections[name])
+            else:
+                self.activeSelection.adjust(opToAdd=self.selections[name])
+    
+    def changeSetOp(self,name):
+        if self.multipleSelected:
+            if name in self.nonPreviewSetOps:
+                self.nonPreviewSetOps.remove(name)
+            else:
+                self.nonPreviewSetOps.append(name)
+    
+    def startSetOp(self):
+        if self.multipleSelected:
+            return
+        newText = "Merged"
+        newIndex = 1
+        while newText in self.selectionOrder:
+            newText = "Merged (%i)" % newIndex
+            newIndex += 1
+        
+        self.nonPreviewSetOps = [self.activeSelection.name]
+        self.activeSelection = setOperation(newText,previousOps=list(self.nonPreviewSetOps))
+        self.selectionOrder.append(newText)
+        self.selections[newText] = self.activeSelection
     
     def addVariant(self, variantObject):
         if self.isFrozen:
@@ -260,6 +663,9 @@ class variantData:
         '''
         if not self.isFrozen:
             self.freeze(attribute1,attribute2,progressWidget)
+            return
+        
+        if self.currentXattribute == attribute1 and self.currentYattribute == attribute2:
             return
         
         if progressWidget != None:

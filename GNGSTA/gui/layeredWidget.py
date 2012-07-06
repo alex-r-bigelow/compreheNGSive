@@ -76,11 +76,13 @@ class eventPacket:
         self.y = -1
         self.deltaX = 0
         self.deltaY = 0
+        self.deltaWheel = 0
         self.buttons = set()
         self.lastButtons = set()
         self.keys = set()
         self.lastKeys = set()
         self.contextRequested = False
+        self.retainWheelFocus = False
     
     def moveMouse(self, x, y):
         if self.x != -1:    # and self.y != -1... but they'll always go together
@@ -92,6 +94,7 @@ class eventPacket:
     def prepForNextFrame(self):
         self.deltaX = 0
         self.deltaY = 0
+        self.deltaWheel = 0
         self.lastButtons = set(self.buttons)    # copy each set
         self.lastKeys = set(self.keys)
         self.contextRequested = False
@@ -283,3 +286,8 @@ class layeredWidget(QWidget):
     
     def contextMenuEvent(self,event):
         self.userState.contextRequested = True
+    
+    def wheelEvent(self, event):
+        self.userState.deltaWheel += event.delta()
+        if not self.userState.retainWheelFocus:
+            event.ignore()

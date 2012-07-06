@@ -490,6 +490,8 @@ class mutableSvgNode:
         if self.parent == None:
             raise SvgMapException("Attempted to clone parentless node: %s\n(probably the root, which is not allowed)" % str(self))
         twin = deepcopy(self.xmlElement)
+        if twin.attrib.has_key('__parentProperty'):
+            del twin.attrib['__parentProperty']
         for node in twin.iter():
             appendText = "_%i" % self.document.numClones
             if node.attrib.has_key('__globalProperty'):
@@ -553,7 +555,7 @@ class mutableSvgNode:
                     self.resetProgram = self.compileCode(self.attributes['__resetCode'])
             # elif att == '__initCode': only clones of me could ever experience this... and they'll recompile it on their own anyway. don't bother compiling
             elif att in self.needs.iterkeys():
-                raise SvgMapException("TODO: I have not yet implemented resetting of custom attributes...")
+                raise SvgMapException("TODO: I have not yet implemented resetting of custom attributes...\nTried to reset %s" % att)
         return success     
     
     def setCSS(self, att, value, force=True):

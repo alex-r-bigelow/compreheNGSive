@@ -9,8 +9,8 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="460"
-   height="460"
+   width="500"
+   height="500"
    id="svg3807"
    version="1.1"
    inkscape:version="0.48.2 r9819"
@@ -25,16 +25,16 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.75"
-     inkscape:cx="125.78156"
-     inkscape:cy="239.07834"
+     inkscape:cx="240.06728"
+     inkscape:cy="33.364051"
      inkscape:document-units="px"
      inkscape:current-layer="svg3807"
      showgrid="false"
-     inkscape:window-width="1839"
-     inkscape:window-height="1156"
-     inkscape:window-x="81"
-     inkscape:window-y="414"
-     inkscape:window-maximized="1" />
+     inkscape:window-width="1440"
+     inkscape:window-height="878"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0" />
   <metadata
      id="metadata3812">
     <rdf:RDF>
@@ -48,37 +48,37 @@
     </rdf:RDF>
   </metadata>
   <rect
-     style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
      id="rect3823"
      width="499"
      height="499"
      x="0.5"
-     y="-39.5" />
+     y="0.5" />
   <text
      xml:space="preserve"
      style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
      x="259.99805"
-     y="443.48001"
+     y="483.48001"
      id="text4982"
      sodipodi:linespacing="125%">Background Allele Frequency</text>
   <text
      sodipodi:linespacing="125%"
      id="text4986"
      y="-16.52"
-     x="199.83804"
+     x="239.83804"
      style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
      xml:space="preserve"
      transform="matrix(0,1,-1,0,0,0)">Background Allele Frequency</text>
   <g
-     id="g5059">
+     id="g4335">
     <path
        inkscape:connector-curvature="0"
        id="path5011"
        style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       d="M 448.05746,419.99999 447.90698,422.53077 446.45691,422.53077 446.45691,423.8714 447.8249,423.8714 447.70178,426.00546 446.41587,426.00546 446.41587,427.34609 447.66074,427.34609 447.46922,429.99999 448.63201,429.99999 448.82353,427.34609 450.90287,427.34609 450.75239,429.99999 451.91519,429.99999 452.06566,427.34609 453.51573,427.34609 453.51573,426.00546 452.14774,426.00546 452.2435,423.8714 453.58413,423.8714 453.58413,422.53077 452.33926,422.53077 452.48974,419.99999 451.32695,419.99999 451.17647,422.53077 449.09713,422.53077 449.24761,419.99999 448.05746,419.99999 M 451.08071,423.8714 450.97127,426.00546 448.87825,426.00546 449.01505,423.8714 451.08071,423.8714" />
+       d="M 488.05746,459.99999 487.90698,462.53077 486.45691,462.53077 486.45691,463.8714 487.8249,463.8714 487.70178,466.00546 486.41587,466.00546 486.41587,467.34609 487.66074,467.34609 487.46922,469.99999 488.63201,469.99999 488.82353,467.34609 490.90287,467.34609 490.75239,469.99999 491.91519,469.99999 492.06566,467.34609 493.51573,467.34609 493.51573,466.00546 492.14774,466.00546 492.2435,463.8714 493.58413,463.8714 493.58413,462.53077 492.33926,462.53077 492.48974,459.99999 491.32695,459.99999 491.17647,462.53077 489.09713,462.53077 489.24761,459.99999 488.05746,459.99999 M 491.08071,463.8714 490.97127,466.00546 488.87825,466.00546 489.01505,463.8714 491.08071,463.8714" />
     <path
        style="color:#000000;fill:none;stroke:#ff0000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       d="M 454.5,429.5 445.5,420.5"
+       d="M 494.5,469.5 485.5,460.5"
        id="path5013"
        inkscape:connector-curvature="0" />
   </g>
@@ -98,12 +98,14 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1" />
+     id="layer1"
+     transform="translate(0,40)" />
   <g
-     id="g5063">
+     id="g5063"
+     transform="translate(0,40)">
     <path
        style="color:#000000;fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       d="M 40,420.04535 40,19.954649"
+       d="M 40,420 40,-19"
        id="path4327"
        inkscape:connector-curvature="0" />
     <text
@@ -117,16 +119,17 @@
        xml:space="preserve"
        style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
        x="37.846092"
-       y="26.389999"
+       y="-13.610001"
        id="text4347"
        sodipodi:linespacing="125%">999.99</text>
   </g>
   <g
-     id="g5049">
+     id="g5049"
+     transform="translate(0,40)">
     <path
        inkscape:connector-curvature="0"
        id="path4325"
-       d="M 39.954648,420 440.04535,420"
+       d="M 40,420 480,420"
        style="color:#000000;fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <text
        transform="matrix(0,1,-1,0,0,0)"
@@ -139,7 +142,7 @@
     <text
        sodipodi:linespacing="125%"
        id="text4349"
-       y="-434.15536"
+       y="-474.15536"
        x="422.69"
        style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
        xml:space="preserve"
@@ -150,39 +153,39 @@
     <path
        inkscape:connector-curvature="0"
        id="path4928"
-       d="M 40,430 40,440 30,440 z"
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="M 40,470 40,480 30,480 z"
+       style="color:#000000;fill:#1b9e77;fill-opacity:0.39215687;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <rect
-       y="420"
+       y="20"
        x="40"
-       height="10"
-       width="400"
+       height="450"
+       width="440"
        id="rect4930"
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
     <path
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       d="M 440,430 440,440 450,440 z"
+       style="color:#000000;fill:#1b9e77;fill-opacity:0.39215687;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       d="M 480,470 480,480 490,480 z"
        id="path4932"
        inkscape:connector-curvature="0" />
   </g>
   <g
      id="g5068">
     <path
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       style="color:#000000;fill:#1b9e77;fill-opacity:0.39215687;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        d="M 30,19.749995 20,19.749995 20,9.749995 z"
        id="path4941"
        inkscape:connector-curvature="0" />
     <rect
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        id="rect4943"
-       width="10"
-       height="400"
+       width="450"
+       height="440"
        x="30"
        y="20" />
     <path
        inkscape:connector-curvature="0"
        id="path4945"
-       d="M 30,420.25 20,420.25 20,430.25 z"
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+       d="M 30,460.25 20,460.25 20,470.25 z"
+       style="color:#000000;fill:#1b9e77;fill-opacity:0.39215687;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
   </g>
 </svg>

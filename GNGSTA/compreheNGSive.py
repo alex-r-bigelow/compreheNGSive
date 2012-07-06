@@ -8,6 +8,12 @@ from PySide.QtGui import *
 from PySide.QtUiTools import *
 import sys, os
 
+'''
+Link to the color scheme used in this app:
+
+http://colorbrewer2.org/index.php?type=qualitative&scheme=Dark2&n=8
+'''
+
 class setupApp:
     def __init__(self):
         loader = QUiLoader()

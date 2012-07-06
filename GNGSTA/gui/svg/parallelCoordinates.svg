@@ -24,9 +24,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.75"
-     inkscape:cx="140.35427"
-     inkscape:cy="580.18635"
+     inkscape:zoom="2.67"
+     inkscape:cx="148.21911"
+     inkscape:cy="149.45926"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -61,7 +61,9 @@
        handle="__handle"
        __childProperty="__axis"
        spacer="__spacer"
-       __eventCode="">
+       scrollDownBar="__scrollDownBar"
+       scrollUpBar="__scrollUpBar"
+       itemGroup="__itemGroup">
       <rect
          style="color:#000000;fill:#000000;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
          id="rect3004"
@@ -70,51 +72,255 @@
          x="0"
          y="0"
          __parentProperty="__spacer" />
-      <path
-         transform="matrix(0.36499272,0,0,0.3649917,41.167929,277.15239)"
-         d="M 51.595746,387.26358 32.41728,368.08511 51.595745,348.90665 70.77421,368.08511 z"
-         inkscape:randomized="0"
-         inkscape:rounded="0"
-         inkscape:flatsided="true"
-         sodipodi:arg2="2.3561945"
-         sodipodi:arg1="1.5707963"
-         sodipodi:r2="13.561222"
-         sodipodi:r1="19.178465"
-         sodipodi:cy="368.08511"
-         sodipodi:cx="51.595745"
-         sodipodi:sides="4"
-         id="path3037"
-         style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:2.73978448;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         sodipodi:type="star" />
-      <path
-         sodipodi:type="arc"
-         style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:2.70049143;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         id="path3870"
-         sodipodi:cx="55.319149"
-         sodipodi:cy="421.27658"
-         sodipodi:rx="17.553192"
-         sodipodi:ry="17.553192"
-         d="M 72.872341,421.27658 A 17.553192,17.553192 0 1 1 37.765957,421.27658 17.553192,17.553192 0 1 1 72.872341,421.27658 z"
-         transform="matrix(0.37030301,0,0,0.37030301,39.515153,275.50042)" />
-      <path
-         style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         d="M 45,270 55,270 45,260 z"
-         id="top"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="cccc" />
-      <path
-         sodipodi:nodetypes="cccc"
-         inkscape:connector-curvature="0"
-         id="bottom"
-         d="M 45,370 55,370 45,380 z"
-         style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
-      <rect
-         y="270"
-         x="55"
-         height="100"
-         width="10"
-         id="rect3796"
-         style="color:#000000;fill:#1b9e77;fill-opacity:0.78431373;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <g
+         id="g4498"
+         __parentProperty="__itemGroup"
+         numeric="__numeric"
+         textItem="__textItem"
+         alleleMasked="__alleleMasked"
+         missing="__missing">
+        <g
+           id="g4356"
+           __parentProperty="__missing"
+           class="Missing">
+          <path
+             sodipodi:type="arc"
+             style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843000000000;fill-rule:nonzero;stroke:#000000;stroke-width:2.70049143000000003;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             id="path3870"
+             sodipodi:cx="55.319149"
+             sodipodi:cy="421.27658"
+             sodipodi:rx="17.553192"
+             sodipodi:ry="17.553192"
+             d="M 72.872341,421.27658 A 17.553192,17.553192 0 1 1 37.765957,421.27658 17.553192,17.553192 0 1 1 72.872341,421.27658 z"
+             transform="matrix(0.37030301,0,0,0.37030301,-0.484847,275.50042)" />
+          <text
+             xml:space="preserve"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+             x="28.970001"
+             y="434.1004"
+             id="text4339"
+             sodipodi:linespacing="125%">Missing</text>
+        </g>
+        <g
+           id="g4352"
+           __parentProperty="__alleleMasked"
+           class="Allele Masked">
+          <path
+             transform="matrix(0.36499272,0,0,0.3649917,1.167929,277.15239)"
+             d="M 51.595746,387.26358 32.41728,368.08511 51.595745,348.90665 70.77421,368.08511 z"
+             inkscape:randomized="0"
+             inkscape:rounded="0"
+             inkscape:flatsided="true"
+             sodipodi:arg2="2.3561945"
+             sodipodi:arg1="1.5707963"
+             sodipodi:r2="13.561222"
+             sodipodi:r1="19.178465"
+             sodipodi:cy="368.08511"
+             sodipodi:cx="51.595745"
+             sodipodi:sides="4"
+             id="path3037"
+             style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843000000000;fill-rule:nonzero;stroke:#000000;stroke-width:2.73978447999999997;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             sodipodi:type="star" />
+          <text
+             sodipodi:linespacing="125%"
+             id="text4344"
+             y="414.1004"
+             x="28.970001"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+             xml:space="preserve">Allele Masked</text>
+        </g>
+        <g
+           id="g4348"
+           __parentProperty="__textItem"
+           label="__textItemLabel">
+          <path
+             style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843000000000;fill-rule:nonzero;stroke:#000000;stroke-width:0.99999987999999995;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             d="M 14.25,385.7504 25.75,385.7504 25.75,397.2504 14.25,397.2504 z"
+             id="rect3779"
+             inkscape:connector-curvature="0" />
+          <text
+             xml:space="preserve"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+             x="28.970001"
+             y="394.1004"
+             id="text4346"
+             sodipodi:linespacing="125%"
+             __parentProperty="__textItemLabel">Max 15 chars</text>
+        </g>
+        <g
+           id="g4470"
+           __parentProperty="__numeric"
+           class="Numeric"
+           scrollUpBar="__numericUpBar"
+           scrollDownBar="__numericDownBar"
+           selectionGroup="__selectionGroup">
+          <g
+             background="__numericDownBarBackground"
+             id="g4360"
+             transform="translate(0,-70)"
+             __parentProperty="__numericDownBar"
+             label="__numericDownBarLabel">
+            <rect
+               __parentProperty="__numericDownBarBackground"
+               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               id="rect4362"
+               width="99"
+               height="14"
+               x="10.5"
+               y="435.50003" />
+            <path
+               inkscape:connector-curvature="0"
+               id="path4364"
+               d="M 68,437.50003 78,437.50003 73,447.50003 z"
+               style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               __eventCode="self.setAttribute('fill-opacity',0.5)\n
+if 'LeftButton' in event.buttons:\n
+    signals['numericScrolledDown'] = self.axis"
+               __resetCode="self.setAttribute('fill-opacity',1.0)"
+               axis="__axis" />
+            <path
+               d="M 100.10569,437.50003 100.10569,441.58717 96,441.58717 96,443.41289 100.10569,443.41289 100.10569,447.50003 101.89431,447.50003 101.89431,443.41289 106,443.41289 106,441.58717 101.89431,441.58717 101.89431,437.50003 100.10569,437.50003"
+               style="marker:none"
+               id="path4385"
+               inkscape:connector-curvature="0"
+               __eventCode="self.setAttribute('fill-opacity',0.5)\n
+if 'LeftButton' in event.buttons:\n
+    signals['numericZoomedIn'] = self.axis"
+               __resetCode="self.setAttribute('fill-opacity',1.0)"
+               axis="__axis" />
+            <path
+               id="path4389"
+               style="marker:none"
+               d="M 82,441.60572 82,443.39434 92,443.39434 92,441.60572"
+               inkscape:connector-curvature="0"
+               sodipodi:nodetypes="cccc"
+               __eventCode="self.setAttribute('fill-opacity',0.5)\n if 'LeftButton' in event.buttons:\n     signals['numericZoomedOut'] = self.axis"
+               __resetCode="self.setAttribute('fill-opacity',1.0)"
+               axis="__axis" />
+            <text
+               xml:space="preserve"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               x="13.33"
+               y="445.61502"
+               id="text4409"
+               __parentProperty="__numericDownBarLabel">999.999</text>
+          </g>
+          <g
+             transform="translate(0,-430)"
+             id="g4419"
+             background="__numericUpBarBackground"
+             __parentProperty="__numericUpBar"
+             label="__numericUpBarLabel">
+            <rect
+               y="440.5"
+               x="10.5"
+               height="14"
+               width="99"
+               id="rect4421"
+               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               __parentProperty="__numericUpBarBackground" />
+            <path
+               style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               d="M 67.999998,452 77.999998,452 72.999998,442 z"
+               id="path4423"
+               inkscape:connector-curvature="0"
+               __eventCode="self.setAttribute('fill-opacity',0.5)\n if 'LeftButton' in event.buttons:\n     signals['numericScrolledUp'] = self.axis"
+               __resetCode="self.setAttribute('fill-opacity',1.0)"
+               axis="__axis" />
+            <path
+               inkscape:connector-curvature="0"
+               id="path4425"
+               style="marker:none"
+               d="M 100.10569,442.60163 100.10569,446.6057 95.999998,446.6057 95.999998,448.39431 100.10569,448.39431 100.10569,452.39838 101.89431,452.39838 101.89431,448.39431 106,448.39431 106,446.6057 101.89431,446.6057 101.89431,442.60163 100.10569,442.60163"
+               __eventCode="self.setAttribute('fill-opacity',0.5)\n if 'LeftButton' in event.buttons:\n     signals['numericZoomedIn'] = self.axis"
+               __resetCode="self.setAttribute('fill-opacity',1.0)"
+               axis="__axis" />
+            <path
+               sodipodi:nodetypes="cccc"
+               inkscape:connector-curvature="0"
+               d="M 81.999998,446.60569 81.999998,448.39431 91.999998,448.39431 91.999998,446.60569"
+               style="marker:none"
+               id="path4431"
+               __eventCode="self.setAttribute('fill-opacity',0.5)\n if 'LeftButton' in event.buttons:\n     signals['numericZoomedOut'] = self.axis"
+               __resetCode="self.setAttribute('fill-opacity',1.0)"
+               axis="__axis" />
+            <text
+               sodipodi:linespacing="125%"
+               id="text4433"
+               y="450.61499"
+               x="13.33"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               xml:space="preserve"
+               __parentProperty="__numericUpBarLabel">999.999</text>
+          </g>
+          <g
+             id="g4544"
+             __parentProperty="__selectionGroup"
+             selectionRange="__selectionRange"
+             transform="translate(0,40)">
+            <g
+               id="g4459"
+               __parentProperty="__selectionRange"
+               topHandle="__selectionRangeTopHandle"
+               bottomHandle="__selectionRangeBottomHandle"
+               bar="__selectionRangeBar"
+               transform="translate(0,-40)">
+              <rect
+                 y="25"
+                 x="68.096565"
+                 height="340"
+                 width="10"
+                 id="rect3796"
+                 style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+                 __parentProperty="__selectionRangeBar" />
+              <g
+                 transform="translate(0,40)"
+                 id="g4449"
+                 label="__selectionRangeBottomLabel"
+                 background="__selectionRangeBottomBackground"
+                 __parentProperty="__selectionRangeBottomHandle">
+                <path
+                   style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+                   d="M 58.096565,325 68.096565,325 58.096565,335 z"
+                   id="bottom"
+                   inkscape:connector-curvature="0"
+                   sodipodi:nodetypes="cccc"
+                   __parentProperty="__selectionRangeBottomBackground" />
+                <text
+                   sodipodi:linespacing="125%"
+                   id="text4439"
+                   y="335.61502"
+                   x="13.330003"
+                   style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+                   xml:space="preserve"
+                   __parentProperty="__selectionRangeBottomLabel">999.999</text>
+              </g>
+              <g
+                 transform="translate(0,-205)"
+                 id="g4454"
+                 label="__selectionRangeTopLabel"
+                 background="__selectionRangeTopBackground"
+                 __parentProperty="__selectionRangeTopHandle">
+                <path
+                   sodipodi:nodetypes="cccc"
+                   inkscape:connector-curvature="0"
+                   id="top"
+                   d="M 58.096562,230 68.096562,230 58.096562,220 z"
+                   style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+                   __parentProperty="__selectionRangeTopBackground" />
+                <text
+                   xml:space="preserve"
+                   style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+                   x="13.33"
+                   y="225.61501"
+                   id="text4445"
+                   sodipodi:linespacing="125%"
+                   __parentProperty="__selectionRangeTopLabel">999.999</text>
+              </g>
+            </g>
+          </g>
+        </g>
+      </g>
       <g
          id="g3816">
         <g
@@ -138,7 +344,7 @@
              __parentProperty="__label1"
              transform="scale(0.99977695,1.0002231)"
              xml:space="preserve"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
              x="810.08063"
              y="488.30743"
              id="text3016"
@@ -148,7 +354,7 @@
              id="label"
              y="497.30536"
              x="810.08063"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
              xml:space="preserve"
              transform="scale(0.99977695,1.0002231)"
              __parentProperty="__label2">CASES AF</text>
@@ -156,59 +362,74 @@
              __parentProperty="__label3"
              transform="scale(0.99977695,1.0002231)"
              xml:space="preserve"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier"
+             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823532;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
              x="810.08063"
              y="506.30328"
              id="text3018"
              sodipodi:linespacing="100%">CASES AF</text>
         </g>
       </g>
-      <path
-         style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         d="M 54.25,385.7504 65.75,385.7504 65.75,397.2504 54.25,397.2504 z"
-         id="rect3779"
-         inkscape:connector-curvature="0" />
       <g
-         id="g3790"
-         __eventCode="self.background.setAttribute('fill','#DDDDDD')\n
-if 'LeftButton' in event.buttons:\n
-    signals['axisScrollUp'] = self"
-         background="__scrollUpBackground"
-         __resetCode="self.background.setAttribute('fill','#FFFFFF')">
-        <rect
-           style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-           id="rect3768"
-           width="99"
-           height="9"
-           x="10.5"
-           y="0.5"
-           __parentProperty="__scrollUpBackground" />
-        <path
-           inkscape:connector-curvature="0"
-           id="path3782"
-           d="M 58,7 62,7 60,3 z"
-           style="color:#000000;fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
-      </g>
-      <g
-         id="g3786"
-         __eventCode="self.background.setAttribute('fill','#DDDDDD')\n
-if 'LeftButton' in event.buttons:\n
-    signals['axisScrollDown'] = self"
-         background="__scrollDownBackground"
-         __resetCode="self.background.setAttribute('fill','#FFFFFF')">
-        <rect
-           y="440.5"
-           x="10.5"
-           height="9"
-           width="99"
-           id="rect2998"
-           style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-           __parentProperty="__scrollDownBackground" />
-        <path
-           style="color:#000000;fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-           d="M 58,443 62,443 60,447 z"
-           id="path3784"
-           inkscape:connector-curvature="0" />
+         id="g4536"
+         __eventCode="event.retainWheelFocus = True\n
+distance = 0\n
+if event.deltaWheel &lt; 0:\n
+    distance = (self.parent.itemGroup.bottom()+self.parent.itemGroup.top())/2-self.parent.scrollUpBar.bottom()\n
+    distance = max(0,distance)\n
+    distance = -min(-event.deltaWheel,distance)\n
+elif event.deltaWheel &gt; 0:\n
+    distance = self.parent.scrollDownBar.top()-(self.parent.itemGroup.bottom()+self.parent.itemGroup.top())/2\n
+    distance = max(0,distance)\n
+    distance = min(event.deltaWheel,distance)\n
+if distance != 0:\n
+    self.parent.itemGroup.translate(0,distance)\n     signals['axisScrolled'] = self.parent\n
+if signals.has_key('scrollArrowPressed'):\n
+    del signals['scrollArrowPressed']\n
+else:\n
+    signals['__EVENT__ABSORBED__'] = False"
+         __resetCode="event.retainWheelFocus = False">
+        <g
+           __parentProperty="__scrollUpBar"
+           __resetCode="self.background.setAttribute('fill','#FFFFFF')"
+           background="__scrollUpBackground"
+           __eventCode="self.background.setAttribute('fill','#DDDDDD')\n if 'LeftButton' in event.buttons:\n     event.deltaWheel -= 10\n     signals['__EVENT__ABSORBED__'] = False\n
+signals['scrollArrowPressed'] = self"
+           id="g3790">
+          <rect
+             __parentProperty="__scrollUpBackground"
+             y="0.5"
+             x="10.5"
+             height="9"
+             width="99"
+             id="rect3768"
+             style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+          <path
+             style="color:#000000;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             d="M 58,7 62,7 60,3 z"
+             id="path3782"
+             inkscape:connector-curvature="0" />
+        </g>
+        <g
+           __parentProperty="__scrollDownBar"
+           __resetCode="self.background.setAttribute('fill','#FFFFFF')"
+           background="__scrollDownBackground"
+           __eventCode="self.background.setAttribute('fill','#DDDDDD')\n if 'LeftButton' in event.buttons:\n     event.deltaWheel += 10\n     signals['__EVENT__ABSORBED__'] = False\n
+signals['scrollArrowPressed'] = self"
+           id="g3786">
+          <rect
+             __parentProperty="__scrollDownBackground"
+             style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             id="rect2998"
+             width="99"
+             height="9"
+             x="10.5"
+             y="440.5" />
+          <path
+             inkscape:connector-curvature="0"
+             id="path3784"
+             d="M 58,443 62,443 60,447 z"
+             style="color:#000000;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+        </g>
       </g>
     </g>
   </g>
