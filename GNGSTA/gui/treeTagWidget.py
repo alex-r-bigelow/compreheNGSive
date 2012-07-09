@@ -35,6 +35,8 @@ class treeTagWidget(layeredWidget):
         prototypeIndividualBlock = self.svgLayer.svg.getElement('individualBlock')
         prototypeTag = self.svgLayer.svg.getElement('tag')
         
+        wOffset = prototypeGroupBlock.background.left()
+        
         groupClones = []
         individualClones = []
         
@@ -87,7 +89,7 @@ class treeTagWidget(layeredWidget):
         for c in individualClones:
             c.background.setSize(w,c.height())
         
-        self.svgLayer.resize(QSize(w,h))
+        self.svgLayer.resize(QSize(w+wOffset,h))
         
         self.addLayer(self.svgLayer)
     

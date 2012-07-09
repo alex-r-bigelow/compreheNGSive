@@ -66,25 +66,22 @@ class parallelCoordinateWidget(layeredWidget):
                 if l == 'Numeric':
                     if ax.hasNumeric():
                         keepNumeric = True
-                        current.itemGroup.numeric.moveTo(current.itemGroup.numeric.left(),y)
-                        y += current.itemGroup.numeric.height() + itemGap
-                        ax.visItems[l] = current.itemGroup.numeric
                         
                         high = ax.getMax()
                         low = ax.getMin()
-                        bottom = current.itemGroup.numeric.scrollDownBar.top()
-                        top = current.itemGroup.numeric.scrollUpBar.bottom()
+                        bottom = current.numeric.scrollDownBar.top()
+                        top = current.numeric.scrollUpBar.bottom()
                         ratio = float(high-low)/float(bottom-top)
                         if ratio == 0:
                             ratio = 1
                         
-                        current.itemGroup.numeric.bottomValue = low
-                        current.itemGroup.numeric.topValue = high
-                        current.itemGroup.numeric.numberToPixelRatio = ratio
-                        current.itemGroup.numeric.scrollUpBar.label.setText(self.fitInSevenChars(high))
-                        current.itemGroup.numeric.scrollDownBar.label.setText(self.fitInSevenChars(low))
-                        current.itemGroup.numeric.visRanges = {(low,high):current.itemGroup.numeric.selectionGroup.selectionRange}
-                        self.settleZoom(ax,current)
+                        current.numeric.bottomValue = low
+                        current.numeric.topValue = high
+                        current.numeric.numberToPixelRatio = ratio
+                        current.numeric.scrollUpBar.label.setText(self.fitInSevenChars(high))
+                        current.numeric.scrollDownBar.label.setText(self.fitInSevenChars(low))
+                        current.numeric.visRanges = {(low,high):current.numeric.selectionGroup.selectionRange}
+                        self.settleNumericView(ax,current)
                         
                 elif l == 'Allele Masked':
                     if ax.hasMasked():
@@ -112,7 +109,8 @@ class parallelCoordinateWidget(layeredWidget):
                     
             
             if not keepNumeric:
-                current.itemGroup.numeric.delete()
+                current.numeric.delete()
+                current.scrollUpBar.moveTo(current.scrollUpBar.left(),0)
             if not keepAlleleMasked:
                 current.itemGroup.alleleMasked.delete()
             if not keepMissing:
@@ -132,26 +130,61 @@ class parallelCoordinateWidget(layeredWidget):
         
         # Init selection, mouse layers
     
-    def settleZoom(self, dataAxis, visAxis):
+    def scrollNumeric(self, axis, factor):
+        factor = factor*axis.visAxis.numeric.numberToPixelRatio
+        axis.visAxis.numeric.topValue += factor
+        axis.visAxis.numeric.bottomValue += factor
+        self.settleNumericView(axis.dataAxis, axis.visAxis)
+    
+    def zoom(self, axis, factor):
+        midpoint = (axis.visAxis.numeric.topValue + axis.visAxis.numeric.bottomValue)/2
+        axis.visAxis.numeric.topValue = (axis.visAxis.numeric.topValue - midpoint)/factor + midpoint
+        axis.visAxis.numeric.bottomValue = midpoint - (midpoint - axis.visAxis.numeric.bottomValue)/factor
+        axis.visAxis.numeric.numberToPixelRatio /= factor
+        self.settleNumericView(axis.dataAxis, axis.visAxis)
+    
+    def settleNumericView(self, dataAxis, visAxis):
+        numberItem = visAxis.numeric
+        numberItem.scrollUpBar.label.setText(self.fitInSevenChars(numberItem.topValue))
+        numberItem.scrollDownBar.label.setText(self.fitInSevenChars(numberItem.bottomValue))
+        
         for r in dataAxis.selectedValueRanges:
             l = r[0]
             h = r[1]
             
-            numberItem = visAxis.itemGroup.numeric
-            numberItem.scrollUpBar.label.setText(self.fitInSevenChars(numberItem.topValue))
-            numberItem.scrollDownBar.label.setText(self.fitInSevenChars(numberItem.bottomValue))
-            
             v = numberItem.visRanges[(l,h)]
             t = numberItem.scrollUpBar.bottom()
+            b = numberItem.scrollDownBar.top()
             r = numberItem.numberToPixelRatio
             
-            v.moveTo(v.left(),t+(numberItem.topValue-h)/r-v.topHandle.height())
-            bottomStretchAmount = (h-l)/r - v.bar.height()
-            v.bar.stretch(0,0,0,bottomStretchAmount)
-            v.bottomHandle.moveTo(v.bottomHandle.left(),v.bar.bottom())
+            # are parts (or all) of the selection hidden?
+            topPixel = (numberItem.topValue-h)/r
+            bottomPixel = topPixel + (h-l)/r
             
-            v.topHandle.label.setText(self.fitInSevenChars(h))
-            v.bottomHandle.label.setText(self.fitInSevenChars(l))
+            if topPixel < 0 or topPixel - v.topHandle.height() > b:
+                v.topHandle.hide()
+            else:
+                v.topHandle.label.setText(self.fitInSevenChars(h))
+                v.topHandle.moveTo(v.topHandle.left(),t+topPixel-v.topHandle.height())
+                v.topHandle.show()
+            topPixel = max(topPixel,0)
+            topPixel = min(topPixel,b)
+            
+            if bottomPixel > b or bottomPixel + v.bottomHandle.height() < 0:
+                v.bottomHandle.hide()
+            else:
+                v.bottomHandle.label.setText(self.fitInSevenChars(l))
+                v.bottomHandle.moveTo(v.bottomHandle.left(),t+bottomPixel)
+                v.bottomHandle.show()
+            bottomPixel = min(b,bottomPixel)
+            bottomPixel = max(0,bottomPixel)
+            
+            if bottomPixel == topPixel:
+                v.bar.hide()
+            else:
+                v.bar.moveTo(v.bar.left(),t+topPixel)
+                v.bar.setSize(v.bar.width(),bottomPixel-topPixel)
+                v.bar.show()
     
     def fitInSevenChars(self, value):
         result = "{:7G}".format(value)
@@ -321,25 +354,19 @@ class parallelCoordinateWidget(layeredWidget):
         # rearrangement/resizing of axis items
         
         # scrolling/zooming numeric area
-        if signals.has_key('numericScrolledDown'):
-            factor = 10*axis.visAxis.itemGroup.numeric.numberToPixelRatio
-            axis.visAxis.itemGroup.numeric.topValue -= factor
-            axis.visAxis.itemGroup.numeric.bottomValue -= factor
-            self.settleZoom(axis.dataAxis, axis.visAxis)
+        if signals.has_key('numericScrolled'):
+            self.scrollNumeric(axis, signals['numericScrolled'])
+            linesMoved = True
         
-        if signals.has_key('numericScrolledUp'):
-            factor = 10*axis.visAxis.itemGroup.numeric.numberToPixelRatio
-            axis.visAxis.itemGroup.numeric.topValue += factor
-            axis.visAxis.itemGroup.numeric.bottomValue += factor
-            self.settleZoom(axis.dataAxis, axis.visAxis)
-        
-        if signals.has_key('numericZoomedIn'):
-            print 'in'
-        
-        if signals.has_key('numericZoomedOut'):
-            print 'out'
+        if signals.has_key('numericZoomed'):
+            self.zoom(axis, signals['numericZoomed'])
+            linesMoved = True
         
         # adjustment of selections
+        if signals.has_key('rangeAdjusted'):
+            #print signals['rangeAdjusted']
+            pass
+        
         
         # moused-over data
         

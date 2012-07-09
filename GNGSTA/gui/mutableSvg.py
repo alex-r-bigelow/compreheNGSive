@@ -8,59 +8,13 @@ from copy import deepcopy
 
 '''
 Special extensions to the .svg standard:
-Qt doesn't support anything beyond SVG Tiny (which makes sense), but for what we're doing
+QSvgRenderer doesn't support anything beyond SVG Tiny (which makes sense), but for what we're doing
 we need some kind of interaction mechanisms. For anything beyond extremely basic interaction,
 SVG Full relies on javascript anyway - the purpose of this code is to provide a python
 abstraction layer for manipulating SVG. This is a really hacked-together approach; I'm messing
 with this API as I go.
 
 custom events:
-                The most precise selected element will initially be be the only element that receives an event
-                packet. The most precise element is the deepest child of the frontmost element in the SVG XML tree; checking
-                if the mouse is in the rectangle of elements relies on the id attribute, so if your SVG is ill-formed,
-                it is possible that elements will be chosen that aren't under the cursor.
-                
-                To implement a custom event handler, set the __eventCode attribute on any element in the SVG
-                document; whether it will receive the event or not is explained as follows:
-                
-                <g id='a'>
-                    <g id='b' __eventCode="self.translate(event.deltaX,0)">
-                        <g id='c' __eventCode="self.translate(0,event.deltaY)">
-                            <g id='d' __eventCode="">
-                                <g id='e' __eventCode="self.translate(event.deltaX,event.deltaY)"\>
-                                <g id='f'\>
-                            <\g>
-                            <g id='g'\>
-                        <\g>
-                        <g id='h'\>
-                    <\g>
-                    <g id='i'\>
-                <\g>
-                
-                TODO: event is propagated to overlapping siblings...
-                
-                No action is the default behavior for the root element. For all others, default behavior is
-                to yield the event to its closest ancestor that implements the __eventCode attribute, or
-                no action if no such ancestor exists:
-                "signals = self.yieldEventToGroup(event=event,signals=signals)"
-                
-                Therefore:
-                
-                Assuming a is the root SVG element or no elements above a have the __eventCode attribute:
-                    Moving the mouse over a will have no effect
-                    Moving the mouse over b will move b,c,d,e,f,g and h in the x direction only
-                    Moving the mouse over c will move c,d,e,f and g in the y direction only
-                    Moving the mouse over d will have no effect
-                    Moving the mouse over e will move e in both directions
-                    Moving the mouse over f will have no effect
-                    Moving the mouse over g will move c,d,e,f and g in the y direction only
-                    Moving the mouse over h will move b,c,d,e,f,g and h in the x direction only
-                    Moving the mouse over i will have no effect
-                
-                (of course a more practical implementation would include checks to see if the mouse button was down before
-                translating, which would give us simple dragging functionality - but for readability I left that out. For
-                better dragging, you probably should also set the __LOCK__ signal as True)
-                
                 Python implementation namespace:
                 Implement custom events as if you were filling in this stub with no accessible global variables:
                 
@@ -87,28 +41,104 @@ custom events:
                 appropriately. You can also pass messages between nodes via the signals dict, though remember that children
                 will access this before ancestors or lower(z-coordinate) siblings. A better way to do this (especially
                 considering the complications that could arise from the clone() method) is to use local/global references.
+                
+                Event propagation:
+                The most precise selected element will initially be be the only element that receives an event
+                packet. The most precise element is the deepest child of the frontmost element in the SVG XML tree; checking
+                if the mouse is in the rectangle of elements relies on the id attribute, so if your SVG is ill-formed,
+                it is possible that elements will be chosen that aren't under the cursor.
+                
+                To implement a custom event handler, set the __eventCode attribute on any element in the SVG
+                document; whether it will receive the event or not is explained as follows:
+                
+                <g id='a'>
+                    <g id='b' __eventCode="self.translate(event.deltaX,0)">
+                        <g id='c' __eventCode="self.translate(0,event.deltaY)">
+                            <g id='d' __eventCode="">
+                                <g id='e' __eventCode="self.translate(event.deltaX,event.deltaY)"\>
+                                <g id='f'\>
+                            <\g>
+                            <g id='g'\>
+                        <\g>
+                        <g id='h'\>
+                    <\g>
+                    <g id='i'\>
+                <\g>
+                
+                No action is the default behavior for the root element. For all others, default behavior is
+                to yield the event to its closest sibling and then ancestor that implements the __eventCode
+                attribute, or no action if no such ancestor exists.
+                
+                For example:
+                
+                Assuming a is the root SVG element or no elements above a have the __eventCode attribute:
+                    Moving the mouse over a will have no effect
+                    Moving the mouse over b will move b,c,d,e,f,g and h in the x direction only
+                    Moving the mouse over c will move c,d,e,f and g in the y direction only
+                    Moving the mouse over d will have no effect
+                    Moving the mouse over e will move e in both directions
+                    Moving the mouse over f will have no effect
+                    Moving the mouse over g will move c,d,e,f and g in the y direction only
+                    Moving the mouse over h will move b,c,d,e,f,g and h in the x direction only
+                    Moving the mouse over i will have no effect
+                
+                (of course a more practical implementation would include checks to see if the mouse button was down before
+                translating, which would give us simple dragging functionality - but for readability I left that out. For
+                better dragging, you probably should also set the reserved __LOCK__ signal as True)
 
     __eventCode
     
     __resetCode
 
 signals:
-    __SVG__DIRTY__ ******TODO
+    __SVG__DIRTY__ ******TODO - rewrite
                 used to notify the renderer that the view needs to be updated. Only set this to False if your custom code does
                 not modify the appearance of the resulting SVG. You should really only bother setting this to False if you
-                have a lot of minimally visually invasive custom code and it's affecting performance (though if this is the
-                case, it's probably a sign that you should reconsider where you put your code - in theory __eventCode should
-                ONLY affect visual components and abstract high-level events in the signals dict for handling in your
-                controller).
+                are merely translating an interaction in the signals dict and it's affecting performance.
     __EVENT__ABSORBED__
     
     __LOCK__
 
 local/global references:
-                For performance reasons, it might be a good idea to store references to frequently used child elements in a
-                node's attributes for easy access. To do this, begin a parameter value with "__". For example:
+                For performance/code readability, it might be a good idea to store references to frequently used parent/child elements
+                as a node's attribute (in the python, not SVG sense) for easy access. To do this, begin a parameter value with "__".
                 
-                *** TODO ***
+                For example:
+                
+                <g id='a' C='__childNamedC' __eventCode='self.C.hide()'>
+                    <g id='b'>
+                        <g id='c' __parentProperty='__childNamedC'/>
+                    </g>
+                </g>
+                
+                would hide c when a is moused over.
+                
+                These links are preserved across clones if their specificity isn't violated; for example:
+                
+                <g id='a' __globalProperty='A' __childProperty='__parentNamedA' C='__childNamedC' >
+                    <g id='b' __globalProperty='B'>
+                        <g id='c' __globalProperty='C' __parentProperty='__childNamedC' A='__parentNamedA'/>
+                    </g>
+                </g>
+                
+                ... (code in main controller that extends layeredWidget):
+                
+                document.A.C == document.C      # True
+                document.C.A == document.A      # True
+                
+                A2 = document.A.clone()    # Creates an intact copy with no intersecting references
+                document.A == A2                # False
+                document.C == A2.C              # False
+                A2.C.A == A2                    # True
+                A2.C.A == document.A            # False
+                document.A.C == document.C      # Still True
+                document.C.A == document.A      # Still True
+                
+                C2 = document.C.clone()    # Creates an orphan... has no references to its' prototype's parent
+                document.C == C2                # False
+                document.C2.A                   # None
+                document.A.C == C2              # False
+
 __globalProperty
 
 __parentProperty
