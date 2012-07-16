@@ -97,7 +97,27 @@ def tail(fname, window):
             block -= 1
     return data.splitlines()[-window:]
 
-
+def fitInSevenChars(value):
+    '''
+    Squeeze a float into exactly 7 characters, align right
+    '''
+    result = "{:7G}".format(value)
+    while len(result) > 7:
+        if 'E' in result and result[1] != 'E':
+            eind = result.find('E')
+            offset = 1
+            original = result
+            while len(result) > 7 and result[1] != 'E':
+                result = original[:eind-offset] + original[eind:]
+                offset += 1
+            if len(result) > 7:
+                result = "INF"
+        else:
+            while len(result) > 7:
+                result = result[:-1]
+    while len(result) < 7:
+        result = ' ' + result
+    return result
 ##################
 # Helper classes #
 ##################

@@ -207,9 +207,10 @@ class mutableSvgNode:
                     raise SvgMapException("Two parent nodes:\n(%s and %s)\nattempted to fill the same __childProperty: %s" % (str(self),str(self.document.childProperites[v]),v))
                 self.document.childProperites[v] = self
             elif a == '__globalProperty':
-                if self.document.globalProperties.has_key(v):
-                    raise SvgMapException("Two nodes:\n(%s and %s)\nattempted to fill the same __globalProperty: %s" % (str(self),str(self.document.globalProperties[v]),v))
+                if hasattr(self.document,a) or self.document.globalProperties.has_key(v):
+                    raise SvgMapException("Node %s attempts to overwrite a reserved or existing global property %s" % (str(self),v))
                 self.document.globalProperties[v] = self
+                setattr(self.document,v,self)
             elif v.startswith("__"):
                 if hasattr(self,a):
                     raise SvgMapException("Node %s attempts to overwrite a reserved or existing property %s" % (str(self),a))
@@ -385,24 +386,27 @@ class mutableSvgNode:
     
     def matrix(self,a,b,c,d,e,f,applyImmediately=True):
         # Per SVG spec, flatten by multiplying the new matrix to the left of the existing one
-        temp = list(self.transforms) # copy
-        self.transforms[0] = a*temp[0] + c*temp[1] # + e*0.0
-        self.transforms[2] = a*temp[2] + c*temp[3] # + e*0.0
-        self.transforms[4] = a*temp[4] + c*temp[5] + e # *1.0
+        newTransforms = [0,0,0,0,0,0]
+        newTransforms[0] = a*self.transforms[0] + c*self.transforms[1] # + e*0.0
+        newTransforms[2] = a*self.transforms[2] + c*self.transforms[3] # + e*0.0
+        newTransforms[4] = a*self.transforms[4] + c*self.transforms[5] + e # *1.0
         
-        self.transforms[1] = b*temp[0] + d*temp[1] # + e*0.0
-        self.transforms[3] = b*temp[2] + d*temp[3] # + e*0.0
-        self.transforms[5] = b*temp[4] + d*temp[5] + f # *1.0
+        newTransforms[1] = b*self.transforms[0] + d*self.transforms[1] # + e*0.0
+        newTransforms[3] = b*self.transforms[2] + d*self.transforms[3] # + e*0.0
+        newTransforms[5] = b*self.transforms[4] + d*self.transforms[5] + f # *1.0
         
-        if applyImmediately:
-            self.applyTransforms()
+        if newTransforms[0]*newTransforms[3] - newTransforms[2]*newTransforms[1] == 0:  # singular matrix
+            self.setSizeZero()
+        else:
+            self.unsetSizeZero()
+            self.transforms = newTransforms
+            
+            if applyImmediately:
+                self.applyTransforms()
     
     def translate(self, deltaX, deltaY, applyImmediately=True):
-        self.transforms[4] += deltaX
-        self.transforms[5] += deltaY
-        if applyImmediately:
-            self.applyTransforms()
-    
+        self.matrix(1,0,0,1,deltaX,deltaY,applyImmediately)
+        
     def moveTo(self, x, y):
         l,t,r,b = self.getBounds()
         deltaX = x-l
@@ -416,10 +420,7 @@ class mutableSvgNode:
             self.translate(-deltaX,-deltaY)
     
     def scale(self, xFactor, yFactor, applyImmediately=True):
-        self.transforms[0] *= xFactor
-        self.transforms[3] *= yFactor
-        if applyImmediately:
-            self.applyTransforms()
+        self.matrix(xFactor,0,0,yFactor,0,0,applyImmediately)
     
     def stretch(self, fromLeft, fromTop, fromRight, fromBottom):
         l,t,r,b = self.getBounds()
@@ -428,23 +429,8 @@ class mutableSvgNode:
         xGrowth = fromLeft + fromRight
         yGrowth = fromTop + fromBottom
         
-        xFactor = None
-        yFactor = None
-        if width + xGrowth <= 0:
-            self.setSizeZero()
-            xFactor = 1.0
-        elif self.originalVisibility != None:
-            self.unsetSizeZero()
-        if height + yGrowth <= 0:
-            self.setSizeZero()
-            yFactor = 1.0
-        elif self.originalVisibility != None and xFactor == None:
-            self.unsetSizeZero()
-        
-        if xFactor == None:
-            xFactor = (xGrowth + width)/width
-        if yFactor == None:
-            yFactor = (yGrowth + height)/height
+        xFactor = (xGrowth + width)/width
+        yFactor = (yGrowth + height)/height
         self.scale(xFactor,yFactor)
         self.moveTo(l-fromLeft, t-fromTop)
     
@@ -625,12 +611,9 @@ class mutableSvgNode:
         if value == None:
             return None
         try:
-            value = int(value)
+            value = float(value)
         except ValueError:
-            try:
-                value = float(value)
-            except ValueError:
-                pass
+            pass
         return value
     
     def getCSS(self, att):
@@ -645,12 +628,9 @@ class mutableSvgNode:
                 endPoint = len(part)-1
             value = part[:endPoint]
             try:
-                value = int(value)
+                value = float(value)
             except ValueError:
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
+                pass
             return value
 
 class mutableSvgRenderer:

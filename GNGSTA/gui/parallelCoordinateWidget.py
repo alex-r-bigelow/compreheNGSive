@@ -8,24 +8,26 @@ class axisWrapper:
         self.visAxis = visAxis
 
 class parallelCoordinateWidget(layeredWidget):
-    def __init__(self, data, parent = None):
+    def __init__(self, data, app, parent = None):
         layeredWidget.__init__(self, parent)
         self.data = data
+        self.app = app
         
         self.axes = {}
-        self.axisOrder = []
+        self.axisOrder = self.data.defaultAxisOrder()
         
         # Init axes, svg layer
-        
         self.svgLayer = mutableSvgLayer('gui/svg/parallelCoordinates.svg',self)
         
         prototype = self.svgLayer.svg.getElement('axis')
         self.w = prototype.spacer.width()
         self.h = prototype.spacer.height()
+        self.numericTopPixel = prototype.numeric.scrollUpBar.bottom()
+        self.numericBottomPixel = prototype.numeric.scrollDownBar.top()
         self.yOffset = prototype.top()
         xOffset = 0
-        for att,ax in self.data.axes.iteritems():
-            self.axisOrder.append(att)
+        for att in self.axisOrder:
+            ax = self.data.axes[att]
             current = prototype.clone()
             
             # Label
@@ -69,18 +71,18 @@ class parallelCoordinateWidget(layeredWidget):
                         
                         high = ax.getMax()
                         low = ax.getMin()
-                        bottom = current.numeric.scrollDownBar.top()
-                        top = current.numeric.scrollUpBar.bottom()
-                        ratio = float(high-low)/float(bottom-top)
+                        ratio = float(high-low)/float(self.numericBottomPixel-self.numericTopPixel)
                         if ratio == 0:
                             ratio = 1
                         
                         current.numeric.bottomValue = low
+                        current.numeric.bottomPixel = self.numericBottomPixel
                         current.numeric.topValue = high
+                        current.numeric.topPixel = self.numericTopPixel
                         current.numeric.numberToPixelRatio = ratio
                         current.numeric.scrollUpBar.label.setText(self.fitInSevenChars(high))
                         current.numeric.scrollDownBar.label.setText(self.fitInSevenChars(low))
-                        current.numeric.visRanges = {(low,high):current.numeric.selectionGroup.selectionRange}
+                        current.numeric.visRanges = [current.numeric.selectionGroup.selectionRange]
                         self.settleNumericView(ax,current)
                         
                 elif l == 'Allele Masked':
@@ -126,9 +128,9 @@ class parallelCoordinateWidget(layeredWidget):
         self.addLayer(self.svgLayer)
         
         self.sourceIndex = None
-        self.currentAtt = self.axisOrder[0]
         
         # Init selection, mouse layers
+        
     
     def scrollNumeric(self, axis, factor):
         factor = factor*axis.visAxis.numeric.numberToPixelRatio
@@ -148,43 +150,50 @@ class parallelCoordinateWidget(layeredWidget):
         numberItem.scrollUpBar.label.setText(self.fitInSevenChars(numberItem.topValue))
         numberItem.scrollDownBar.label.setText(self.fitInSevenChars(numberItem.bottomValue))
         
-        for r in dataAxis.selectedValueRanges:
+        i = len(numberItem.visRanges) - 1
+        while len(numberItem.visRanges) > len(dataAxis.selectedValueRanges):
+            numberItem.visRanges[i].delete()
+            del numberItem.visRanges[i]
+            i -= 1
+        
+        while len(numberItem.visRanges) < len(dataAxis.selectedValueRanges):
+            numberItem.visRanges.append(numberItem.visRanges[0].clone())
+        
+        for i,r in enumerate(dataAxis.selectedValueRanges):
             l = r[0]
             h = r[1]
             
-            v = numberItem.visRanges[(l,h)]
-            t = numberItem.scrollUpBar.bottom()
-            b = numberItem.scrollDownBar.top()
+            v = numberItem.visRanges[i]
             r = numberItem.numberToPixelRatio
             
             # are parts (or all) of the selection hidden?
             topPixel = (numberItem.topValue-h)/r
             bottomPixel = topPixel + (h-l)/r
             
-            if topPixel < 0 or topPixel - v.topHandle.height() > b:
+            if topPixel < 0 or topPixel - v.topHandle.height() > self.numericBottomPixel:
                 v.topHandle.hide()
             else:
                 v.topHandle.label.setText(self.fitInSevenChars(h))
-                v.topHandle.moveTo(v.topHandle.left(),t+topPixel-v.topHandle.height())
+                v.topHandle.moveTo(v.topHandle.left(),self.numericTopPixel+topPixel-v.topHandle.height())
                 v.topHandle.show()
             topPixel = max(topPixel,0)
-            topPixel = min(topPixel,b)
+            topPixel = min(topPixel,self.numericBottomPixel)
             
-            if bottomPixel > b or bottomPixel + v.bottomHandle.height() < 0:
+            if bottomPixel > self.numericBottomPixel or bottomPixel + v.bottomHandle.height() < 0:
                 v.bottomHandle.hide()
             else:
                 v.bottomHandle.label.setText(self.fitInSevenChars(l))
-                v.bottomHandle.moveTo(v.bottomHandle.left(),t+bottomPixel)
+                v.bottomHandle.moveTo(v.bottomHandle.left(),self.numericTopPixel+bottomPixel)
                 v.bottomHandle.show()
-            bottomPixel = min(b,bottomPixel)
+            bottomPixel = min(self.numericBottomPixel,bottomPixel)
             bottomPixel = max(0,bottomPixel)
             
-            if bottomPixel == topPixel:
-                v.bar.hide()
-            else:
-                v.bar.moveTo(v.bar.left(),t+topPixel)
-                v.bar.setSize(v.bar.width(),bottomPixel-topPixel)
-                v.bar.show()
+            if bottomPixel >= topPixel:
+                v.bar.setSize(v.bar.width(),1)
+            
+            v.bar.moveTo(v.bar.left(),self.numericTopPixel+topPixel)
+            v.bar.setSize(v.bar.width(),bottomPixel-topPixel)
+            v.bar.show()
     
     def fitInSevenChars(self, value):
         result = "{:7G}".format(value)
@@ -226,6 +235,7 @@ class parallelCoordinateWidget(layeredWidget):
     
     def handleEvents(self, event, signals):
         linesMoved = False
+        selectionChanged = False
         
         index = int(event.x/self.w)
         att = self.axisOrder[index]
@@ -257,7 +267,7 @@ class parallelCoordinateWidget(layeredWidget):
             
             contextMenu.addSeparator()
             
-            itemsMenu = QMenu("Show/Hide Values",parent=self)
+            '''itemsMenu = QMenu("Show/Hide Values",parent=self)
             itemsActions = QActionGroup(self)
             # TODO - include icons for Numerical, Missing, and Allele Masked?
             for label in axis.dataAxis.labelOrder:
@@ -274,7 +284,7 @@ class parallelCoordinateWidget(layeredWidget):
                 itemsMenu.addAction(act)
             contextMenu.addMenu(itemsMenu)
             
-            contextMenu.addSeparator()
+            contextMenu.addSeparator()'''
             
             contextMenu.addAction(u'Use as X axis')
             contextMenu.addAction(u'Use as Y axis')
@@ -313,7 +323,7 @@ class parallelCoordinateWidget(layeredWidget):
                     splash.setWindowModality(Qt.WindowModal)
                     
                     self.data.setScatterAxes(att,self.data.currentYattribute,splash)
-                    
+                    self.app.notifyAxisChange()
                     splash.close()
                 
                 # Y axis
@@ -322,7 +332,7 @@ class parallelCoordinateWidget(layeredWidget):
                     splash.setWindowModality(Qt.WindowModal)
                     
                     self.data.setScatterAxes(self.data.currentXattribute,att,splash)
-                    
+                    self.app.notifyAxisChange()
                     splash.close()
         
         # horizontal rearranging of axes
@@ -363,10 +373,23 @@ class parallelCoordinateWidget(layeredWidget):
             linesMoved = True
         
         # adjustment of selections
-        if signals.has_key('rangeAdjusted'):
-            #print signals['rangeAdjusted']
-            pass
+        if signals.has_key('startRangeAdjust'):
+            oldLow,oldHigh = signals['startRangeAdjust']
+            self.data.startNumericOperation(axis.dataAxis,oldLow,oldHigh)
         
+        if signals.has_key('rangeAdjusted'):
+            r,oldLow,oldHigh,newLow,newHigh = signals['rangeAdjusted']
+                        
+            self.data.adjustNumericOperation(axis.dataAxis,oldLow,oldHigh,newLow,newHigh)
+            
+            r.bottomHandle.label.setText(self.fitInSevenChars(newLow))
+            r.topHandle.label.setText(self.fitInSevenChars(newHigh))
+        
+        if signals.has_key('finishRangeAdjust'):
+            #tempAx,r = signals['finishRangeAdjust']
+            #att = tempAx.getAttribute('att')
+            self.data.applyCurrentOperation()
+            selectionChanged = True
         
         # moused-over data
         
@@ -374,6 +397,11 @@ class parallelCoordinateWidget(layeredWidget):
         if linesMoved:
             pass
         
-        # update selections
-        
-        # update moused layer
+        if selectionChanged:
+            self.app.notifySelection(att)
+    
+    def notifySelection(self, att):
+        self.settleNumericView(self.axes[att].dataAxis, self.axes[att].visAxis)
+    
+    def notifyHighlight(self):
+        pass

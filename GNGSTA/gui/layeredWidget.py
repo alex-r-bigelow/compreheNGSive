@@ -111,15 +111,7 @@ class layeredWidget(QWidget):
     setDirty() function is called. Layers that can be
     drawn quickly should be dynamic, but if it takes
     longer than approximately a second to draw, the layer
-    should be static (and a "loading" screen will be
-    drawn while it is updating).
-    If desired, a
-    controller object should be supplied to accept
-    an abstract userState array. The userState array will
-    contain an object for every existing layer (in the
-    same order from bottom to top) that represents the
-    results of the events on that layer (subclasses of
-    layer should generate these objects).
+    should be static.
     '''
     
     def __init__(self, parent = None):

@@ -1,7 +1,7 @@
 from resources.utils import chrLengths, chrOffsets
 from resources.structures import recursiveDict, TwoTree, FourTree
 from copy import deepcopy
-import operator, math, re
+import operator, math, re, sys
 
 selectionLabelRegex = re.compile('\(\d+\)')
 
@@ -10,15 +10,16 @@ class mixedAxis:
         self.tree = None
         self.rsValues = {}
         self.rsValuePairs = []
-        self.selectedValueRanges = set()   # set(tuple(low,high))
         
         self.rsLabels = {}
         self.labels = {'Missing':set(),'Allele Masked':set()}
-        self.selectedLabels = {}    # {label:bool}
         
         self.labelOrder = ['Numeric','Missing','Allele Masked']
         self.visibleLabels = {}
         self.isfinished = False
+        
+        self.minimum = 0
+        self.maximum = 0
     
     def add(self, id, value):
         self.isfinished = False
@@ -52,74 +53,40 @@ class mixedAxis:
             self.rsValuePairs.sort(key=lambda i: i[1])
             self.tree = TwoTree(self.rsValuePairs)
             self.findNaturalMinAndMax()
-            if len(self.selectedValueRanges) == 0:
-                self.selectedValueRanges.add((self.getMin(),self.getMax()))
             self.visibleLabels['Numeric']=True
-            self.selectedLabels['Numeric']=True
         else:
             self.tree = None
-            self.selectedValueRanges = set()
             self.visibleLabels['Numeric']=None
-            self.selectedLabels['Numeric']=False
         
         if len(self.labelOrder) <= 3:
             self.labelOrder = ['Numeric','Missing','Allele Masked']
             miss = self.hasMissing()
             mask = self.hasMasked()
-            self.selectedLabels['Missing'] = miss
-            self.selectedLabels['Allele Masked'] = mask
-            if not miss:
-                miss = None
-            if not mask:
-                mask = None
-            self.visibleLabels['Missing'] = miss
-            self.visibleLabels['Allele Masked'] = mask
+            if self.hasMissing():
+                self.visibleLabels['Missing'] = True
+            else:
+                self.visibleLabels['Missing'] = None
+            if self.hasMasked():
+                self.visibleLabels['Allele Masked'] = True
+            else:
+                self.visibleLabels['Allele Masked'] = None
         
         for l in sorted(self.labels.iterkeys()):
             if l not in self.labelOrder:
                 self.labelOrder.append(l)
-                self.selectedLabels[l] = True
                 self.visibleLabels[l] = True
         self.isfinished = True
     
-    def getSelected(self):
+    def query(self, ranges=[], labels={}):    # ranges should be [(low,high)], and labels should be {label:bool}
         assert self.isfinished
         results = set()
         if self.tree != None:
-            for low,high in self.selectedValueRanges:
+            for low,high in ranges:
                 results.update(self.tree.select(low,high,includeMasked=False,includeUndefined=False,includeMissing=False))  # I actually implement the missing/masked stuff outside the tree(s)
-        for l,include in self.selectedLabels.iteritems():
-            if include:
-                results.add(self.labels[l])
+        for l,v in self.labels.iteritems():
+            if labels.get(l,False):
+                results.update(v)
         return results
-    
-    def simplifyNumericSelections(self):
-        while True:
-            numSelections = len(self.selectedValueRanges)
-            
-            newValueRanges = []
-            for low,high in self.selectedValueRanges:
-                for pair in newValueRanges:
-                    if (low >= pair[0] and low <= pair[1]) or (high >= pair[0] and high <= pair[1]):
-                        pair[0] = min(low,pair[0])
-                        pair[1] = max(high,pair[1])
-                    else:
-                        newValueRanges.append((low,high))
-            self.selectedValueRanges = set(newValueRanges)
-            
-            if len(self.selectedValueRanges) == numSelections:
-                return
-    
-    def modifyNumericSelection(self, oldLow, oldHigh, newLow, newHigh):
-        self.selectedValueRanges.remove((oldLow,oldHigh))
-        self.selectedValueRanges.add((newLow,newHigh))
-    
-    def modifyLabelSelection(self, label, include):
-        self.selectedLabels[label] = include
-        if include:
-            self.visibleLabels[label] = None
-        else:
-            self.visibleLabels[label] = True
     
     def getLabels(self):
         assert self.isfinished
@@ -148,8 +115,8 @@ class mixedAxis:
     
     def findNaturalMinAndMax(self):
         if self.tree == None or self.tree.root == None:
-            self.minimum = None
-            self.maximum = None
+            self.minimum = 0
+            self.maximum = 0
             return
         else:
             self.minimum = self.tree.root.low
@@ -157,8 +124,9 @@ class mixedAxis:
             if self.minimum == self.maximum:
                 self.minimum = 0
                 if self.maximum == 0:
-                    self.maximum = 1
-            '''span = self.maximum - self.minimum
+                    return
+                    #self.maximum = 1    # though it would make sense, for some reason changing this to a 1 causes CGAffineTransformInvert: singular matrix...
+            span = self.maximum - self.minimum
             if self.maximum > 0:
                 nearestTenMax = 10**math.ceil(math.log10(self.maximum))
             elif self.maximum == 0:
@@ -188,7 +156,7 @@ class mixedAxis:
             elif nearestTenMin < 0.25*span:
                 self.minimum = nearestTenMin
             else:
-                self.minimum -= 0.05*span'''
+                self.minimum -= 0.05*span
     
     def getMin(self):
         return self.minimum
@@ -205,209 +173,585 @@ class mixedAxis:
     def hasMissing(self):
         return len(self.labels['Missing']) != 0
 
-class operation:
-    def __init__(self, name):
-        self.name = name
-        self.applied = True
-        self.isFirstOp = True
+class selection:
+    namelessIndex = 1
+    def __init__(self, data, name=None, result=None, params=None):
+        if not data.isFrozen:
+            data.freeze(None,None,None)
+        self.data = data
         
-        self.previousOp = None
-        self.nextOp = None
+        if name == None:
+            self.name = "Selection %s" % selection.namelessIndex
+            selection.namelessIndex += 1
+        else:
+            self.name = name
         
-        self.result = set()
-        self.preview = set()
+        if result != None and params != None:
+            self.result = set(result)
+            self.params = params.copy()
+        else:
+            self.params = {}    # {axis:([(low,high)],{str:bool})}
+            # Default initial selection: select the top 5% of the two scatterplot axes
+            # (including all non-numerics - unless the axis has no numerics. In that
+            # case select nothing), and everything from all other axes
+            
+            # do the x axis first so we have an initial selection
+            ax = self.data.axes[self.data.currentXattribute]
+            if ax.hasNumeric():
+                self.applySelectAll(ax, applyImmediately=False)
+                self.applySelectTopFivePercent(ax, applyImmediately=False)
+            else:
+                self.applySelectNone(ax, applyImmediately=False)
+            self.result = ax.query(self.params[ax][0],self.params[ax][1])
+            # now do all the others that will cut that selection down
+            for a,ax in self.data.axes.iteritems():
+                if a == self.data.currentXattribute:
+                    continue
+                elif a == self.data.currentYattribute:
+                    if ax.hasNumeric():
+                        self.applySelectAll(ax, applyImmediately=False)
+                        self.applySelectTopFivePercent(ax, applyImmediately=False)
+                    else:
+                        self.applySelectNone(ax, applyImmediately=False)
+                else:
+                    self.applySelectAll(ax, applyImmediately=False)
+                self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
     
-    def updatePreview(self):
-        self.preview = set()
-    
-    def apply(self, allData):
-        return self
-    
-    def undo(self):
-        return self
-    
-class setOperation(operation):
-    def __init__(self, name, previousOps, op="UNION"):
-        self.name = name
-        self.applied = False
-        self.isFirstOp = False
+    def findClosestEndpoints(self, axis, value):
+        highDiff = sys.float_info.max
+        closestHigh = -1
+        lowDiff = sys.float_info.min
+        closestLow = -1
         
-        self.nextOp = None
-        assert len(previousOps) > 0
-        self.previousOps = previousOps
-        for o in previousOps:
-            assert o.applied == True
-            o.nextOp = self
-        
-        self.result = set()
-        self.preview = set()
-        
-        self.updatePreview()
-        
-        self.op = op
+        for i,(low,high) in enumerate(self.params[axis][0]):
+            temp = abs(high-value)
+            if temp < highDiff:
+                closestHigh = i
+                highDiff = temp 
+            temp = abs(low-value)
+            if temp < lowDiff:
+                closestLow = i
+                lowDiff = temp
+        return (closestHigh,highDiff,closestLow,lowDiff)
     
-    def adjust(self, opToAdd=None, opToRemove=None):
-        assert self.applied == False
-        if opToRemove != None and opToAdd == None and len(self.previousOps) <= 1:
+    def findClosestRange(self, axis, value, isHigh=None):
+        diff = sys.float_info.max
+        closest = -1
+        
+        if isHigh == None:
+            isHigh = False
+            repeat = 0
+        else:
+            repeat = 1
+        
+        while repeat < 2:
+            for i,(low,high) in enumerate(self.params[axis][0]):
+                if isHigh:
+                    newDiff = abs(high-value)
+                else:
+                    newDiff = abs(low-value)
+                if newDiff < diff:
+                    closest = i
+                    diff = newDiff
+            repeat += 1
+            isHigh = not isHigh
+        
+        if closest == -1:
+            return None
+        else:
+            return closest
+    
+    def simplifyNumericSelections(self, axis):
+        selectedRanges = self.params[axis][0]
+        if len(selectedRanges) == 0:
             return
-        if opToRemove != None:
-            assert opToRemove.applied == True
-            self.previousOps.remove(opToRemove)
-            opToRemove.nextOp = None
-        if opToAdd != None:
-            assert opToAdd.applied == True
-            self.previousOps.append(opToAdd)
-            opToAdd.nextOp = self
-        self.updatePreview()
+        selectedRanges.sort()
+        prevLow,prevHigh = selectedRanges[0]
+        newRanges = [(prevLow,prevHigh)]
+        i = 0
+        for low,high in selectedRanges[1:]:
+            if prevHigh >= low:
+                newRanges[i] = (newRanges[i][0],max(high,prevHigh))
+            else:
+                newRanges.append((low,high))
+                prevLow = low
+                prevHigh = high
+                i += 1
+        
+        self.params[axis] = (newRanges,self.params[axis][1])
     
-    def updatePreview(self):
-        self.preview = set()
-        for o in self.previousOps:
-            self.preview.update(o.result)
+    def updateResult(self, axis=None):
+        if axis == None:
+            axis = self.params.itervalues().next()    # ugly way of pulling out one of the axes
+        self.result = axis.query(self.params[axis][0],self.params[axis][1])
+        for ax in self.data.axes.itervalues():
+            if ax == axis:
+                continue
+            self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
     
-    def apply(self, allData):
-        self.applied = True
-        
-        if self.op == "UNION" or self.op == "COMPLEMENT":
-            self.result = set()
-            for o in self.previousOps:
-                assert o.applied
-                self.result.update(o.result)
-        elif self.op == "INTERSECTION":
-            self.result = None
-            for o in self.previousOps:
-                if self.result == None:
-                    self.result = set(o.result)
-                else:
-                    self.result.intersection_update(o.result)
-        elif self.op == "DIFFERENCE":
-            self.result = None
-            for o in self.previousOps:
-                if self.result == None:
-                    self.result = set(o.result)
-                else:
-                    self.result.difference_update(o.result)
-        
-        if self.op == "COMPLEMENT":
-            temp = set(allData.data.iterkeys())
-            temp.difference_update(self.result)
-            self.result = temp
-        
-        self.preview = set(self.result)
-        
-        return self
+    def addNumericRange(self, axis, newLow, newHigh, applyImmediately=True):
+        self.params[axis][0].append((newLow,newHigh))
+        if applyImmediately:
+            self.simplifyNumericSelections(axis)
+            self.updateResult(axis)
     
-    def undo(self):
-        self.applied = False
-        self.result = set()
-        return list(self.previousOps)
+    def removeNumericRange(self, axis, value, applyImmediately=True):
+        index = self.findClosestRange(axis, value, isHigh=None)
+        del self.param[axis][0][index]
+        if applyImmediately:
+            self.updateResult(axis)
     
-    def abort(self):
-        for o in self.previousOps:
-            o.nextOp = None
-        
-class numericOperation(operation):
-    def __init__(self, name, previousOp, axis, lowStart, highStart):
-        self.name = name
-        self.applied = False
-        self.isFirstOp = False
-        
-        self.nextOp = None
-        self.previousOp = previousOp
-        
-        assert previousOp.applied == True
-        previousOp.nextOp = self
-        
-        self.result = self.previousOp.result
-        self.startPreview = self.axis.getSelected()
-        self.preview = set()
-        
-        self.oldRanges = set(axis.selectedValueRanges)
-        
-        self.axis = axis
-        self.lowStart = lowStart
-        self.highStart = highStart
-        self.low = lowStart
-        self.high = highStart
-    
-    def adjust(self, deltaLow, deltaHigh):
-        assert self.applied == False
-        self.low += deltaLow
-        self.high += deltaHigh
-        self.updatePreview()
-    
-    def updatePreview(self):
-        newSet = set()
-        if self.axis.tree != None:
-            newSet.update(self.axis.tree.select(self.low,self.high,includeMasked=False,includeUndefined=False,includeMissing=False))
-        self.preview = self.startPreview.difference(newSet)
-    
-    def apply(self, allData):
-        self.applied = True
-        if self.low == self.lowStart and self.high == self.highStart:
-            self.axis.selectedValueRanges.add((self.low,self.high))
-            self.axis.simplifyNumericSelections()
+    def applyNumericSelection(self, axis, index, isHigh, newValue, applyImmediately=True):
+        if isHigh:
+            self.params[axis][0][index] = (self.params[axis][0][index][0],newValue)
         else:
-            self.axis.modifyNumericSelection(self.lowStart,self.highStart,self.low,self.high)
-            self.axis.simplifyNumericSelections()
-        
-        self.result = self.axis.getSelected()
-        for a in allData.axes.itervalues():
-            if len(a) == 0:
-                break
-            if a != self.axis:
-                self.result.intersection_update(a.getSelected())
-        
-        self.preview = set(self.result)
-        return self
-        
-    def undo(self):
-        self.applied = False
-        self.result = self.previousOp.result
-        self.axis.selectedValueRanges = set(self.oldRanges)
-        if self.low == self.lowStart and self.high == self.highStart:
-            self.axis.selectedValueRanges.remove((self.low,self.high))
+            self.params[axis][0][index] = (newValue,self.params[axis][0][index][1])
+        if applyImmediately:
+            self.simplifyNumericSelections(axis)
+            self.updateResult(axis)
+    
+    def applyLabelToggle(self, axis, label, applyImmediately=True):
+        self.params[axis][1][label] = not self.params[axis][1][label]
+        if applyImmediately:
+            self.updateResult(axis)
+    
+    def applyLabelSelection(self, axis, label, include, applyImmediately=True):
+        self.params[axis][1][label] = include
+        if applyImmediately:
+            self.updateResult(axis)
+    
+    def applySelectAllLabels(self, axis, include=True, applyImmediately=True):
+        for l in self.params[axis][1].iterkeys():
+            self.params[axis][1][l] = include
+        if applyImmediately:
+            self.updateResult(axis)
+    
+    def applySelectAll(self, axis, applyImmediately=True):
+        ranges = [(axis.getMin(),axis.getMax())]
+        labels = {}
+        for k,visible in axis.visibleLabels.iteritems():
+            labels[k] = True
+        self.params[axis] = (ranges,labels)
+        if applyImmediately:
+            self.updateResult(axis)
+    
+    def applySelectNone(self, axis, applyImmediately=True):
+        ranges = [(axis.getMax(),axis.getMax())]
+        labels = {}
+        for k,visible in axis.visibleLabels.iteritems():
+            labels[k] = False
+        self.params[axis] = (ranges,labels)
+        if applyImmediately:
+            self.updateResult(axis)
+    
+    def applySelectTopFivePercent(self, axis, applyImmediately=True):
+        if not axis.hasNumeric():
+            ranges = []
         else:
-            self.axis.modifyNumericSelection(self.low,self.high,self.lowStart,self.highStart)
-        return self.previousOp
+            fivePercent = (axis.getMax()-axis.getMin()) * 0.05
+            ranges = [(axis.getMax()-fivePercent,axis.getMax())]
+        self.params[axis] = (ranges,self.params[axis][1])
+        if applyImmediately:
+            self.updateResult(axis)
+    
+    def getUnion(self, others):
+        new = selection(self.data, name=None, result=self.result, params=self.params)
+        
+        for other in others:
+            for ax,(ranges,labels) in other.params.iteritems():
+                for low,high in ranges:
+                    new.addNumericRange(ax, low, high, applyImmediately=False)
+                for label,include in labels.iteritems():
+                    new.params[ax][1][label] = include or new.params[ax][1][label]
+        
+        firstAxis = None
+        for ax in new.params.iterkeys():
+            new.simplifyNumericSelections(ax)
+            if firstAxis == None:
+                firstAxis = ax
+        
+        new.updateResult(firstAxis)
+        return new
+    
+    def getIntersection(self, others):
+        new = selection(self.data, name=None, result=self.result, params=self.params)
+        
+        firstAxis = None
+        
+        for other in others:
+            for ax,(ranges,labels) in other.params.iteritems():
+                if firstAxis == None:
+                    firstAxis = ax
+                
+                newRanges = []
+                for low,high in ranges:
+                    for myLow,myHigh in new.params[ax][0]:
+                        newLow = max(myLow,low)
+                        newHigh = min(myHigh,high)
+                        if newLow <= newHigh:
+                            newRanges.append((newLow,newHigh))
+                
+                newLabels = {}
+                for label,include in labels.iteritems():
+                    newLabels[label] = include and new.params[ax][1][label]
+                
+                new.params[ax] = (newRanges,newLabels)
+        
+        new.updateResult(firstAxis)
+        return new
+    
+    def getDifference(self, others):
+        new = selection(self.data, name=None, result=self.result, params=self.params)
+        
+        firstAxis = None
+        
+        for other in others:
+            for ax,(ranges,labels) in other.params.iteritems():
+                if firstAxis == None:
+                    firstAxis = ax
+                
+                for i,(myLow,myHigh) in enumerate(new.params[ax][0]):
+                    for low,high in ranges:
+                        if myLow >= low and myLow <= high:
+                            myLow = high
+                        if myHigh >= low and myHigh <= high:
+                            myHigh = low
+                        new.params[ax][0][i] = (myLow,myHigh)
+                
+                for label,include in labels.iteritems():
+                    new.params[ax][1][label] = new.params[ax][1][label] and not include
+        
+        new.updateResult(firstAxis)
+        return new
+    
+    def getInverse(self):
+        newParams = {}
+        
+        for ax,(ranges,labels) in self.params.iteritems():
+            newLabels = {}
+            for label in labels.iterkeys():
+                newLabels[l] = True
+            newParams[ax] = ([(ax.getMin(),ax.getMax())],newLabels)
+        new = selection(self.data, name=None, result=set(), params=([(self.getMin(),self.getMax())],{}))
+        return new.getDifference(self)
+    
+    def previewUnion(self, others):
+        tempResult = set(self.result)
+        for o in others:
+            tempResult.update(o.result)
+        return tempResult
+    
+    def previewParameterUnion(self, others):
+        tempResult = {}
+        for ax,(ranges,labels) in self.params.iteritems():
+            tempResult[ax] = (deepcopy(ranges),deepcopy(labels))
+        
+        for o in others:
+            for ax,(ranges,labels) in o.params.iteritems():
+                tempResult[ax][0].extend(ranges)    # don't bother to consolidate... make it obvious that multiple selections are active
+                for label in tempResult[ax][1].iterkeys():
+                    tempResult[ax][1][label] = tempResult[ax][1][label] or labels[label]
+        return tempResult
+    
+    def previewNumericSelection(self, axis, index, isHigh, newValue):
+        if isHigh:
+            return axis.query((self.params[axis][0][index][0],newValue),{})
+        else:
+            return axis.query((newValue,self.params[axis][0][index][1]),{})
+    
+    def previewLabelSelection(self, axis, label, include=True):
+        return axis.query((),{label:include})
 
-class labelOperation(operation):
-    def __init__(self, name, previousOp, axis, label, checked=True):
-        self.name = name
-        self.applied = False
-        self.isFirstOp = False
+class selectionState:
+    def __init__(self, data):
+        self.data = data
         
-        self.axis = axis
-        self.label = label
-        self.checked = checked
+        startingSelection = selection(self.data)
+        self.selectionOrder = [startingSelection.name]
+        self.allSelections = {startingSelection.name:startingSelection}
+        self.activeSelections = [startingSelection]
+    
+    def registerNew(self, s):
+        self.activeSelections = [s]
+        self.allSelections[s.name] = s
+        self.selectionOrder.append(s.name)
+    
+    def remove(self, s):
+        self.selectionOrder.remove(s.name)
+        del self.allSelections[s.name]
+    
+    def hasMultipleActiveSelections(self):
+        return len(self.activeSelections) > 1
+    
+    def startNewSelection(self):
+        self.registerNew(selection(self.data))
+    
+    def deleteActiveSelections(self):
+        for s in self.activeSelections:
+            self.remove(s)
         
+        if len(self.allSelections) == 0:
+            self.startNewSelection()
+        else:
+            self.activeSelections = [self.allSelections[self.selectionOrder[-1]]]
+    
+    def duplicateActiveSelection(self):
+        s = self.activeSelections[0]
+        newSelection = selection(self.data,s.name + "(2)",s.result,s.params)
+        self.registerNew(newSelection)
+    
+    def invertActiveSelection(self):
+        s = self.activeSelections[0]
+        self.allSelections[s.name] = s.getInverse()
+    
+    def unionActiveSelections(self):
+        first = self.activeSelections[0]
+        newSelection = first.getUnion(self.activeSelections[1:])
+        self.registerNew(newSelection)
+    
+    def intersectionActiveSelections(self):
+        first = self.activeSelections[0]
+        newSelection = first.getIntersection(self.activeSelections[1:])
+        self.registerNew(newSelection)
+    
+    def differenceActiveSelections(self):
+        first = self.activeSelections[0]
+        newSelection = first.getDifference(self.activeSelections[1:])
+        self.registerNew(newSelection)
+    
+    def renameSelection(self, newText):
+        if self.allSelections.has_key(newText):
+            return
+        s = self.activeSelections[0]
+        oldName = s.name
+        
+        self.allSelections[newText] = s
+        del self.allSelections[oldName]
+        
+        i = self.selectionOrder.index(oldName)
+        self.selectionOrder[i] = newText
+    
+    def activateSelection(self, name):
+        self.activeSelections.append(self.allSelections[name])
+    
+    def deactivateSelection(self, name):
+        self.activeSelections.remove(self.allSelections[name])
+    
+    def getActiveRsNumbers(self):
+        return self.activeSelections[0].previewUnion(self.activeSelections[1:])
+    
+    def getActiveParameters(self):
+        return self.activeSelections[0].previewParameterUnion(self.activeSelections[1:])
+
+class operation:
+    NUMERIC_CHANGE = 1
+    NUMERIC_ADD = 2
+    MULTI_ADD = 3
+    NUMERIC_REMOVE = 4
+    NUMERIC_TOP_FIVE_PERCENT = 5
+    LABEL_TOGGLE = 6
+    ALL = 7
+    NONE = 8
+    SELECTION_COMPLEMENT = 9
+    SELECTION_DUPLICATE = 10
+    SELECTION_RENAME = 11
+    SELECTION_UNION = 12
+    SELECTION_DIFFERENCE = 13
+    SELECTION_INTERSECTION = 14
+    SELECTION_NEW = 15
+    SELECTION_DELETE = 16
+    SELECTION_INCLUDE = 17
+    SELECTION_EXCLUDE = 18
+    SELECTION_SWITCH = 19
+    NO_OP = 20
+    
+    # shortcuts that classify types of operations
+    SINGLE_SELECTION_REQUIRED = set([NUMERIC_CHANGE,NUMERIC_ADD,MULTI_ADD,NUMERIC_REMOVE,NUMERIC_TOP_FIVE_PERCENT,LABEL_TOGGLE,ALL,NONE,SELECTION_COMPLEMENT,SELECTION_DUPLICATE,SELECTION_RENAME])
+    MULTIPLE_SELECTION_REQUIRED = set([SELECTION_UNION,SELECTION_DIFFERENCE,SELECTION_INTERSECTION])
+    STATELESS = set([SELECTION_NEW,SELECTION_DELETE,SELECTION_INCLUDE,SELECTION_EXCLUDE,NO_OP,SELECTION_SWITCH])
+    
+    AXIS_REQUIRED = set([NUMERIC_CHANGE,NUMERIC_ADD,MULTI_ADD,NUMERIC_REMOVE,NUMERIC_TOP_FIVE_PERCENT,LABEL_TOGGLE,ALL,NONE])
+    
+    SINGLE_LOSSY = set([NUMERIC_CHANGE,NUMERIC_ADD,MULTI_ADD,NUMERIC_REMOVE,NUMERIC_TOP_FIVE_PERCENT,ALL,NONE])
+    
+    DOESNT_DIRTY = set([SELECTION_RENAME,SELECTION_DUPLICATE,NO_OP])
+    
+    def __init__(self, type, selections, previousOp=None, **kwargs):
+        self.type = type
+        self.selections = selections
         self.previousOp = previousOp
-        assert previousOp.applied == True
-        self.previousOp.nextOp = self
         self.nextOp = None
+        self.kwargs = kwargs
+        self.isLegal = True
+        self.finished = False
         
-        self.result = previousOp.result
-        self.preview = self.axis.labels[label]
+        # check that types and parameters are appropriate
+        try:
+            if len(self.selections.activeSelections) == 1:
+                assert self.type not in operation.MULTIPLE_SELECTION_REQUIRED
+                self.activeSelection = self.selections.activeSelections[0]
+                
+                if self.type in operation.AXIS_REQUIRED:
+                    assert self.kwargs.has_key('axis')
+                    self.axis = self.kwargs['axis']
+                    
+                    if self.type in operation.SINGLE_LOSSY:
+                        self.previousParams = deepcopy(self.activeSelection.params[self.axis])
+            
+            else:
+                assert self.type not in operation.SINGLE_SELECTION_REQUIRED
+                self.activeSelections = activeSelections
+                
+                if self.type == operation.SELECTION_DELETE:
+                    self.previousParams = {}
+                    for s in self.activeSelections:
+                        self.previousParams[s.name] = {}
+                        for ax,(ranges,labels) in s.params.iteritems():
+                            self.previousParams[s.name][ax] = (deepcopy(ranges),deepcopy(labels))
+            
+            # operation-specific inits
+            if self.type == operation.NUMERIC_CHANGE:
+                assert self.kwargs.has_key('start') and self.kwargs.has_key('end') and self.kwargs.has_key('isHigh')
+                self.start = self.kwargs['start']
+                self.end = self.kwargs['end']
+                self.isHigh = self.kwargs['isHigh']
+                self.rangeIndex = self.activeSelection.findClosestRange(self.axis, self.start, self.isHigh)
+            elif self.type == operation.LABEL_TOGGLE:
+                assert self.kwargs.has_key('label')
+                self.label = self.kwargs['label']
+            elif self.type == operation.NUMERIC_ADD or self.type == operation.NUMERIC_REMOVE:
+                assert self.kwargs.has_key('position')
+                self.position = self.kwargs['position']
+            elif self.type == operation.MULTI_ADD:
+                assert self.kwargs.has_key('secondAxis') and self.kwargs.has_key('position') and self.kwargs.has_key('secondPosition')
+                self.secondAxis = self.kwargs['secondAxis']
+                
+                self.position = self.kwargs['position']
+                self.secondPosition = self.kwargs['secondPosition']
+                
+                self.includeAllLabels = self.kwargs.get('includeAllLabels',False)
+                self.includeAllSecondLabels = self.kwargs.get('includeAllSecondLabels',False)
+                
+                self.secondPreviousParams = deepcopy(self.activeSelection.params[self.secondAxis])
+            elif self.type == operation.SELECTION_RENAME or self.type == operation.SELECTION_INCLUDE:
+                assert self.kwargs.has_key('name')
+                self.oldName = self.activeSelection.name
+                self.name = self.kwargs['name']
+            elif self.type == operation.SELECTION_INCLUDE:
+                assert self.kwargs.has_key('name')
+                self.name = self.kwargs['name']
+            elif self.type == operation.SELECTION_EXCLUDE:
+                assert self.kwargs.has_key('name') and len(self.activeSelections) > 1
+                self.name = self.kwargs['name']
+            elif self.type == operation.SELECTION_SWITCH:
+                assert self.kwargs.has_key('name')
+                self.name = self.kwargs['name']
+                self.oldNames = []
+                for s in selections.activeSelections:
+                    self.oldNames.append(s.name)
+            elif self.type == operation.SELECTION_COMPLEMENT:
+                self.previousParams = {}
+                for ax,(ranges,labels) in self.activeSelection.params.iteritems():
+                    self.previousParams[ax] = (deepcopy(ranges),deepcopy(labels))
+            
+        except AssertionError:
+            self.isLegal = False
         
-    def apply(self, allData):
-        self.applied = True
-        self.axis.modifyLabelSelection(self.label, self.checked)
+        if self.isLegal:
+            if self.previousOp != None:
+                self.previousOp.nextOp = self
+            self.apply()
+    
+    def apply(self):
+        assert self.isLegal
+        if self.finished:
+            return
+        self.finished = True
         
-        self.result = self.axis.getSelected()
-        for a in allData.axes.itervalues():
-            if len(a) == 0:
-                break
-            if a != self.axis:
-                self.result.intersection_update(a.getSelected())
-        
-        return self
+        if self.type == operation.NUMERIC_CHANGE:
+            self.activeSelection.applyNumericSelection(self.axis, self.rangeIndex, self.isHigh, self.end)
+        elif self.type == operation.NUMERIC_ADD:
+            self.activeSelection.addNumericRange(self.axis, self.position)
+        elif self.type == operation.NUMERIC_REMOVE:
+            self.activeSelection.removeNumericRange(self.axis, self.position)
+        elif self.type == operation.MULTI_ADD:
+            if self.includeAllLabels:
+                self.activeSelection.applySelectAllLabels(self.axis, applyImmediately=False)
+            if self.includeAllSecondLabels:
+                self.activeSelection.applySelectAllLabels(self.secondAxis, applyImmediately=False)
+            self.activeSelection.addNumericRange(self.axis, self.position, applyImmediately=False)
+            self.activeSelection.addNumericRange(self.secondAxis, self.secondPosition)
+        elif self.type == operation.NUMERIC_TOP_FIVE_PERCENT:
+            self.activeSelection.applySelectTopFivePercent(self.axis)
+        elif self.type == operation.ALL:
+            self.activeSelection.applySelectAll(self.axis)
+        elif self.type == operation.NONE:
+            self.activeSelection.applySelectNone(self.axis)
+        elif self.type == operation.LABEL_TOGGLE:
+            self.activeSelection.applyLabelToggle(self.axis,self.label)
+        elif self.type == operation.SELECTION_COMPLEMENT:
+            self.selections.invertActiveSelection()
+        elif self.type == operation.SELECTION_DELETE:
+            self.selections.deleteActiveSelections()
+        elif self.type == operation.SELECTION_DIFFERENCE:
+            self.selections.differenceActiveSelections()
+        elif self.type == operation.SELECTION_DUPLICATE:
+            self.selections.duplicateActiveSelection()
+        elif self.type == operation.SELECTION_EXCLUDE:
+            self.selections.deactivateSelection(self.name)
+        elif self.type == operation.SELECTION_INCLUDE:
+            self.selections.activateSelection(self.name)
+        elif self.type == operation.SELECTION_SWITCH:
+            for n in self.oldNames:
+                self.selections.deactivateSelection(n)
+            self.selections.activateSelection(self.name)
+        elif self.type == operation.SELECTION_INTERSECTION:
+            self.selections.intersectionActiveSelections()
+        elif self.type == operation.SELECTION_NEW:
+            self.selections.startNewSelection()
+        elif self.type == operation.SELECTION_RENAME:
+            self.selections.renameSelection(self.name)
+        elif self.type == operation.SELECTION_UNION:
+            self.selections.unionActiveSelections()
     
     def undo(self):
-        self.applied = False
-        self.result = self.previousOp.result
-        self.axis.modifyLabelSelection(self.label, not self.checked)
+        assert self.isLegal
+        if not self.finished:
+            return
+        self.finished = False
         
-        return self.previousOp
+        # restore data lost by operations
+        if self.type == operation.SELECTION_DELETE:
+            for name,params in self.previousParams.iteritems():
+                newSelection = selection(self.data,name,set(),params)
+                newSelection.updateResult()
+                self.selections.registerNew(newSelection)
+            for name in self.previousParams.iterkeys():
+                self.selections.activateSelection(name)
+        elif self.type == operation.SELECTION_COMPLEMENT:
+            self.activeSelection.params = {}
+            for ax,(ranges,labels) in self.previousParams.iteritems():
+                self.activeSelection.params[ax] = (deepcopy(ranges),deepcopy(labels))
+            self.activeSelection.updateResult()
+        elif self.type in operation.SINGLE_LOSSY:
+            self.activeSelection.params[self.axis] = deepcopy(self.previousParams)
+            if self.type == operation.MULTI_ADD:
+                self.activeSelection.params[self.secondAxis] = deepcopy(self.secondPreviousParams)
+            self.activeSelection.updateResult(self.axis)
+        
+        # fix easy to restore operations
+        if self.type == operation.LABEL_TOGGLE:
+            self.axis.applyLabelToggle(self.axis,self.label)
+        elif self.type == operation.SELECTION_RENAME:
+            self.selections.renameSelection(self.oldName)
+        elif self.type == operation.SELECTION_EXCLUDE:
+            self.selections.activateSelection(self.name)
+        elif self.type == operation.SELECTION_INCLUDE:
+            self.selections.deactivateSelection(self.name)
+        elif self.type == operation.SELECTION_SWITCH:
+            self.selections.deactivateSelection(self.name)
+            for n in self.oldNames:
+                self.selections.activeSelections(n)
 
 class variantData:
     def __init__(self):
@@ -423,109 +767,9 @@ class variantData:
         self.currentYattribute = None
         
         self.axisLabels = set()
-        
-        self.activeSelection = None
-        self.nonPreviewSetOps = []
-        self.selectionOrder = []
-        self.selections = {}
-        self.newSelectionNumber = 1
-        self.multipleSelected = False
-        self.newSelection()
+        self.alleleFrequencyLabels = []
         
         self.isFrozen = False
-    
-    def getSelectionList(self):
-        pass    # need a list of all selections in order, with flags for which are selected and which one was the first selection
-    
-    def getCurrentPreview(self):
-        return self.activeSelection.preview
-    
-    def getCurrentSelection(self):
-        return self.activeSelection.result
-    
-    def addSelection(self, new, changeToNew = True):
-        self.selectionOrder.append(new.name)
-        self.selections[new.name] = new
-        if changeToNew:
-            self.changeSelection(new.name)
-    
-    def changeSelection(self, name):
-        if self.multipleSelected:
-            self.activeSelection.abort()
-            self.nonPreviewSetOps = []
-        
-        self.activeSelection = self.selections[name]
-    
-    def newSelection(self):
-        new = operation('Selection %s' % self.newSelectionNumber)
-        self.newSelectionNumber += 1
-        self.addSelection(new)
-        
-    def duplicateSelection(self, name=None):
-        if name == None:
-            name = self.activeSelection.name
-        if self.multipleSelected:
-            for o in self.nonPreviewSetOps:
-                self.duplicateSelection(o.name)
-            self.changeSelection(self.selectionOrder[-1])
-        else:
-            new = deepcopy(self.selections[name])
-            m = selectionLabelRegex.search(new.name)
-            if m == None:
-                new.name += " (2)"
-            else:
-                new.name = new.name[:m.start()] + "(%i)" % (int(new.name[m.start()+1:m.end()-1])+1) + new.name[m.end():]
-            
-            if name == self.activeSelection.name:
-                self.addSelection(new)
-            else:
-                self.addSelection(new, False)
-    
-    def deleteSelection(self, name=None):
-        if name == None:
-            name = self.activeSelection.name
-        if self.multipleSelected:
-            for o in self.nonPreviewSetOps:
-                self.deleteSelection(o.name)
-            self.nonPreviewSetOps = []
-        
-        del self.selections[name]
-        self.selectionOrder.remove(name)
-        
-        if name == self.activeSelections.name:
-            if len(self.selectionOrder) == 0:
-                self.newSelection()
-            else:
-                self.changeSelection(self.selectionOrder[-1])
-    
-    def previewSetOp(self, name):
-        if self.multipleSelected:
-            if name in self.nonPreviewSetOps:
-                if len(self.activeSelection.previousOps) > 1:
-                    self.activeSelection.adjust(opToRemove=self.selections[name])
-            else:
-                self.activeSelection.adjust(opToAdd=self.selections[name])
-    
-    def changeSetOp(self,name):
-        if self.multipleSelected:
-            if name in self.nonPreviewSetOps:
-                self.nonPreviewSetOps.remove(name)
-            else:
-                self.nonPreviewSetOps.append(name)
-    
-    def startSetOp(self):
-        if self.multipleSelected:
-            return
-        newText = "Merged"
-        newIndex = 1
-        while newText in self.selectionOrder:
-            newText = "Merged (%i)" % newIndex
-            newIndex += 1
-        
-        self.nonPreviewSetOps = [self.activeSelection.name]
-        self.activeSelection = setOperation(newText,previousOps=list(self.nonPreviewSetOps))
-        self.selectionOrder.append(newText)
-        self.selections[newText] = self.activeSelection
     
     def addVariant(self, variantObject):
         if self.isFrozen:
@@ -548,7 +792,13 @@ class variantData:
         self.axisLabels.discard(att)
     
     def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup=[], fallback="ALT"):
-        att = "%s Allele Frequency" % groupName
+        if self.isFrozen:
+            self.thaw()
+        att = "Allele Frequency (%s)" % groupName
+        self.axisLabels.add(att)
+        if att not in self.alleleFrequencyLabels:
+            self.alleleFrequencyLabels.append(att)
+        
         for variantObject in self.data.itervalues():
             # First see if we can find a minor allele with stuff in basisGroup
             alleleCounts = {}
@@ -569,9 +819,9 @@ class variantData:
                     variantObject.attributes[att] = float('NaN')
                     continue
                 elif fallback == "REF":
-                    minorAllele = variantObject.ref
+                    minorAllele = 0 #variantObject.ref.text
                 elif fallback == "ALT":
-                    minorAllele = variantObject.alt[0]
+                    minorAllele = 1 #variantObject.alt[0].text
                 else:
                     index = int(fallback[4:])
                     if index < len(variantObject.alt):
@@ -584,9 +834,9 @@ class variantData:
             minorCount = 0
             allCount = 0
             for i in individuals:
-                if variantObject.genotypes.has_key(i):
-                    allele1 = variantObject.genotypes[i].allele1
-                    allele2 = variantObject.genotypes[i].allele2
+                if variantObject.genotypes.has_key(i.name):
+                    allele1 = variantObject.genotypes[i.name].allele1
+                    allele2 = variantObject.genotypes[i.name].allele2
                     if allele1 != None:
                         allCount += 1
                         if allele1 == minorAllele:
@@ -621,11 +871,6 @@ class variantData:
         
         for att in self.axisLabels:
             self.axes[att] = mixedAxis()
-            
-            if startingXaxis == None:
-                startingXaxis = att
-            elif startingYaxis == None:
-                startingYaxis = att
         
         for v in self.data.itervalues():
             self.axes["Genome Position"].add(v.name,v.genomePosition)
@@ -644,7 +889,67 @@ class variantData:
                 index += 1
                 progressWidget.setValue(index)
         
+        if startingXaxis == None or startingYaxis == None:
+            x,y = self.getFirstAxes()
+            if startingXaxis == None:
+                startingXaxis = x
+                if startingYaxis == None:
+                    startingYaxis = y
+            elif startingYaxis == None:
+                startingYaxis = x
+        
         return self.setScatterAxes(startingXaxis, startingYaxis, progressWidget)
+    
+    def getFirstAxes(self):
+        # attempts to prioritize existing axes; chooses from the alphabetically sorted lists:
+        # first: recalculated allele frequencies
+        # second: any attribute with numerical values
+        # third: any other attribute
+        if not self.isFrozen:
+            self.freeze(None, None, None)
+        x = None
+        y = None
+        for a in sorted(self.alleleFrequencyLabels):
+            if x == None:
+                x = a
+            elif y == None:
+                y = a
+            else:
+                return (x,y)
+        for a,ax in sorted(self.axes.iteritems()):
+            if ax.hasNumeric():
+                if x == None:
+                    x = a
+                elif y == None:
+                    y = a
+                else:
+                    return (x,y)
+        for a,ax in sorted(self.axes.iteritems()):
+            if not ax.hasNumeric():
+                if x == None:
+                    x = a
+                elif y == None:
+                    y = a
+                else:
+                    return (x,y)
+        # If we've gotten this far, someone's not using the program correctly (you should have AT LEAST two dimensions)
+        raise ValueError("You should have at least two data attributes (columns in your .csv file or INFO fields in your .vcf file)\n" +
+                         "to use this program (otherwise you probably should be using LibreOffice Calc or IGV to explore your data instead).")
+    
+    def defaultAxisOrder(self):
+        # follows the same order as finding first axes, but gives the whole list
+        if not self.isFrozen:
+            self.freeze(None, None, None)
+        result = []
+        for a in sorted(self.alleleFrequencyLabels):
+            result.append(a)
+        for a,ax in sorted(self.axes.iteritems()):
+            if ax.hasNumeric():
+                result.append(a)
+        for a,ax in sorted(self.axes.iteritems()):
+            if not ax.hasNumeric():
+                result.append(a)
+        return result
     
     def thaw(self):
         '''
@@ -681,7 +986,11 @@ class variantData:
             threshold = increment
             
             progressWidget.setLabelText('Building K-d Tree')
-                
+        
+        if not self.axes.has_key(attribute1):
+            print self.axes.keys()
+            print attribute1
+            sys.exit(1)
         axis1 = self.axes[attribute1]
         assert axis1.isfinished
         axis2 = self.axes[attribute2]
@@ -714,22 +1023,23 @@ class variantData:
                     self.scatterYs.add(rs,axis2.rsValues.get(rs,None))
                 else:
                     self.scatterNones.add(rs)
-            index += 1
-            if index > threshold:
-                threshold += increment
-                if progressWidget != None:
-                    if progressWidget.wasCanceled():
-                        self.currentXattribute = originalXattribute
-                        self.currentYattribute = originalYattribute
-                        
-                        self.scatter = originalScatter
-                        self.scatterXs = originalScatterXs
-                        self.scatterYs = originalScatterYs
-                        self.scatterNones = originalScatterNones
-                        return False
-                    progressWidget.setValue(index/divisions)
-        if progressWidget != None:
-            progressWidget.setValue(increment)
+            if progressWidget != None:
+                index += 1
+                if index > threshold:
+                    threshold += increment
+                    if progressWidget != None:
+                        if progressWidget.wasCanceled():
+                            self.currentXattribute = originalXattribute
+                            self.currentYattribute = originalYattribute
+                            
+                            self.scatter = originalScatter
+                            self.scatterXs = originalScatterXs
+                            self.scatterYs = originalScatterYs
+                            self.scatterNones = originalScatterNones
+                            return False
+                        progressWidget.setValue(index/divisions)
+            if progressWidget != None:
+                progressWidget.setValue(increment)
         return True
         
     def getData(self, rsNumbers, att):
