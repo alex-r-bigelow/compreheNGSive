@@ -1,8 +1,9 @@
 from resources.structures import recursiveDict
 from scour.scour import scourString
 from pyquery import PyQuery as pq
-from PySide.QtCore import QByteArray, QRectF
+from PySide.QtCore import Qt, QByteArray, QRectF
 from PySide.QtSvg import QSvgRenderer
+from PySide.QtGui import QPixmap, QCursor, QPainter
 import sys, math
 from copy import deepcopy
 
@@ -793,8 +794,22 @@ class mutableSvgRenderer:
         self.forceFreeze()
         return self.renderer.defaultSize()
     
-    
-    
-    
+    def generateCursor(self, element):
+        cursorPixmap = QPixmap(32,32)
+        hotX = element.getAttribute('__hotX')
+        if hotX == None:
+            hotX = element.width()/2
+        hotY = element.getAttribute('__hotY')
+        if hotY == None:
+            hotY = element.height()/2
+        cursorPixmap.fill(Qt.transparent)
+        element.moveTo(0,0)
+        painter = QPainter()
+        painter.begin(cursorPixmap)
+        id = element.getAttribute('id')
+        assert id != None and isinstance(id,str)
+        self.render(painter,"#" + id)
+        painter.end()
+        return QCursor(cursorPixmap,hotX,hotY)
     
     

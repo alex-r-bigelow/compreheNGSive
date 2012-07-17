@@ -25,14 +25,14 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.63"
-     inkscape:cx="217.35951"
-     inkscape:cy="342.28605"
+     inkscape:cx="290.97914"
+     inkscape:cy="366.82593"
      inkscape:document-units="px"
-     inkscape:current-layer="svg3807"
+     inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="1058"
-     inkscape:window-x="3840"
+     inkscape:window-width="1680"
+     inkscape:window-height="1028"
+     inkscape:window-x="1920"
      inkscape:window-y="0"
      inkscape:window-maximized="0" />
   <metadata
@@ -50,273 +50,262 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1"
-     transform="translate(0,40)" />
-  <rect
-     style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-     id="rect3823"
-     width="499"
-     height="499"
-     x="0.5"
-     y="0.5" />
-  <rect
-     style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-     id="rect4413"
-     width="420"
-     height="420"
-     x="60"
-     y="20"
-     __globalProperty="scatterBounds" />
-  <g
-     id="g4335"
-     transform="translate(0,-20)">
-    <path
-       inkscape:connector-curvature="0"
-       id="path5011"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       d="M 488.05746,459.99999 487.90698,462.53077 486.45691,462.53077 486.45691,463.8714 487.8249,463.8714 487.70178,466.00546 486.41587,466.00546 486.41587,467.34609 487.66074,467.34609 487.46922,469.99999 488.63201,469.99999 488.82353,467.34609 490.90287,467.34609 490.75239,469.99999 491.91519,469.99999 492.06566,467.34609 493.51573,467.34609 493.51573,466.00546 492.14774,466.00546 492.2435,463.8714 493.58413,463.8714 493.58413,462.53077 492.33926,462.53077 492.48974,459.99999 491.32695,459.99999 491.17647,462.53077 489.09713,462.53077 489.24761,459.99999 488.05746,459.99999 M 491.08071,463.8714 490.97127,466.00546 488.87825,466.00546 489.01505,463.8714 491.08071,463.8714" />
-    <path
-       style="color:#000000;fill:none;stroke:#ff0000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       d="M 494.5,469.5 485.5,460.5"
-       id="path5013"
-       inkscape:connector-curvature="0" />
-  </g>
-  <g
-     id="g5073"
-     transform="translate(20,0)">
-    <path
-       d="M 33.057456,4.999992 32.906977,7.530772 31.456909,7.530772 31.456909,8.871401 32.824898,8.871401 32.701779,11.005464 31.415869,11.005464 31.415869,12.346094 32.660739,12.346094 32.469221,14.999992 33.632011,14.999992 33.82353,12.346094 35.902873,12.346094 35.752394,14.999992 36.915185,14.999992 37.065664,12.346094 38.515732,12.346094 38.515732,11.005464 37.147743,11.005464 37.243503,8.871401 38.584132,8.871401 38.584132,7.530772 37.339262,7.530772 37.489741,4.999992 36.32695,4.999992 36.176471,7.530772 34.097128,7.530772 34.247606,4.999992 33.057456,4.999992 M 36.080712,8.871401 35.971273,11.005464 33.878249,11.005464 34.015048,8.871401 36.080712,8.871401"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       id="path4998"
-       inkscape:connector-curvature="0" />
-    <path
-       inkscape:connector-curvature="0"
-       id="path5000"
-       d="M 39.5,14.5 30.5,5.5"
-       style="color:#000000;fill:none;stroke:#ff0000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
-  </g>
-  <g
-     id="g4466"
-     __globalProperty="yAxis"
-     label="__yLabel"
-     highLabel="__yHighLabel"
-     lowLabel="__yLowLabel">
-    <text
-       sodipodi:linespacing="125%"
-       id="text4986"
-       y="-49.52"
-       x="229.83804"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       xml:space="preserve"
-       transform="matrix(0,1,-1,0,0,0)"
-       __parentProperty="__yLabel">Background Allele Frequency</text>
-    <path
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       d="M 60,439.5 60,20.5"
-       id="path4327"
-       inkscape:connector-curvature="0"
-       __globalProperty="xZeroBar" />
-    <text
-       __parentProperty="__yLowLabel"
-       xml:space="preserve"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       x="47.206093"
-       y="448.11499"
-       id="text4345"
-       sodipodi:linespacing="125%">999.999</text>
-    <text
-       __parentProperty="__yHighLabel"
-       sodipodi:linespacing="125%"
-       id="text4347"
-       y="18.115"
-       x="47.206093"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       xml:space="preserve">999.999</text>
-  </g>
-  <g
-     id="g4472"
-     __globalProperty="xAxis"
-     label="__xLabel"
-     highLabel="__xHighLabel"
-     lowLabel="__xLowLabel">
-    <text
-       xml:space="preserve"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       x="269.74805"
-       y="450.07654"
-       id="text4982"
-       sodipodi:linespacing="125%"
-       __parentProperty="__xLabel">Case Allele Frequency</text>
-    <path
-       inkscape:connector-curvature="0"
-       id="path4325"
-       d="M 60.5,440 479.5,440"
-       style="color:#000000;fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       __globalProperty="yZeroBar" />
-    <text
-       transform="matrix(0,-1,1,0,0,0)"
-       __parentProperty="__xLowLabel"
-       sodipodi:linespacing="125%"
-       id="text4337"
-       y="58.115002"
-       x="-452.79391"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       xml:space="preserve">999.999</text>
-    <text
-       transform="matrix(0,-1,1,0,0,0)"
-       __parentProperty="__xHighLabel"
-       xml:space="preserve"
-       style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-       x="-452.79391"
-       y="488.11499"
-       id="text4349"
-       sodipodi:linespacing="125%">999.999</text>
-  </g>
-  <g
-     id="g5054"
-     __globalProperty="xRange"
-     bar="__bottomBar"
-     leftHandle="__bottomBottomHandle"
-     rightHandle="__bottomTopHandle">
+     id="layer1">
     <rect
-       y="-1.0658141e-14"
-       x="60"
-       height="440"
+       style="color:#000000;fill:#7570b3;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect4480"
+       width="5"
+       height="5"
+       x="88.343559"
+       y="-32.5"
+       __globalProperty="dotPrototype" />
+    <rect
+       y="-32.5"
+       x="108.34356"
+       height="5"
+       width="5"
+       id="rect4482"
+       style="color:#000000;fill:#d95f02;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       __globalProperty="highlightedDotPrototype" />
+    <rect
+       style="color:#000000;fill:#1b9e77;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect4484"
+       width="5"
+       height="5"
+       x="128.34357"
+       y="-32.5"
+       __globalProperty="selectedDotPrototype" />
+    <rect
+       style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect3823"
+       width="499"
+       height="499"
+       x="0.5"
+       y="0.5" />
+    <rect
+       style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect4413"
        width="420"
-       id="rect4930"
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       __parentProperty="__bottomBar" />
-    <g
-       id="g4439"
-       __parentProperty="__bottomBottomHandle"
-       background="__bottomBottomHandleBackground"
-       label="__bottomBottomHandleLabel"
-       __eventCode="if self.controller.canAdjustSelection():\n
-    self.background.setAttribute('fill-opacity',0.75)\n
-    if 'LeftButton' in event.buttons:\n
-        signals['__LOCK__'] = True\n
-        if 'LeftButton' not in event.lastButtons:\n
-            self.controller.startDrag(self)\n
-        else:\n
-            distance = self.controller.handleDrag(event.deltaX)\n
-            self.translate(distance,0)\n
-    else:\n
-        signals['__LOCK__'] = False\n
-        if 'LeftButton' in event.lastButtons:\n
-            self.controller.finishDrag()"
-       __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False"
-       handleName="bottomLeft">
-      <path
-         style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         d="M 60,440 60,450 50,450 z"
-         id="path4928"
-         inkscape:connector-curvature="0"
-         __parentProperty="__bottomBottomHandleBackground" />
-      <text
-         xml:space="preserve"
-         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-         x="-452.79391"
-         y="58.115002"
-         id="text4425"
-         sodipodi:linespacing="125%"
-         __parentProperty="__bottomBottomHandleLabel"
-         transform="matrix(0,-1,1,0,0,0)">999.999</text>
-    </g>
-    <g
-       id="g4443"
-       __parentProperty="__bottomTopHandle"
-       background="__bottomTopHandleBackground"
-       label="__bottomTopHandleLabel"
-       __eventCode="if self.controller.canAdjustSelection():\n
-    self.background.setAttribute('fill-opacity',0.75)\n
-    if 'LeftButton' in event.buttons:\n
-        signals['__LOCK__'] = True\n
-        if 'LeftButton' not in event.lastButtons:\n
-            self.controller.startDrag(self)\n
-        else:\n
-            distance = self.controller.handleDrag(event.deltaX)\n
-            self.translate(distance,0)\n
-    else:\n
-        signals['__LOCK__'] = False\n
-        if 'LeftButton' in event.lastButtons:\n
-            self.controller.finishDrag()"
-       __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False"
-       handleName="bottomRight">
-      <path
-         inkscape:connector-curvature="0"
-         id="path4932"
-         d="M 480,440 480,450 490,450 z"
-         style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         __parentProperty="__bottomTopHandleBackground" />
-      <text
-         sodipodi:linespacing="125%"
-         id="text4429"
-         y="488.11499"
-         x="-452.79391"
-         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-         xml:space="preserve"
-         __parentProperty="__bottomTopHandleLabel"
-         transform="matrix(0,-1,1,0,0,0)">999.999</text>
-    </g>
-  </g>
-  <g
-     id="g5068"
-     topHandle="__leftTopHandle"
-     bottomHandle="__leftBottomHandle"
-     bar="__leftBar"
-     __globalProperty="yRange">
-    <rect
-       style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       id="rect4943"
-       width="440"
        height="420"
        x="60"
        y="20"
-       __parentProperty="__leftBar" />
+       __globalProperty="scatterBounds" />
     <g
-       id="g4431"
-       __parentProperty="__leftBottomHandle"
-       background="__leftBottomHandleBackground"
-       label="__leftBottomHandleLabel"
-       __eventCode="if self.controller.canAdjustSelection():\n
-    self.background.setAttribute('fill-opacity',0.75)\n
-    if 'LeftButton' in event.buttons:\n
-        signals['__LOCK__'] = True\n
-        if 'LeftButton' not in event.lastButtons:\n
-            self.controller.startDrag(self)\n
-        else:\n
-            distance = self.controller.handleDrag(event.deltaY)\n
-            self.translate(0,distance)\n
-    else:\n
-        signals['__LOCK__'] = False\n
-        if 'LeftButton' in event.lastButtons:\n
-            self.controller.finishDrag()"
-       handleName="leftBottom"
-       __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False">
+       id="g4335"
+       transform="translate(0,-20)"
+       __globalProperty="xNonNumericIcon">
       <path
-         style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         d="M 60,440 50,440 50,450 z"
-         id="path4945"
          inkscape:connector-curvature="0"
-         __parentProperty="__leftBottomHandleBackground" />
+         id="path5011"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         d="M 488.05746,459.99999 487.90698,462.53077 486.45691,462.53077 486.45691,463.8714 487.8249,463.8714 487.70178,466.00546 486.41587,466.00546 486.41587,467.34609 487.66074,467.34609 487.46922,469.99999 488.63201,469.99999 488.82353,467.34609 490.90287,467.34609 490.75239,469.99999 491.91519,469.99999 492.06566,467.34609 493.51573,467.34609 493.51573,466.00546 492.14774,466.00546 492.2435,463.8714 493.58413,463.8714 493.58413,462.53077 492.33926,462.53077 492.48974,459.99999 491.32695,459.99999 491.17647,462.53077 489.09713,462.53077 489.24761,459.99999 488.05746,459.99999 M 491.08071,463.8714 490.97127,466.00546 488.87825,466.00546 489.01505,463.8714 491.08071,463.8714" />
+      <path
+         style="color:#000000;fill:none;stroke:#ff0000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         d="M 494.5,469.5 485.5,460.5"
+         id="path5013"
+         inkscape:connector-curvature="0" />
+    </g>
+    <g
+       id="g5073"
+       transform="translate(20,0)"
+       __globalProperty="yNonNumericIcon">
+      <path
+         d="M 33.057456,4.999992 32.906977,7.530772 31.456909,7.530772 31.456909,8.871401 32.824898,8.871401 32.701779,11.005464 31.415869,11.005464 31.415869,12.346094 32.660739,12.346094 32.469221,14.999992 33.632011,14.999992 33.82353,12.346094 35.902873,12.346094 35.752394,14.999992 36.915185,14.999992 37.065664,12.346094 38.515732,12.346094 38.515732,11.005464 37.147743,11.005464 37.243503,8.871401 38.584132,8.871401 38.584132,7.530772 37.339262,7.530772 37.489741,4.999992 36.32695,4.999992 36.176471,7.530772 34.097128,7.530772 34.247606,4.999992 33.057456,4.999992 M 36.080712,8.871401 35.971273,11.005464 33.878249,11.005464 34.015048,8.871401 36.080712,8.871401"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         id="path4998"
+         inkscape:connector-curvature="0" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path5000"
+         d="M 39.5,14.5 30.5,5.5"
+         style="color:#000000;fill:none;stroke:#ff0000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    </g>
+    <g
+       id="g4466"
+       __globalProperty="yAxis"
+       label="__yLabel"
+       highLabel="__yHighLabel"
+       lowLabel="__yLowLabel">
       <text
          sodipodi:linespacing="125%"
-         id="text4419"
+         id="text4986"
+         y="-49.52"
+         x="229.83804"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         xml:space="preserve"
+         transform="matrix(0,1,-1,0,0,0)"
+         __parentProperty="__yLabel">Background Allele Frequency</text>
+      <path
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:0.99999988;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         d="M 60,439.5 60,20.5"
+         id="path4327"
+         inkscape:connector-curvature="0"
+         __globalProperty="xZeroBar" />
+      <text
+         __parentProperty="__yLowLabel"
+         xml:space="preserve"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         x="47.206093"
          y="448.11499"
+         id="text4345"
+         sodipodi:linespacing="125%">999.999</text>
+      <text
+         __parentProperty="__yHighLabel"
+         sodipodi:linespacing="125%"
+         id="text4347"
+         y="18.115"
          x="47.206093"
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-         xml:space="preserve"
-         __parentProperty="__leftBottomHandleLabel">999.999</text>
+         xml:space="preserve">999.999</text>
     </g>
     <g
-       id="g4435"
-       __parentProperty="__leftTopHandle"
-       background="__leftTopHandleBackground"
-       label="__leftTopHandleLabel"
-       __eventCode="if self.controller.canAdjustSelection():\n
+       id="g4472"
+       __globalProperty="xAxis"
+       label="__xLabel"
+       highLabel="__xHighLabel"
+       lowLabel="__xLowLabel">
+      <text
+         xml:space="preserve"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         x="269.74805"
+         y="450.07654"
+         id="text4982"
+         sodipodi:linespacing="125%"
+         __parentProperty="__xLabel">Case Allele Frequency</text>
+      <path
+         inkscape:connector-curvature="0"
+         id="path4325"
+         d="M 60.5,440 479.5,440"
+         style="color:#000000;fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.58823529;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         __globalProperty="yZeroBar" />
+      <text
+         transform="matrix(0,-1,1,0,0,0)"
+         __parentProperty="__xLowLabel"
+         sodipodi:linespacing="125%"
+         id="text4337"
+         y="58.115002"
+         x="-452.79391"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         xml:space="preserve">999.999</text>
+      <text
+         transform="matrix(0,-1,1,0,0,0)"
+         __parentProperty="__xHighLabel"
+         xml:space="preserve"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         x="-452.79391"
+         y="488.11499"
+         id="text4349"
+         sodipodi:linespacing="125%">999.999</text>
+    </g>
+    <g
+       id="g5054"
+       __globalProperty="xRange"
+       bar="__bottomBar"
+       leftHandle="__bottomBottomHandle"
+       rightHandle="__bottomTopHandle">
+      <rect
+         y="-1.0658141e-14"
+         x="60"
+         height="440"
+         width="420"
+         id="rect4930"
+         style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         __parentProperty="__bottomBar" />
+      <g
+         id="g4439"
+         __parentProperty="__bottomBottomHandle"
+         background="__bottomBottomHandleBackground"
+         label="__bottomBottomHandleLabel"
+         __eventCode="if self.controller.canAdjustSelection():\n
+    self.background.setAttribute('fill-opacity',0.75)\n
+    if 'LeftButton' in event.buttons:\n
+        signals['__LOCK__'] = True\n
+        if 'LeftButton' not in event.lastButtons:\n
+            self.controller.startDrag(self)\n
+        else:\n
+            distance = self.controller.handleDrag(event.deltaX)\n
+            self.translate(distance,0)\n
+    else:\n
+        signals['__LOCK__'] = False\n
+        if 'LeftButton' in event.lastButtons:\n
+            self.controller.finishDrag()"
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
+signals['__LOCK__'] = False"
+         handleName="bottomLeft">
+        <path
+           style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           d="M 60,440 60,450 50,450 z"
+           id="path4928"
+           inkscape:connector-curvature="0"
+           __parentProperty="__bottomBottomHandleBackground" />
+        <text
+           xml:space="preserve"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+           x="-452.79391"
+           y="58.115002"
+           id="text4425"
+           sodipodi:linespacing="125%"
+           __parentProperty="__bottomBottomHandleLabel"
+           transform="matrix(0,-1,1,0,0,0)">999.999</text>
+      </g>
+      <g
+         id="g4443"
+         __parentProperty="__bottomTopHandle"
+         background="__bottomTopHandleBackground"
+         label="__bottomTopHandleLabel"
+         __eventCode="if self.controller.canAdjustSelection():\n
+    self.background.setAttribute('fill-opacity',0.75)\n
+    if 'LeftButton' in event.buttons:\n
+        signals['__LOCK__'] = True\n
+        if 'LeftButton' not in event.lastButtons:\n
+            self.controller.startDrag(self)\n
+        else:\n
+            distance = self.controller.handleDrag(event.deltaX)\n
+            self.translate(distance,0)\n
+    else:\n
+        signals['__LOCK__'] = False\n
+        if 'LeftButton' in event.lastButtons:\n
+            self.controller.finishDrag()"
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
+signals['__LOCK__'] = False"
+         handleName="bottomRight">
+        <path
+           inkscape:connector-curvature="0"
+           id="path4932"
+           d="M 480,440 480,450 490,450 z"
+           style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           __parentProperty="__bottomTopHandleBackground" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text4429"
+           y="488.11499"
+           x="-452.79391"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+           xml:space="preserve"
+           __parentProperty="__bottomTopHandleLabel"
+           transform="matrix(0,-1,1,0,0,0)">999.999</text>
+      </g>
+    </g>
+    <g
+       id="g5068"
+       topHandle="__leftTopHandle"
+       bottomHandle="__leftBottomHandle"
+       bar="__leftBar"
+       __globalProperty="yRange">
+      <rect
+         style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect4943"
+         width="440"
+         height="420"
+         x="60"
+         y="20"
+         __parentProperty="__leftBar" />
+      <g
+         id="g4431"
+         __parentProperty="__leftBottomHandle"
+         background="__leftBottomHandleBackground"
+         label="__leftBottomHandleLabel"
+         __eventCode="if self.controller.canAdjustSelection():\n
     self.background.setAttribute('fill-opacity',0.75)\n
     if 'LeftButton' in event.buttons:\n
         signals['__LOCK__'] = True\n
@@ -329,47 +318,77 @@ signals['__LOCK__'] = False">
         signals['__LOCK__'] = False\n
         if 'LeftButton' in event.lastButtons:\n
             self.controller.finishDrag()"
-       handleName="leftTop"
-       __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
+         handleName="leftBottom"
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
 signals['__LOCK__'] = False">
-      <path
-         inkscape:connector-curvature="0"
-         id="path4941"
-         d="M 60,20 50,20 50,10 z"
-         style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         __parentProperty="__leftTopHandleBackground" />
-      <text
-         xml:space="preserve"
-         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-         x="47.206093"
-         y="18.115"
-         id="text4423"
-         sodipodi:linespacing="125%"
-         __parentProperty="__leftTopHandleLabel">999.999</text>
+        <path
+           style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           d="M 60,440 50,440 50,450 z"
+           id="path4945"
+           inkscape:connector-curvature="0"
+           __parentProperty="__leftBottomHandleBackground" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text4419"
+           y="448.11499"
+           x="47.206093"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+           xml:space="preserve"
+           __parentProperty="__leftBottomHandleLabel">999.999</text>
+      </g>
+      <g
+         id="g4435"
+         __parentProperty="__leftTopHandle"
+         background="__leftTopHandleBackground"
+         label="__leftTopHandleLabel"
+         __eventCode="if self.controller.canAdjustSelection():\n
+    self.background.setAttribute('fill-opacity',0.75)\n
+    if 'LeftButton' in event.buttons:\n
+        signals['__LOCK__'] = True\n
+        if 'LeftButton' not in event.lastButtons:\n
+            self.controller.startDrag(self)\n
+        else:\n
+            distance = self.controller.handleDrag(event.deltaY)\n
+            self.translate(0,distance)\n
+    else:\n
+        signals['__LOCK__'] = False\n
+        if 'LeftButton' in event.lastButtons:\n
+            self.controller.finishDrag()"
+         handleName="leftTop"
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
+signals['__LOCK__'] = False">
+        <path
+           inkscape:connector-curvature="0"
+           id="path4941"
+           d="M 60,20 50,20 50,10 z"
+           style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           __parentProperty="__leftTopHandleBackground" />
+        <text
+           xml:space="preserve"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+           x="47.206093"
+           y="18.115"
+           id="text4423"
+           sodipodi:linespacing="125%"
+           __parentProperty="__leftTopHandleLabel">999.999</text>
+      </g>
     </g>
+    <rect
+       style="color:#000000;fill:#d95f02;fill-opacity:0.09803922;stroke:#d95f02;stroke-width:1;stroke-opacity:0.39215686;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="pointCursor"
+       width="19"
+       height="19"
+       x="0.5"
+       y="-39.5"
+       __globalProperty="pointCursor" />
+    <rect
+       y="0"
+       x="60"
+       height="440"
+       width="440"
+       id="rect4525"
+       style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       __eventCode="self.controller.handleMouseOver(event.x,event.y)"
+       __resetCode="self.controller.handleMouseOver(None,None)" />
   </g>
-  <rect
-     style="color:#000000;fill:#000000;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-     id="rect4480"
-     width="5"
-     height="5"
-     x="8.3435593"
-     y="-8.6809769"
-     __globalProperty="dotPrototype" />
-  <rect
-     y="-8.6809769"
-     x="28.343559"
-     height="5"
-     width="5"
-     id="rect4482"
-     style="color:#000000;fill:#e7298a;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-     __globalProperty="highlightedDotPrototype" />
-  <rect
-     style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-     id="rect4484"
-     width="5"
-     height="5"
-     x="48.343559"
-     y="-8.6809769"
-     __globalProperty="selectedDotPrototype" />
 </svg>

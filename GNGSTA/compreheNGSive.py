@@ -123,6 +123,7 @@ class singleVariantApp:
         self.selections = selectionState(self.vData)
         self.currentOperation = operation(operation.NO_OP, self.selections, previousOp = None)
         
+        self.highlightedRsNumbers = set()
         self.activeRsNumbers = self.selections.getActiveRsNumbers()
         self.activeParams = self.selections.getActiveParameters()
         
@@ -150,7 +151,7 @@ class singleVariantApp:
         self.scatter = scatterplotWidget(data=vData,app=self,parent=self.window.scatterWidget)
         
         progressWidget.close()
-        self.window.show()
+        self.window.showMaximized()
     
     def newOperation(self, opCode, **kwargs):
         newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)
@@ -191,9 +192,10 @@ class singleVariantApp:
         #self.pc.notifySelection(rsNumbers,params,axis)
         self.scatter.notifySelection(self.activeRsNumbers,self.activeParams,axis)
     
-    def notifyHighlight(self):
+    def notifyHighlight(self, rsNumbers):
+        self.highlightedRsNumbers = rsNumbers
         #self.pc.notifyHighlight()
-        self.scatter.notifyHighlight()
+        self.scatter.notifyHighlight(rsNumbers)
     
     def notifyAxisChange(self, xAxis=True):
         self.scatter.notifyAxisChange(xAxis)

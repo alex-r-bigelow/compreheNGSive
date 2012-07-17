@@ -28,14 +28,14 @@ class mixedAxis:
             value = ",".join(value)
         
         if value == None:
-            self.labels['Missing'].add(value)
+            self.labels['Missing'].add(id)
         else:
             try:
                 value = float(value)
                 if math.isinf(value):
-                    self.labels['Missing'].add(value)
+                    self.labels['Missing'].add(id)
                 elif math.isnan(value):
-                    self.labels['Allele Masked'].add(value)
+                    self.labels['Allele Masked'].add(id)
                 else:
                     self.rsValuePairs.append((id,value))
                     self.rsValues[id] = value

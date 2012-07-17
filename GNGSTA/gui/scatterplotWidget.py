@@ -2,7 +2,8 @@ from layeredWidget import mutableSvgLayer, layeredWidget, layer
 from resources.utils import fitInSevenChars
 from dataModels.variantData import operation
 from PySide.QtCore import Qt,QSize
-from PySide.QtGui import QColor
+from PySide.QtGui import QColor, QCursor
+import math
 
 class rasterLayer(layer):
     def __init__(self, size, dynamic, controller):
@@ -18,15 +19,27 @@ class rasterLayer(layer):
         while i <= 1.0:
             self.dotColors.append(QColor.fromRgbF(dotColor.redF(),dotColor.greenF(),dotColor.blueF(),i))
             i += dotColor.alphaF()
+        
+        self.dotWidth = self.controller.svgLayer.svg.dotPrototype.width()
+        self.dotHeight = self.controller.svgLayer.svg.dotPrototype.height()
+        
+        self.halfDotWidth = self.dotWidth/2
+        self.halfDotHeight = self.dotHeight/2
+        
+        self.xoffset = self.controller.scatterBounds[0]-self.halfDotWidth
+        self.yoffset = self.controller.scatterBounds[3]-self.halfDotHeight
+        
+        self.xNonNumeric = (self.controller.svgLayer.svg.xNonNumericIcon.left() + self.controller.svgLayer.svg.xNonNumericIcon.right())/2 - self.halfDotWidth
+        self.yNonNumeric = (self.controller.svgLayer.svg.yNonNumericIcon.top() + self.controller.svgLayer.svg.yNonNumericIcon.bottom())/2 - self.halfDotHeight
     
-    def setup(self, queryObject):
-        self.queryObject = queryObject
+    def setup(self, scatter):
+        self.scatter = scatter
         
         self.xIncrement = self.controller.xAxisRatio
         self.yIncrement = self.controller.yAxisRatio
         
-        self.xRadius = self.controller.svgLayer.svg.dotPrototype.width()*self.xIncrement/2.0
-        self.yRadius = self.controller.svgLayer.svg.dotPrototype.height()*self.yIncrement/2.0
+        self.xRadius = self.dotWidth*self.xIncrement/2.0
+        self.yRadius = self.dotHeight*self.yIncrement/2.0
         
         self.ready = True
         self.setDirty()
@@ -37,8 +50,7 @@ class rasterLayer(layer):
     def draw(self,painter):
         if not self.ready:
             return
-        width,height = self.size.toTuple()
-        painter.eraseRect(0,0,width,height)
+        self.image.fill(Qt.transparent)
         
         yPix = self.controller.scatterBounds[1]
         yDat = self.controller.currentYaxis.getMax()    # reversed coordinates
@@ -46,13 +58,101 @@ class rasterLayer(layer):
             xPix = self.controller.scatterBounds[0]
             xDat = self.controller.currentXaxis.getMin()
             while xPix <= self.controller.scatterBounds[2]:
-                weight = self.queryObject.countPopulation(xDat-self.xRadius, lowY=yDat-self.yRadius, highX=xDat+self.xRadius, highY=yDat+self.yRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
+                weight = self.scatter.countPopulation(xDat-self.xRadius, lowY=yDat-self.yRadius, highX=xDat+self.xRadius, highY=yDat+self.yRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
                 painter.setPen(self.dotColors[min(weight,len(self.dotColors)-1)])
                 painter.drawPoint(xPix,yPix)
                 xPix += 1
                 xDat += self.xIncrement
             yPix += 1
             yDat += self.yIncrement
+        
+        # Draw the missing values in x
+        if self.controller.currentXaxis.hasNumeric():
+            yPix = self.controller.scatterBounds[1]
+            yDat = self.controller.currentYaxis.getMax()
+            while yPix <= self.controller.scatterBounds[3]:
+                rsNumsInRange = self.controller.currentYaxis.tree.select(low=yDat-self.yRadius, high=yDat+self.yRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
+                rsNumsInRange.difference_update(self.controller.currentXaxis.rsValues.iterkeys())
+                weight = len(rsNumsInRange)
+                painter.setPen(self.dotColors[min(len(rsNumsInRange),len(self.dotColors)-1)])
+                painter.drawLine(self.xNonNumeric,yPix,self.xNonNumeric+self.dotWidth-1,yPix)
+                yPix += 1
+                yDat += self.yIncrement
+        # Draw the missing values in y
+        if self.controller.currentYaxis.hasNumeric():
+            xPix = self.controller.scatterBounds[0]
+            xDat = self.controller.currentYaxis.getMin()
+            while xPix <= self.controller.scatterBounds[2]:
+                rsNumsInRange = self.controller.currentXaxis.tree.select(low=xDat-self.xRadius, high=xDat+self.xRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
+                rsNumsInRange.difference_update(self.controller.currentYaxis.rsValues.iterkeys())
+                weight = len(rsNumsInRange)
+                painter.setPen(self.dotColors[min(len(rsNumsInRange),len(self.dotColors)-1)])
+                painter.drawLine(xPix,self.yNonNumeric,xPix,self.yNonNumeric+self.dotHeight-1)
+                xPix += 1
+                xDat += self.xIncrement
+
+class selectionLayer(layer):
+    def __init__(self, size, dynamic, controller, prototypeDot, rsNumbers):
+        layer.__init__(self,size,dynamic)
+        self.controller = controller
+        self.rsNumbers = rsNumbers
+        
+        self.dotColor = QColor()
+        self.dotColor.setNamedColor(prototypeDot.getAttribute('fill'))
+        self.dotColor.setAlphaF(float(prototypeDot.getAttribute('fill-opacity')))
+        self.dotWidth = prototypeDot.width()
+        self.xoffset = self.controller.scatterBounds[0]-self.dotWidth/2+1
+        self.dotHeight = prototypeDot.height()
+        self.yoffset = self.controller.scatterBounds[3]-self.dotHeight/2+1
+        self.xNonNumeric = (self.controller.svgLayer.svg.xNonNumericIcon.left() + self.controller.svgLayer.svg.xNonNumericIcon.right())/2 - self.dotWidth/2
+        self.yNonNumeric = (self.controller.svgLayer.svg.yNonNumericIcon.top() + self.controller.svgLayer.svg.yNonNumericIcon.bottom())/2 - self.dotHeight/2
+    
+    def handleFrame(self, event, signals):
+        return signals
+    
+    def update(self, rsNumbers):
+        self.rsNumbers = rsNumbers
+    
+    def draw(self,painter):
+        if not hasattr(self.controller,'xAxisRatio') or not hasattr(self.controller,'yAxisRatio'):
+            return
+        self.reverseXratio = 1.0/self.controller.xAxisRatio
+        self.reverseYratio = 1.0/self.controller.yAxisRatio
+        
+        self.image.fill(Qt.transparent)
+        for x,y in zip(self.controller.currentXaxis.getValues(self.rsNumbers),self.controller.currentYaxis.getValues(self.rsNumbers)):
+            if x == None or (not isinstance(x,int) and not isinstance(x,float)) or math.isinf(x) or math.isnan(x):
+                x = self.xNonNumeric
+            else:
+                x = self.xoffset + x*self.reverseXratio
+            
+            if y == None or (not isinstance(y,int) and not isinstance(y,float)) or math.isinf(y) or math.isnan(x):
+                y = self.yNonNumeric
+            else:
+                y = self.yoffset + y*self.reverseYratio
+            painter.fillRect(x,y,self.dotWidth,self.dotHeight,self.dotColor)
+    
+    def getRsNumbers(self, x, y):
+        lowX=self.controller.screenToDataSpace(x-self.controller.cursorXradius, self.controller.scatterBounds[0], self.controller.currentXaxis.getMin(), self.controller.xAxisRatio)
+        lowY=self.controller.screenToDataSpace(y-self.controller.cursorYradius, self.controller.scatterBounds[3], self.controller.currentYaxis.getMin(), self.controller.yAxisRatio)
+        highX=self.controller.screenToDataSpace(x+self.controller.cursorXradius, self.controller.scatterBounds[0], self.controller.currentXaxis.getMin(), self.controller.xAxisRatio)
+        highY=self.controller.screenToDataSpace(y+self.controller.cursorYradius, self.controller.scatterBounds[3], self.controller.currentYaxis.getMin(), self.controller.yAxisRatio)
+        
+        rsNumbers = self.controller.data.scatter.select(lowX=lowX,lowY=lowY,highX=highX,highY=highY,
+                                             includeMaskedX=False, includeMaskedY=False, includeUndefinedX=False, includeUndefinedY=False, includeMissingX=False, includeMissingY=False)
+        
+        showXnonNumerics = (x + self.controller.cursorXradius >= self.xNonNumeric) and (x <= self.xNonNumeric + self.dotWidth)
+        if showXnonNumerics:
+            rsInRange = self.controller.currentYaxis.tree.select(low=lowY, high=highY, includeMasked=False, includeUndefined=False, includeMissing=False)
+            rsInRange.difference_update(self.controller.currentXaxis.rsValues.iterkeys())
+            rsNumbers.update(rsInRange)
+        showYnonNumerics = (y + self.controller.cursorYradius >= self.yNonNumeric) and (y <= self.yNonNumeric + self.dotHeight)
+        if showYnonNumerics:
+            rsInRange = self.controller.currentXaxis.tree.select(low=lowX, high=highX, includeMasked=False, includeUndefined=False, includeMissing=False)
+            rsInRange.difference_update(self.controller.currentYaxis.rsValues.iterkeys())
+            rsNumbers.update(rsInRange)
+        # TODO: show both
+        return rsNumbers
 
 class scatterplotWidget(layeredWidget):
     def __init__(self, data, app, parent = None):
@@ -63,10 +163,24 @@ class scatterplotWidget(layeredWidget):
         self.svgLayer = mutableSvgLayer('gui/svg/scatterplot.svg',self)
         self.addLayer(self.svgLayer)
         
-        self.allDataLayer = rasterLayer(self.svgLayer.size,False,self)
-        self.addLayer(self.allDataLayer,0)
+        self.cursorXradius = self.svgLayer.svg.pointCursor.width()/2
+        self.cursorYradius = self.svgLayer.svg.pointCursor.height()/2
+        self.normalCursor = QCursor(Qt.CrossCursor)
+        self.highlightCursor = self.svgLayer.svg.generateCursor(self.svgLayer.svg.pointCursor)
+        self.svgLayer.svg.pointCursor.hide()
+        
+        self.setCursor(self.normalCursor)
         
         self.scatterBounds = self.svgLayer.svg.scatterBounds.getBounds()
+        
+        self.highlightedLayer = selectionLayer(self.svgLayer.size,False,self,self.svgLayer.svg.highlightedDotPrototype,self.app.highlightedRsNumbers)
+        self.addLayer(self.highlightedLayer,0)
+        
+        self.selectedLayer = selectionLayer(self.svgLayer.size,False,self,self.svgLayer.svg.selectedDotPrototype,self.app.activeRsNumbers)
+        self.addLayer(self.selectedLayer,0)
+        
+        self.allDataLayer = rasterLayer(self.svgLayer.size,False,self)
+        self.addLayer(self.allDataLayer,0)
         
         self.xRanges = [self.svgLayer.svg.xRange]
         self.yRanges = [self.svgLayer.svg.yRange]
@@ -98,8 +212,8 @@ class scatterplotWidget(layeredWidget):
                 self.svgLayer.svg.xZeroBar.moveTo(self.dataToScreenSpace(0.0, self.scatterBounds[0], self.currentXaxis.getMin(), self.xAxisRatio)-self.svgLayer.svg.xZeroBar.width()/2,self.svgLayer.svg.xZeroBar.top())
             else:
                 self.svgLayer.svg.xZeroBar.hide()
+            self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentXaxis)
             if applyImmediately:
-                self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentXaxis)
                 self.allDataLayer.setup(self.data.scatter)
         else:
             self.currentYaxis = self.data.axes[self.data.currentYattribute]
@@ -115,11 +229,13 @@ class scatterplotWidget(layeredWidget):
                 self.svgLayer.svg.yZeroBar.moveTo(self.svgLayer.svg.yZeroBar.left(),self.dataToScreenSpace(0.0, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)-self.svgLayer.svg.yZeroBar.height()/2)
             else:
                 self.svgLayer.svg.yZeroBar.hide()
+            self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentYaxis)
             if applyImmediately:
-                self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentYaxis)
                 self.allDataLayer.setup(self.data.scatter)
     
     def notifySelection(self, rsNumbers, params, axis=None):
+        self.selectedLayer.update(rsNumbers)
+        self.selectedLayer.setDirty()
         # pull out the sizes of things once before we manipulate everything - this should help minimize re-rendering
         if axis == self.currentXaxis:
             dataAxis = self.currentXaxis
@@ -234,8 +350,9 @@ class scatterplotWidget(layeredWidget):
     def handleEvents(self, event, signals):
         pass
     
-    def notifyHighlight(self):
-        pass
+    def notifyHighlight(self, rsNumbers):
+        self.highlightedLayer.update(rsNumbers)
+        self.highlightedLayer.setDirty()
     
     def canAdjustSelection(self):
         return not self.app.multipleSelected()
@@ -320,6 +437,15 @@ class scatterplotWidget(layeredWidget):
         self.draggedDistance = None
         self.draggedStart = None
         self.draggedHandle = None
+    
+    def handleMouseOver(self, x, y):
+        if x == None or y == None:
+            self.setCursor(self.normalCursor)
+            self.app.notifyHighlight(set())
+        else:
+            self.setCursor(self.highlightCursor)
+            rsNumbers = self.highlightedLayer.getRsNumbers(x,y)
+            self.app.notifyHighlight(rsNumbers)
 
 '''
 init
