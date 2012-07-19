@@ -24,16 +24,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.67"
-     inkscape:cx="-31.556167"
-     inkscape:cy="149.45926"
+     inkscape:zoom="1.88"
+     inkscape:cx="-182.55815"
+     inkscape:cy="265.78996"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1830"
+     inkscape:window-width="1833"
      inkscape:window-height="1156"
-     inkscape:window-x="90"
-     inkscape:window-y="414"
+     inkscape:window-x="87"
+     inkscape:window-y="22"
      inkscape:window-maximized="0"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -57,14 +57,12 @@
      id="layer1">
     <g
        id="g3803"
-       __globalProperty="axis"
-       handle="__handle"
-       __childProperty="__axis"
-       scrollDownBar="__scrollDownBar"
-       scrollUpBar="__scrollUpBar"
-       itemGroup="__itemGroup"
+       spacer="__spacer"
        numeric="__numeric"
-       spacer="__spacer">
+       __globalProperty="axis"
+       categorical="__categorical"
+       handle="__handle"
+       axisLine="__axisLine">
       <rect
          style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
          id="rect3004"
@@ -73,81 +71,14 @@
          x="0"
          y="0"
          __parentProperty="__spacer" />
-      <g
-         id="g4498"
-         __parentProperty="__itemGroup"
-         textItem="__textItem"
-         alleleMasked="__alleleMasked"
-         missing="__missing">
-        <g
-           id="g4356"
-           __parentProperty="__missing"
-           class="Missing">
-          <path
-             sodipodi:type="arc"
-             style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.70049143;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             id="path3870"
-             sodipodi:cx="55.319149"
-             sodipodi:cy="421.27658"
-             sodipodi:rx="17.553192"
-             sodipodi:ry="17.553192"
-             d="M 72.872341,421.27658 A 17.553192,17.553192 0 1 1 37.765957,421.27658 17.553192,17.553192 0 1 1 72.872341,421.27658 z"
-             transform="matrix(0.37030301,0,0,0.37030301,82.015153,275.50042)" />
-          <text
-             xml:space="preserve"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823528999999997;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-             x="92.220001"
-             y="434.1004"
-             id="text4339"
-             sodipodi:linespacing="125%">Missing</text>
-        </g>
-        <g
-           id="g4352"
-           __parentProperty="__alleleMasked"
-           class="Allele Masked">
-          <path
-             transform="matrix(0.36499272,0,0,0.3649917,83.667929,277.15239)"
-             d="M 51.595746,387.26358 32.41728,368.08511 51.595745,348.90665 70.77421,368.08511 z"
-             inkscape:randomized="0"
-             inkscape:rounded="0"
-             inkscape:flatsided="true"
-             sodipodi:arg2="2.3561945"
-             sodipodi:arg1="1.5707963"
-             sodipodi:r2="13.561222"
-             sodipodi:r1="19.178465"
-             sodipodi:cy="368.08511"
-             sodipodi:cx="51.595745"
-             sodipodi:sides="4"
-             id="path3037"
-             style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.73978448;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             sodipodi:type="star" />
-          <text
-             sodipodi:linespacing="125%"
-             id="text4344"
-             y="414.1004"
-             x="92.25"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823528999999997;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-             xml:space="preserve">Allele Masked</text>
-        </g>
-        <g
-           id="g4348"
-           __parentProperty="__textItem"
-           label="__textItemLabel">
-          <path
-             style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:0.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             d="M 96.75,385.7504 108.25,385.7504 108.25,397.2504 96.75,397.2504 z"
-             id="rect3779"
-             inkscape:connector-curvature="0" />
-          <text
-             xml:space="preserve"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823528999999997;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-             x="92.220001"
-             y="394.1004"
-             id="text4346"
-             sodipodi:linespacing="125%"
-             __parentProperty="__textItemLabel">Max 15 chars</text>
-        </g>
-      </g>
+      <rect
+         style="color:#000000;fill:#666666;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect3841"
+         width="1"
+         height="480"
+         x="102.5"
+         y="-7.1054274e-15"
+         __parentProperty="__axisLine" />
       <g
          id="g4470"
          __parentProperty="__numeric"
@@ -155,32 +86,7 @@
          scrollUpBar="__numericUpBar"
          scrollDownBar="__numericDownBar"
          selectionGroup="__selectionGroup"
-         transform="translate(0,-30.000031)"
-         __eventCode="event.retainWheelFocus = True\n
-if event.deltaWheel != 0:\n
-    signals['numericScrolled'] = event.deltaWheel\n
-if signals.has_key('scrollArrowPressed'):\n
-    del signals['scrollArrowPressed']\n
-else:\n
-    signals['__EVENT__ABSORBED__'] = False"
-         __resetCode="event.retainWheelFocus = False"
-         __childProperty="__numericChild"
-         spacer="__numericSpacer">
-        <rect
-           y="30.000031"
-           x="10"
-           height="350"
-           width="100"
-           id="rect3831"
-           style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
-        <rect
-           style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-           id="rect4415"
-           width="100"
-           height="340"
-           x="10"
-           y="35.000031"
-           __parentProperty="__numericSpacer" />
+         transform="translate(0,-30.000031)">
         <g
            background="__numericDownBarBackground"
            id="g4360"
@@ -189,65 +95,59 @@ else:\n
            label="__numericDownBarLabel">
           <rect
              __parentProperty="__numericDownBarBackground"
-             style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             style="color:#000000;fill:#ffffff;fill-opacity:0.39215686999999999;fill-rule:nonzero;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
              id="rect4362"
              width="99"
              height="14"
              x="10.5"
              y="435.50003" />
+          <rect
+             y="435.00003"
+             x="10"
+             height="1"
+             width="100"
+             id="rect3839"
+             style="color:#000000;fill:#666666;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
           <path
              inkscape:connector-curvature="0"
              id="path4364"
-             d="M 34.903442,439.00003 41.903442,439.00003 38.403442,446.00003 z"
-             style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             __eventCode="self.setAttribute('fill-opacity',0.5)\n
-if 'LeftButton' in event.buttons:\n     event.deltaWheel -= 10\n     signals['__EVENT__ABSORBED__'] = False\n
-signals['scrollArrowPressed'] = self"
-             __resetCode="self.setAttribute('fill-opacity',1.0)"
-             axis="__axis" />
+             d="M 34,438.00003 43,438.00003 38.5,447.00003 z"
+             style="color:#000000;fill:#666666;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
           <g
              id="g3844"
              background="__lowHandleZoomInBackground"
-             __eventCode="self.background.setAttribute('fill','#DDDDDD')\n
-if 'LeftButton' in event.buttons:\n
-    signals['numericZoomed'] = 2.0"
-             __resetCode="self.background.setAttribute('fill','#FFFFFF')">
+             transform="translate(0.5,0)">
             <rect
                y="438.00003"
                x="13.5"
                height="9"
                width="9"
                id="rect3840"
-               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               style="color:#000000;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                __parentProperty="__lowHandleZoomInBackground" />
             <path
-               axis="__axis"
                inkscape:connector-curvature="0"
                id="path4385"
-               style="stroke:none;stroke-width:1;marker:none"
+               style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1;marker:none"
                d="M 17.463414,439.50003 17.463414,441.95232 15,441.95232 15,443.04774 17.463414,443.04774 17.463414,445.50003 18.536586,445.50003 18.536586,443.04774 21,443.04774 21,441.95232 18.536586,441.95232 18.536586,439.50003 17.463414,439.50003" />
           </g>
           <g
              id="g3851"
              background="__lowHandleZoomOutBackground"
-             __eventCode="self.background.setAttribute('fill','#DDDDDD')\n
-if 'LeftButton' in event.buttons:\n
-    signals['numericZoomed'] = 0.5"
-             __resetCode="self.background.setAttribute('fill','#FFFFFF')">
+             transform="translate(0.04827881,0.17398071)">
             <rect
                y="437.82605"
                x="23.951721"
                height="9"
                width="9"
                id="rect3848"
-               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               style="color:#000000;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                __parentProperty="__lowHandleZoomOutBackground" />
             <path
-               axis="__axis"
                sodipodi:nodetypes="cccc"
                inkscape:connector-curvature="0"
                d="M 25.451721,441.72605 25.451721,442.92605 31.451721,442.92605 31.451721,441.72605"
-               style="stroke:none;stroke-width:1;marker:none"
+               style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1;marker:none"
                id="path4389" />
           </g>
           <text
@@ -270,24 +170,22 @@ if 'LeftButton' in event.buttons:\n
              height="14"
              width="99"
              id="rect4421"
-             style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             style="color:#000000;fill:#ffffff;fill-opacity:0.39215687;fill-rule:nonzero;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:0.39215686999999999;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
              __parentProperty="__numericUpBarBackground" />
+          <rect
+             style="color:#000000;fill:#666666;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             id="rect3851"
+             width="100"
+             height="1"
+             x="10"
+             y="454" />
           <path
-             style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             d="M 34.903442,450.99999 41.903442,450.99999 38.403442,443.99999 z"
+             style="color:#000000;fill:#666666;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             d="M 33.500001,452 42.500001,452 38.000001,443 z"
              id="path4423"
-             inkscape:connector-curvature="0"
-             __eventCode="self.setAttribute('fill-opacity',0.5)\n
-if 'LeftButton' in event.buttons:\n     event.deltaWheel += 10\n     signals['__EVENT__ABSORBED__'] = False\n
-signals['scrollArrowPressed'] = self"
-             __resetCode="self.setAttribute('fill-opacity',1.0)"
-             axis="__axis" />
+             inkscape:connector-curvature="0" />
           <g
              id="g3867"
-             __eventCode="self.background.setAttribute('fill','#DDDDDD')\n
-if 'LeftButton' in event.buttons:\n
-    signals['numericZoomed'] = 2.0"
-             __resetCode="self.background.setAttribute('fill','#FFFFFF')"
              background="__highHandleZoomInBackground">
             <rect
                y="443"
@@ -295,36 +193,29 @@ if 'LeftButton' in event.buttons:\n
                height="9"
                width="9"
                id="rect3864"
-               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               style="color:#000000;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                __parentProperty="__highHandleZoomInBackground" />
             <path
-               axis="__axis"
-               __resetCode="self.setAttribute('fill-opacity',1.0)"
-               __eventCode="self.setAttribute('fill-opacity',0.5)\n if 'LeftButton' in event.buttons:\n     signals['numericZoomed'] = 2.0"
                d="M 17.463415,444.5 17.463415,446.95229 15.000001,446.95229 15.000001,448.04771 17.463415,448.04771 17.463415,450.5 18.536589,450.5 18.536589,448.04771 21.000001,448.04771 21.000001,446.95229 18.536589,446.95229 18.536589,444.5 17.463415,444.5"
-               style="marker:none"
+               style="fill:#ffffff;fill-opacity:1;stroke:none;marker:none"
                id="path4425"
                inkscape:connector-curvature="0" />
           </g>
           <g
              id="g3860"
-             __eventCode="self.background.setAttribute('fill','#DDDDDD')\n
-if 'LeftButton' in event.buttons:\n
-    signals['numericZoomed'] = 0.5"
              background="__highHandleZoomOutBackground"
-             __resetCode="self.background.setAttribute('fill','#FFFFFF')">
+             transform="translate(-0.45172119,0)">
             <rect
                y="443"
                x="23.951721"
                height="9"
                width="9"
                id="rect3855"
-               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               style="color:#000000;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                __parentProperty="__highHandleZoomOutBackground" />
             <path
-               axis="__axis"
                id="path4431"
-               style="marker:none"
+               style="fill:#ffffff;fill-opacity:1;stroke:none;marker:none"
                d="M 25.451721,446.9 25.451721,448.1 31.451721,448.1 31.451721,446.9"
                inkscape:connector-curvature="0"
                sodipodi:nodetypes="cccc" />
@@ -352,7 +243,7 @@ if 'LeftButton' in event.buttons:\n
              transform="translate(0,-40)">
             <rect
                y="45"
-               x="68.096565"
+               x="65.596558"
                height="320"
                width="10"
                id="rect3796"
@@ -364,30 +255,20 @@ if 'LeftButton' in event.buttons:\n
                label="__selectionRangeBottomLabel"
                background="__selectionRangeBottomBackground"
                __parentProperty="__selectionRangeBottomHandle"
-               numeric="__numericChild"
-               __eventCode="self.background.setAttribute('fill-opacity',0.75)\n
-if 'LeftButton' in event.buttons:\n
-    signals['__LOCK__'] = True\n
-    l,t,r,b = self.numeric.spacer.getBounds()\n
-    t = max(self.numeric.scrollUpBar.bottom(),self.parent.topHandle.bottom())\n
-    y0 = self.top()\n
-    self.translateLimit(0,event.deltaY,l,t,r,b)\n
-    y1 = self.top()\n
-    self.parent.bar.stretch(0,0,0,y1-y0)\n
-    t = self.numeric.topValue - (t-self.numeric.topPixel)*self.numeric.numberToPixelRatio\n
-    y0 = self.numeric.bottomValue + (self.numeric.bottomPixel-y0)*self.numeric.numberToPixelRatio\n
-    y1 = self.numeric.bottomValue + (self.numeric.bottomPixel-y1)*self.numeric.numberToPixelRatio\n
-    signals['rangeAdjusted'] = (self.parent,y0,t,y1,t)\n
-    if 'LeftButton' not in event.lastButtons:\n
-        signals['startRangeAdjust'] = (y0,t)\n
-else:\n
-    signals['__LOCK__'] = False\n
-    if 'LeftButton' in event.lastButtons:\n
-        signals['endRangeAdjust'] = self.parent"
-               __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False\n
-signals['finishRangeAdjust'] = self.parent"
-               axis="__axis">
+               __eventCode="if self.controller.canAdjustSelection():\n
+    self.background.setAttribute('fill-opacity',0.75)\n
+    if 'LeftButton' in event.buttons:\n
+        signals['__LOCK__'] = True\n
+        distance = self.controller.numericRangeDrag(self, event.deltaY)\n
+        self.translate(0,distance)\n
+    else:\n
+        signals['__LOCK__'] = False\n
+        if 'LeftButton' in event.lastButtons:\n
+            self.controller.endNumericRangeDrag()"
+               __resetCode="signals['__LOCK__'] = False\n
+self.background.setAttribute('fill-opacity',0.39215686)\n
+self.controller.endNumericRangeDrag()"
+               handleName="top">
               <path
                  style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                  d="M 58.096565,325 68.096565,325 58.096565,335 z"
@@ -395,12 +276,19 @@ signals['finishRangeAdjust'] = self.parent"
                  inkscape:connector-curvature="0"
                  sodipodi:nodetypes="cccc"
                  __parentProperty="__selectionRangeBottomBackground" />
+              <rect
+                 style="color:#000000;fill:#ffffff;fill-opacity:0.39215686000000000;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+                 id="rect3881"
+                 width="43"
+                 height="8"
+                 x="12.548284"
+                 y="328.50003" />
               <text
                  sodipodi:linespacing="125%"
                  id="text4439"
                  y="335.61502"
                  x="13.330003"
-                 style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+                 style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linejoin:miter"
                  xml:space="preserve"
                  __parentProperty="__selectionRangeBottomLabel">999.999</text>
             </g>
@@ -410,30 +298,20 @@ signals['finishRangeAdjust'] = self.parent"
                label="__selectionRangeTopLabel"
                background="__selectionRangeTopBackground"
                __parentProperty="__selectionRangeTopHandle"
-               numeric="__numericChild"
-               __eventCode="self.background.setAttribute('fill-opacity',0.75)\n
-if 'LeftButton' in event.buttons:\n
-    signals['__LOCK__'] = True\n
-    l,t,r,b = self.numeric.spacer.getBounds()\n
-    b = min(self.numeric.scrollDownBar.top(),self.parent.bottomHandle.top())\n
-    y0 = self.bottom()\n
-    self.translateLimit(0,event.deltaY,l,t,r,b)\n
-    y1 = self.bottom()\n
-    self.parent.bar.stretch(0,y0-y1,0,0)\n
-    b = self.numeric.bottomValue + (self.numeric.bottomPixel-b)*self.numeric.numberToPixelRatio\n
-    y0 = self.numeric.topValue - (y0-self.numeric.topPixel)*self.numeric.numberToPixelRatio\n
-    y1 = self.numeric.topValue - (y1-self.numeric.topPixel)*self.numeric.numberToPixelRatio\n
-    signals['rangeAdjusted'] = (self.parent,b,y0,b,y1)\n
-    if 'LeftButton' not in event.lastButtons:\n
-        signals['startRangeAdjust'] = (b,y0)\n
-else:\n
-    signals['__LOCK__'] = False\n
-    if 'LeftButton' in event.lastButtons:\n
-        signals['endRangeAdjust'] = self.parent"
-               __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False\n
-signals['finishRangeAdjust'] = self.parent"
-               axis="__axis">
+               handleName="bottom"
+               __eventCode="if self.controller.canAdjustSelection():\n
+    self.background.setAttribute('fill-opacity',0.75)\n
+    if 'LeftButton' in event.buttons:\n
+        signals['__LOCK__'] = True\n
+        distance = self.controller.numericRangeDrag(self, event.deltaY)\n
+        self.translate(0,distance)\n
+    else:\n
+        signals['__LOCK__'] = False\n
+        if 'LeftButton' in event.lastButtons:\n
+            self.controller.endNumericRangeDrag()"
+               __resetCode="signals['__LOCK__'] = False\n
+self.background.setAttribute('fill-opacity',0.39215686)\n
+self.controller.endNumericRangeDrag()">
               <path
                  sodipodi:nodetypes="cccc"
                  inkscape:connector-curvature="0"
@@ -441,9 +319,16 @@ signals['finishRangeAdjust'] = self.parent"
                  d="M 58.096562,230 68.096562,230 58.096562,220 z"
                  style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                  __parentProperty="__selectionRangeTopBackground" />
+              <rect
+                 y="218.5"
+                 x="12.548281"
+                 height="8"
+                 width="43"
+                 id="rect3883"
+                 style="color:#000000;fill:#ffffff;fill-opacity:0.39215686;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
               <text
                  xml:space="preserve"
-                 style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+                 style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
                  x="13.33"
                  y="225.61501"
                  id="text4445"
@@ -454,126 +339,230 @@ signals['finishRangeAdjust'] = self.parent"
         </g>
       </g>
       <g
-         id="g4536"
-         __eventCode="event.retainWheelFocus = True\n
-distance = 0\n
-if event.deltaWheel &lt; 0:\n
-    distance = (self.parent.itemGroup.bottom()+self.parent.itemGroup.top())/2-self.parent.scrollUpBar.bottom()\n
-    distance = max(0,distance)\n
-    distance = -min(-event.deltaWheel,distance)\n
-elif event.deltaWheel &gt; 0:\n
-    distance = self.parent.scrollDownBar.top()-(self.parent.itemGroup.bottom()+self.parent.itemGroup.top())/2\n
-    distance = max(0,distance)\n
-    distance = min(event.deltaWheel,distance)\n
-if distance != 0:\n
-    self.parent.itemGroup.translate(0,distance)\n     signals['axisScrolled'] = self.parent\n
-if signals.has_key('scrollArrowPressed'):\n
-    del signals['scrollArrowPressed']\n
-else:\n
-    signals['__EVENT__ABSORBED__'] = False"
-         __resetCode="event.retainWheelFocus = False">
+         id="g3039"
+         __parentProperty="__categorical"
+         scrollUpBar="__scrollUpBar"
+         scrollDownBar="__scrollDownBar"
+         itemGroup="__itemGroup">
         <g
-           __parentProperty="__scrollUpBar"
-           __resetCode="self.background.setAttribute('fill','#FFFFFF')"
-           background="__scrollUpBackground"
-           __eventCode="self.background.setAttribute('fill','#DDDDDD')\n if 'LeftButton' in event.buttons:\n     event.deltaWheel += 10\n     signals['__EVENT__ABSORBED__'] = False\n
-signals['scrollArrowPressed'] = self"
-           id="g3790"
-           transform="translate(0,350)">
-          <rect
-             __parentProperty="__scrollUpBackground"
-             y="0.5"
-             x="10.5"
-             height="9"
-             width="99"
-             id="rect3768"
-             style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
-          <path
-             style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             d="M 56.5,8.5 63.5,8.5 60,1.5 z"
-             id="path3782"
-             inkscape:connector-curvature="0" />
+           missing="__missing"
+           alleleMasked="__alleleMasked"
+           textItem="__textItem"
+           id="g4498"
+           __parentProperty="__itemGroup">
+          <g
+             __parentProperty="__missing"
+             id="g4356"
+             background="__missingBackground"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.lastButtons and 'LeftButton' not in event.buttons:\n
+    self.controller.toggleLabel(event.x, self)"
+             __resetCode="self.background.setAttribute('fill','#1B9E77')\n
+self.controller.unMouseLabel()">
+            <path
+               transform="matrix(0.37030301,0,0,0.37030301,82.015153,275.50042)"
+               d="M 72.872341,421.27658 A 17.553192,17.553192 0 1 1 37.765957,421.27658 17.553192,17.553192 0 1 1 72.872341,421.27658 z"
+               sodipodi:ry="17.553192"
+               sodipodi:rx="17.553192"
+               sodipodi:cy="421.27658"
+               sodipodi:cx="55.319149"
+               id="path3870"
+               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.70049143;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               sodipodi:type="arc"
+               __parentProperty="__missingBackground" />
+            <text
+               sodipodi:linespacing="125%"
+               id="text4339"
+               y="434.1004"
+               x="92.220001"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               xml:space="preserve">Missing</text>
+          </g>
+          <g
+             __parentProperty="__alleleMasked"
+             id="g4352"
+             background="__alleleMaskedBackground"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.lastButtons and 'LeftButton' not in event.buttons:\n
+    self.controller.toggleLabel(event.x, self)"
+             __resetCode="self.background.setAttribute('fill','#1B9E77')\n
+self.controller.unMouseLabel()">
+            <path
+               sodipodi:type="star"
+               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.73978448;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               id="path3037"
+               sodipodi:sides="4"
+               sodipodi:cx="51.595745"
+               sodipodi:cy="368.08511"
+               sodipodi:r1="19.178465"
+               sodipodi:r2="13.561222"
+               sodipodi:arg1="1.5707963"
+               sodipodi:arg2="2.3561945"
+               inkscape:flatsided="true"
+               inkscape:rounded="0"
+               inkscape:randomized="0"
+               d="M 51.595746,387.26358 32.41728,368.08511 51.595745,348.90665 70.77421,368.08511 z"
+               transform="matrix(0.36499272,0,0,0.3649917,83.667929,277.15239)"
+               __parentProperty="__alleleMaskedBackground" />
+            <text
+               xml:space="preserve"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               x="92.25"
+               y="414.1004"
+               id="text4344"
+               sodipodi:linespacing="125%">Allele Masked</text>
+          </g>
+          <g
+             label="__textItemLabel"
+             __parentProperty="__textItem"
+             id="g4348"
+             background="__textItemBackground"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.lastButtons and 'LeftButton' not in event.buttons:\n
+    self.controller.toggleLabel(event.x, self)"
+             __resetCode="self.background.setAttribute('fill','#1B9E77')\n
+self.controller.unMouseLabel()">
+            <path
+               inkscape:connector-curvature="0"
+               id="rect3779"
+               d="M 96.75,385.7504 108.25,385.7504 108.25,397.2504 96.75,397.2504 z"
+               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:0.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               __parentProperty="__textItemBackground" />
+            <text
+               __parentProperty="__textItemLabel"
+               sodipodi:linespacing="125%"
+               id="text4346"
+               y="394.1004"
+               x="92.220001"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               xml:space="preserve">Max 15 chars</text>
+          </g>
         </g>
         <g
-           __parentProperty="__scrollDownBar"
-           __resetCode="self.background.setAttribute('fill','#FFFFFF')"
-           background="__scrollDownBackground"
-           __eventCode="self.background.setAttribute('fill','#DDDDDD')\n if 'LeftButton' in event.buttons:\n     event.deltaWheel -= 10\n     signals['__EVENT__ABSORBED__'] = False\n
-signals['scrollArrowPressed'] = self"
-           id="g3786">
-          <rect
-             __parentProperty="__scrollDownBackground"
-             style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             id="rect2998"
-             width="99"
-             height="9"
-             x="10.5"
-             y="440.5" />
-          <path
-             inkscape:connector-curvature="0"
-             id="path3784"
-             d="M 56.5,441.5 63.5,441.5 60,448.5 z"
-             style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+           id="g4536">
+          <g
+             transform="translate(0,350)"
+             id="g3790"
+             background="__scrollUpBackground"
+             __parentProperty="__scrollUpBar">
+            <rect
+               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               id="rect3768"
+               width="9"
+               height="9"
+               x="98"
+               y="0.5"
+               __parentProperty="__scrollUpBackground" />
+            <path
+               inkscape:connector-curvature="0"
+               id="path3782"
+               d="M 99,8.5 106,8.5 102.5,1.5 z"
+               style="color:#000000;fill:#666666;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+          </g>
+          <g
+             id="g3786"
+             background="__scrollDownBackground"
+             __parentProperty="__scrollDownBar">
+            <rect
+               y="440.5"
+               x="98"
+               height="9"
+               width="9"
+               id="rect2998"
+               style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               __parentProperty="__scrollDownBackground" />
+            <path
+               style="color:#000000;fill:#666666;fill-opacity:1;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               d="M 99,441.5 106,441.5 102.5,448.5 z"
+               id="path3784"
+               inkscape:connector-curvature="0" />
+          </g>
         </g>
       </g>
       <g
-         id="g3816">
-        <g
-           transform="translate(-750,-30.99962)"
-           id="g3018"
-           __parentProperty="__handle"
-           label1="__label1"
-           label2="__label2"
-           label3="__label3"
-           __eventCode="self.background.setAttribute('fill','#DDDDDD')\n
+         transform="translate(-750,-30.99962)"
+         id="g3018"
+         label1="__label1"
+         label2="__label2"
+         label3="__label3"
+         background="__handleBackground"
+         __parentProperty="__handle"
+         __eventCode="self.background.setAttribute('fill','#000000')\n
 if 'LeftButton' in event.buttons:\n
-    l,r,t,b = self.document.root.getBounds()\n
-    self.axis.translateLimit(event.deltaX,0,l,r,t,b)\n
     signals['__LOCK__'] = True\n
-    signals['dragAxis'] = self.axis\n
-    if 'LeftButton' not in event.lastButtons:\n
-        signals['dragAxisStart'] = self.axis\n else:\n
+    self.controller.axisDrag(self, event.x, event.deltaX)\n
+else:\n
     signals['__LOCK__'] = False\n
-    if 'LeftButton' in event.lastButtons:\n
-        signals['dragAxisEnd'] = self.axis"
-           background="__handleBackground"
-           __resetCode="self.background.setAttribute('fill','#FFFFFF')\n signals['__LOCK__'] = False"
-           axis="__axis">
-          <path
-             id="path10489"
-             d="M 760.5,480.5 859.5,480.5 859.5,509.5 760.5,509.5 z"
-             style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.99999994;stroke-miterlimit:4;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-             inkscape:connector-curvature="0"
-             __parentProperty="__handleBackground" />
-          <text
-             __parentProperty="__label1"
-             transform="scale(0.99977695,1.0002231)"
-             xml:space="preserve"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-             x="810.08063"
-             y="488.30743"
-             id="text3016"
-             sodipodi:linespacing="100%">CASES AF</text>
-          <text
-             sodipodi:linespacing="100%"
-             id="label"
-             y="497.30536"
-             x="810.08063"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-             xml:space="preserve"
-             transform="scale(0.99977695,1.0002231)"
-             __parentProperty="__label2">CASES AF</text>
-          <text
-             __parentProperty="__label3"
-             transform="scale(0.99977695,1.0002231)"
-             xml:space="preserve"
-             style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:0.58823529;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-             x="810.08063"
-             y="506.30328"
-             id="text3018"
-             sodipodi:linespacing="100%">CASES AF</text>
-        </g>
+    self.controller.endAxisDrag()"
+         __resetCode="self.background.setAttribute('fill','#666666')\n
+signals['__LOCK__'] = False\n
+self.controller.endAxisDrag()">
+        <path
+           id="path10489"
+           d="M 760,479.99962 860,479.99962 860,509.99962 760,509.99962 z"
+           style="color:#000000;fill:#666666;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.99999994;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           inkscape:connector-curvature="0"
+           __parentProperty="__handleBackground" />
+        <text
+           __parentProperty="__label1"
+           transform="scale(0.99977695,1.0002231)"
+           xml:space="preserve"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+           x="810.08063"
+           y="490.30698"
+           id="text3016"
+           sodipodi:linespacing="100%">CASES AF</text>
+        <text
+           sodipodi:linespacing="100%"
+           id="label"
+           y="497.30536"
+           x="810.08063"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+           xml:space="preserve"
+           transform="scale(0.99977695,1.0002231)"
+           __parentProperty="__label2">CASES AF</text>
+        <text
+           __parentProperty="__label3"
+           transform="scale(0.99977695,1.0002231)"
+           xml:space="preserve"
+           style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:100%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#ffffff;fill-opacity:0.78431373;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+           x="810.08063"
+           y="504.30374"
+           id="text3018"
+           sodipodi:linespacing="100%">CASES AF</text>
       </g>
+      <rect
+         style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+         id="rect3891"
+         width="10"
+         height="320"
+         x="97.5"
+         y="14.999969"
+         __globalProperty="rangeArea"
+         __eventCode="self.controller.mouseIn(event.x, event.y)"
+         __resetCode="self.controller.mouseOut()" />
     </g>
   </g>
+  <path
+     inkscape:connector-curvature="0"
+     id="path3863"
+     d="M 103,-42.180821 103,-20.37231"
+     style="color:#000000;fill:none;stroke:#d95f02;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     __globalProperty="highlightedLinePrototype" />
+  <path
+     style="color:#000000;fill:none;stroke:#1b9e77;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.39215687;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     d="M 103,-82.180821 103,-60.37231"
+     id="path3861"
+     inkscape:connector-curvature="0"
+     __globalProperty="selectedLinePrototype" />
+  <path
+     style="color:#000000;fill:#d95f02;fill-opacity:0.39215686;stroke:#d95f02;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     d="M 2.9255319,-24.476276 C 2.9255319,-24.476276 16.925531,-24.620156 16.925531,-24.476276 16.925531,-17.657967 12.258865,-24.471286 12.258865,-17.533922 12.258865,-10.596563 16.925531,-17.407039 16.925531,-10.591566 16.925531,-10.591566 2.9255319,-10.476048 2.9255319,-10.591566 2.9255319,-17.431581 7.5921986,-10.543285 7.5921986,-17.533922 7.5921986,-24.524556 2.9255319,-17.542128 2.9255319,-24.476276 z"
+     id="path3889"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="sszsszs"
+     __globalProperty="rangeCursor" />
 </svg>

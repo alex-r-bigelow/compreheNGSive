@@ -1,6 +1,7 @@
 from gui.mutableSvg import mutableSvgRenderer
 from PySide.QtCore import *
 from PySide.QtGui import *
+import time
 
 class SvgLayerException(Exception):
     def __init__(self, value):
@@ -130,14 +131,37 @@ class layeredWidget(QWidget):
         self.animationTimer = QTimer()
         self.animationTimer.setSingleShot(False)
         
-        self.connectEvents()
+        # an ugly way to force this to work (sometimes connecting fails... sometimes even with a runtime error)
+        
+        failureCount = 0
+        success = False
+        while not success:
+            try:
+                success = self.drawingTimer.timeout.connect(self.drawStatic)
+            except RuntimeError:
+                success = False
+            if not success:
+                failureCount += 1
+                if failureCount > 100:
+                    raise RuntimeError("Sorry, a rendering error occurred, and I couldn't recover... this is a known bug that should be fixed soon.\n"+
+                                       "You should be able to just run the program again.")
+        
+        failureCount = 0
+        success = False
+        while not success:
+            try:
+                success = self.animationTimer.timeout.connect(self.animate)
+            except RuntimeError:
+                success = False
+            if not success:
+                failureCount += 1
+                if failureCount > 100:
+                    raise RuntimeError("Sorry, a rendering error occurred, and I couldn't recover... this is a known bug that should be fixed soon.\n"+
+                                       "You should be able to just run the program again.")
+        
+        self.animationTimer.start(100)
         
         self.setDirty()
-    
-    def connectEvents(self):
-        self.connect(self.drawingTimer, SIGNAL("timeout()"), self.drawStatic)
-        self.connect(self.animationTimer, SIGNAL("timeout()"), self.animate)
-        self.animationTimer.start(100)
     
     def paintEvent(self, event):
         painter = QPainter()

@@ -6,7 +6,9 @@ import operator, math, re, sys
 selectionLabelRegex = re.compile('\(\d+\)')
 
 class mixedAxis:
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
+        
         self.tree = None
         self.rsValues = {}
         self.rsValuePairs = []
@@ -14,8 +16,6 @@ class mixedAxis:
         self.rsLabels = {}
         self.labels = {'Missing':set(),'Allele Masked':set()}
         
-        self.labelOrder = ['Numeric','Missing','Allele Masked']
-        self.visibleLabels = {}
         self.isfinished = False
         
         self.minimum = 0
@@ -48,33 +48,13 @@ class mixedAxis:
                 self.labels[value].add(id)
     
     def finish(self):
-        self.visibleLabels = {}
         if len(self.rsValuePairs) > 0:
             self.rsValuePairs.sort(key=lambda i: i[1])
             self.tree = TwoTree(self.rsValuePairs)
             self.findNaturalMinAndMax()
-            self.visibleLabels['Numeric']=True
         else:
             self.tree = None
-            self.visibleLabels['Numeric']=None
         
-        if len(self.labelOrder) <= 3:
-            self.labelOrder = ['Numeric','Missing','Allele Masked']
-            miss = self.hasMissing()
-            mask = self.hasMasked()
-            if self.hasMissing():
-                self.visibleLabels['Missing'] = True
-            else:
-                self.visibleLabels['Missing'] = None
-            if self.hasMasked():
-                self.visibleLabels['Allele Masked'] = True
-            else:
-                self.visibleLabels['Allele Masked'] = None
-        
-        for l in sorted(self.labels.iterkeys()):
-            if l not in self.labelOrder:
-                self.labelOrder.append(l)
-                self.visibleLabels[l] = True
         self.isfinished = True
     
     def query(self, ranges=[], labels={}):    # ranges should be [(low,high)], and labels should be {label:bool}
@@ -88,17 +68,9 @@ class mixedAxis:
                 results.update(v)
         return results
     
-    def getLabels(self):
-        assert self.isfinished
-        return self.labelOrder
-    
-    def reorder(self, remove, insertBefore):
-        assert self.isfinished
-        self.labelOrder.remove(remove)
-        target = self.labelOrder.index(insertBefore)
-        self.labelOrder.insert(target,remove)
-    
     def getValues(self, rsNumbers):
+        if not isinstance(rsNumbers, list):
+            print "WARNING: returned rs numbers will be unordered!"
         results = []
         for rs in rsNumbers:
             if self.rsLabels.has_key(rs):
@@ -114,7 +86,7 @@ class mixedAxis:
             return self.rsValues.get(rsNumber,None)
     
     def findNaturalMinAndMax(self):
-        if self.tree == None or self.tree.root == None:
+        if not self.hasNumeric():
             self.minimum = 0
             self.maximum = 0
             return
@@ -126,7 +98,7 @@ class mixedAxis:
                 if self.maximum == 0:
                     return
                     #self.maximum = 1    # though it would make sense, for some reason changing this to a 1 causes CGAffineTransformInvert: singular matrix...
-            span = self.maximum - self.minimum
+            span = abs(self.maximum - self.minimum)
             if self.maximum > 0:
                 nearestTenMax = 10**math.ceil(math.log10(self.maximum))
             elif self.maximum == 0:
@@ -145,18 +117,18 @@ class mixedAxis:
                     print self.minimum
                     sys.exit(1)
             
-            # prefer nearestTenMax if the gap between it and self.maximum is less than 25% the span of the data; otherwise just add a 5% margin to the top
+            # prefer nearestTenMax if the gap between it and self.maximum is less than 25% the span of the data
             if nearestTenMax - self.maximum < 0.25*span:
                 self.maximum = nearestTenMax
-            else:
-                self.maximum += 0.05*span
-            # prefer zero if the gap between it and self.minimum is less than 50% the span of the data, then 25% for nearestTenMin, otherwise 5% margin to the bottom
+            #else:
+            #    self.maximum += 0.05*span
+            # prefer zero if the gap between it and self.minimum is less than 50% the span of the data, then 25% for nearestTenMin
             if self.minimum > 0.0 and self.minimum < 0.5*span:
                 self.minimum = 0.0
-            elif nearestTenMin < 0.25*span:
+            elif self.minimum - nearestTenMin < 0.25*span:
                 self.minimum = nearestTenMin
-            else:
-                self.minimum -= 0.05*span
+            #else:
+            #    self.minimum -= 0.05*span
     
     def getMin(self):
         return self.minimum
@@ -165,7 +137,7 @@ class mixedAxis:
         return self.maximum
     
     def hasNumeric(self):
-        return self.tree != None
+        return not (self.tree == None or self.tree.root == None)
     
     def hasMasked(self):
         return len(self.labels['Allele Masked']) != 0
@@ -329,7 +301,7 @@ class selection:
     def applySelectAll(self, axis, applyImmediately=True):
         ranges = [(axis.getMin(),axis.getMax())]
         labels = {}
-        for k,visible in axis.visibleLabels.iteritems():
+        for k in axis.labels.iterkeys():
             labels[k] = True
         self.params[axis] = (ranges,labels)
         if applyImmediately:
@@ -338,7 +310,7 @@ class selection:
     def applySelectNone(self, axis, applyImmediately=True):
         ranges = [(axis.getMax(),axis.getMax())]
         labels = {}
-        for k,visible in axis.visibleLabels.iteritems():
+        for k in axis.labels.iterkeys():
             labels[k] = False
         self.params[axis] = (ranges,labels)
         if applyImmediately:
@@ -867,10 +839,10 @@ class variantData:
             index = 0
             progressWidget.setLabelText('Filling in Holes')
         
-        self.axes = {"Genome Position":mixedAxis()}
+        self.axes = {"Genome Position":mixedAxis("Genome Position")}
         
         for att in self.axisLabels:
-            self.axes[att] = mixedAxis()
+            self.axes[att] = mixedAxis(att)
         
         for v in self.data.itervalues():
             self.axes["Genome Position"].add(v.name,v.genomePosition)
@@ -901,53 +873,27 @@ class variantData:
         return self.setScatterAxes(startingXaxis, startingYaxis, progressWidget)
     
     def getFirstAxes(self):
-        # attempts to prioritize existing axes; chooses from the alphabetically sorted lists:
-        # first: recalculated allele frequencies
-        # second: any attribute with numerical values
-        # third: any other attribute
-        if not self.isFrozen:
-            self.freeze(None, None, None)
-        x = None
-        y = None
-        for a in sorted(self.alleleFrequencyLabels):
-            if x == None:
-                x = a
-            elif y == None:
-                y = a
-            else:
-                return (x,y)
-        for a,ax in sorted(self.axes.iteritems()):
-            if ax.hasNumeric():
-                if x == None:
-                    x = a
-                elif y == None:
-                    y = a
-                else:
-                    return (x,y)
-        for a,ax in sorted(self.axes.iteritems()):
-            if not ax.hasNumeric():
-                if x == None:
-                    x = a
-                elif y == None:
-                    y = a
-                else:
-                    return (x,y)
-        # If we've gotten this far, someone's not using the program correctly (you should have AT LEAST two dimensions)
-        raise ValueError("You should have at least two data attributes (columns in your .csv file or INFO fields in your .vcf file)\n" +
-                         "to use this program (otherwise you probably should be using LibreOffice Calc or IGV to explore your data instead).")
+        temp = self.defaultAxisOrder()
+        if len(temp) < 2:
+            raise ValueError("You should have at least two data attributes (columns in your .csv file or INFO fields in your .vcf file)\n" +
+                             "to use this program (otherwise you probably should be using LibreOffice Calc or IGV to explore your data instead).")
+        return (temp[0],temp[1])
     
     def defaultAxisOrder(self):
-        # follows the same order as finding first axes, but gives the whole list
+        # gives priority to axes (each subgroup is sorted alphabetically):
+        # program-generated allele frequencies are first
+        # numeric other values are next
+        # categorical other values are last
         if not self.isFrozen:
             self.freeze(None, None, None)
         result = []
         for a in sorted(self.alleleFrequencyLabels):
             result.append(a)
         for a,ax in sorted(self.axes.iteritems()):
-            if ax.hasNumeric():
+            if ax.hasNumeric() and a not in self.alleleFrequencyLabels:
                 result.append(a)
         for a,ax in sorted(self.axes.iteritems()):
-            if not ax.hasNumeric():
+            if not ax.hasNumeric() and a not in self.alleleFrequencyLabels:
                 result.append(a)
         return result
     
@@ -1008,8 +954,8 @@ class variantData:
         originalScatterNones = self.scatterNones
         
         self.scatter = FourTree()
-        self.scatterXs = mixedAxis()
-        self.scatterYs = mixedAxis()
+        self.scatterXs = mixedAxis(self.currentXattribute)
+        self.scatterYs = mixedAxis(self.currentYattribute)
         self.scatterNones = set()
         
         for rs in self.data.iterkeys():

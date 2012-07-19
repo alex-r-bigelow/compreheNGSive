@@ -1,5 +1,4 @@
 from resources.structures import recursiveDict
-from scour.scour import scourString
 from pyquery import PyQuery as pq
 from PySide.QtCore import Qt, QByteArray, QRectF
 from PySide.QtSvg import QSvgRenderer
@@ -316,14 +315,17 @@ class mutableSvgNode:
     
     def setSizeZero(self):
         if self.originalVisibility == None:
-            self.originalVisibility = self.getAttribute('visibility')
+            self.originalVisibility = self.getCSS('visibility')
             if self.originalVisibility == None:
                 self.originalVisibility = 'visible'
         self.hide()
     
     def unsetSizeZero(self):
         if self.originalVisibility != None:
-            self.setAttribute('visibility', self.originalVisibility, True)
+            self.setCSS('visibility', self.originalVisibility, True)
+            if self.originalVisibility == 'visible':
+                self.originalVisibility = None
+                self.show()
         self.originalVisibility = None
     
     # ****** TODO: these are my API... rename them? ******
@@ -396,7 +398,7 @@ class mutableSvgNode:
         newTransforms[3] = b*self.transforms[2] + d*self.transforms[3] # + e*0.0
         newTransforms[5] = b*self.transforms[4] + d*self.transforms[5] + f # *1.0
         
-        if newTransforms[0]*newTransforms[3] - newTransforms[2]*newTransforms[1] == 0:  # singular matrix
+        if abs(newTransforms[0]*newTransforms[3] - newTransforms[2]*newTransforms[1]) <= 0.00001:  # singular matrix
             self.setSizeZero()
         else:
             self.unsetSizeZero()
@@ -458,17 +460,20 @@ class mutableSvgNode:
         '''
     
     def hide(self):
-        self.setAttribute('visibility', 'hidden', True)
-        for c in self.children:
-            c.hide()
+        if self.originalVisibility != None:
+            self.originalVisibility = 'hidden'
+        else:
+            self.setCSS('visibility', 'hidden', True)
+            for c in self.children:
+                c.hide()
     
     def show(self):
         if self.originalVisibility != None:
             self.originalVisibility = 'visible'
         else:
-            self.setAttribute('visibility', 'visible', True)
-        for c in self.children:
-            c.show()
+            self.setCSS('visibility', 'visible', True)
+            for c in self.children:
+                c.show()
     
     def getBounds(self):
         b = self.getRect()

@@ -50,7 +50,7 @@ class rasterLayer(layer):
     def draw(self,painter):
         if not self.ready:
             return
-        self.image.fill(Qt.transparent)
+        self.image.fill(Qt.white)
         
         yPix = self.controller.scatterBounds[1]
         yDat = self.controller.currentYaxis.getMax()    # reversed coordinates
@@ -119,17 +119,20 @@ class selectionLayer(layer):
         self.reverseXratio = 1.0/self.controller.xAxisRatio
         self.reverseYratio = 1.0/self.controller.yAxisRatio
         
+        rsList = list(self.rsNumbers)
+        
         self.image.fill(Qt.transparent)
-        for x,y in zip(self.controller.currentXaxis.getValues(self.rsNumbers),self.controller.currentYaxis.getValues(self.rsNumbers)):
+        for x,y in zip(self.controller.currentXaxis.getValues(rsList),self.controller.currentYaxis.getValues(rsList)):
             if x == None or (not isinstance(x,int) and not isinstance(x,float)) or math.isinf(x) or math.isnan(x):
                 x = self.xNonNumeric
             else:
                 x = self.xoffset + x*self.reverseXratio
             
-            if y == None or (not isinstance(y,int) and not isinstance(y,float)) or math.isinf(y) or math.isnan(x):
+            if y == None or (not isinstance(y,int) and not isinstance(y,float)) or math.isinf(y) or math.isnan(y):
                 y = self.yNonNumeric
             else:
                 y = self.yoffset + y*self.reverseYratio
+            
             painter.fillRect(x,y,self.dotWidth,self.dotHeight,self.dotColor)
     
     def getRsNumbers(self, x, y):
@@ -141,12 +144,12 @@ class selectionLayer(layer):
         rsNumbers = self.controller.data.scatter.select(lowX=lowX,lowY=lowY,highX=highX,highY=highY,
                                              includeMaskedX=False, includeMaskedY=False, includeUndefinedX=False, includeUndefinedY=False, includeMissingX=False, includeMissingY=False)
         
-        showXnonNumerics = (x + self.controller.cursorXradius >= self.xNonNumeric) and (x <= self.xNonNumeric + self.dotWidth)
+        showXnonNumerics = (x + self.controller.cursorXradius >= self.xNonNumeric) and (x - self.controller.cursorXradius <= self.xNonNumeric + self.dotWidth)
         if showXnonNumerics:
             rsInRange = self.controller.currentYaxis.tree.select(low=lowY, high=highY, includeMasked=False, includeUndefined=False, includeMissing=False)
             rsInRange.difference_update(self.controller.currentXaxis.rsValues.iterkeys())
             rsNumbers.update(rsInRange)
-        showYnonNumerics = (y + self.controller.cursorYradius >= self.yNonNumeric) and (y <= self.yNonNumeric + self.dotHeight)
+        showYnonNumerics = (y + self.controller.cursorYradius >= self.yNonNumeric) and (y - self.controller.cursorYradius <= self.yNonNumeric + self.dotHeight)
         if showYnonNumerics:
             rsInRange = self.controller.currentXaxis.tree.select(low=lowX, high=highX, includeMasked=False, includeUndefined=False, includeMissing=False)
             rsInRange.difference_update(self.controller.currentYaxis.rsValues.iterkeys())
@@ -446,197 +449,8 @@ class scatterplotWidget(layeredWidget):
             self.setCursor(self.highlightCursor)
             rsNumbers = self.highlightedLayer.getRsNumbers(x,y)
             self.app.notifyHighlight(rsNumbers)
-
-'''
-init
-        layeredWidget.__init__(self, parent)
-        self.data = data
-        self.app = app
-        
-        self.svgLayer = mutableSvgLayer('gui/svg/scatterplot.svg',self)
-        self.addLayer(self.svgLayer)
-        
-        self.scatterBounds = self.svgLayer.svg.scatterBounds.getBounds()
-        
-        self.xRanges = [self.svgLayer.svg.xRange]
-        self.yRanges = [self.svgLayer.svg.yRange]
-        
-        self.xAxisRatio = 1.0
-        self.yAxisRatio = 1.0
-        
-        self.latestAxisUpdate = self.data.currentXattribute
-        
-        self.notifyAxisChange(True)
-        self.notifyAxisChange(False)
+    
+    def handleMouseClick(self):
+        print self.app.highlightedRsNumbers
 
 
-handleevents
-# adjustment of selections
-        if signals.has_key('startAdjust'):
-            axis,old = signals['startAdjust']
-            if axis == 'x':
-                axis = self.currentXaxis
-                old = self.currentXaxis.getMin() + (old-self.scatterBounds[0])*self.xAxisRatio
-                self.latestAxisUpdate = self.data.currentXattribute
-            elif axis == 'y':
-                axis = self.currentYaxis
-                old = self.currentYaxis.getMax() - (self.scatterBounds[3]-old)*self.yAxisRatio
-                self.latestAxisUpdate = self.data.currentYattribute
-            else:
-                assert False
-            self.data.startNumericOperation(axis,old)
-        
-        if signals.has_key('adjust'):
-            element,axis,oldLow,oldHigh,newLow,newHigh = signals['adjust']
-            if axis == 'x':
-                axis = self.currentXaxis
-                oldLow = self.currentXaxis.getMin() + (oldLow-self.scatterBounds[0])*self.xAxisRatio
-                oldHigh = self.currentXaxis.getMin() + (oldHigh-self.scatterBounds[0])*self.xAxisRatio
-                newLow = self.currentXaxis.getMin() + (newLow-self.scatterBounds[0])*self.xAxisRatio
-                newHigh = self.currentXaxis.getMin() + (newHigh-self.scatterBounds[0])*self.xAxisRatio
-                
-                element.leftHandle.label.setText(self.fitInSevenChars(newLow))
-                element.rightHandle.label.setText(self.fitInSevenChars(newHigh))
-                self.latestAxisUpdate = self.data.currentXattribute
-            elif axis == 'y':
-                axis = self.currentYaxis
-                oldLow = self.currentYaxis.getMax() - (self.scatterBounds[3]-oldLow)*self.yAxisRatio
-                oldHigh = self.currentYaxis.getMax() - (self.scatterBounds[3]-oldHigh)*self.yAxisRatio
-                newLow = self.currentYaxis.getMax() - (self.scatterBounds[3]-newLow)*self.yAxisRatio
-                newHigh = self.currentYaxis.getMax() - (self.scatterBounds[3]-newHigh)*self.yAxisRatio
-                
-                element.bottomHandle.label.setText(self.fitInSevenChars(newLow))
-                element.topHandle.label.setText(self.fitInSevenChars(newHigh))
-                self.latestAxisUpdate = self.data.currentYattribute
-            else:
-                assert False
-            self.data.adjustNumericOperation(axis,oldLow,oldHigh,newLow,newHigh)
-        
-        if signals.has_key('endAdjust'):
-            self.data.applyCurrentOperation()
-            self.app.notifySelection(self.latestAxisUpdate)
-
-notifyaxischange
-if xAxis:
-            self.currentXaxis = self.data.axes[self.data.currentXattribute]
-            ax = self.svgLayer.svg.xAxis
-            ax.label.setText(self.data.currentXattribute)
-            ax.lowLabel.setText(self.fitInSevenChars(self.currentXaxis.getMin()))
-            ax.highLabel.setText(self.fitInSevenChars(self.currentXaxis.getMax()))
-            self.xAxisRatio = float(self.currentXaxis.getMax() - self.currentXaxis.getMin()) / float(self.scatterBounds[2] - self.scatterBounds[0])
-            self.notifySelection(self.data.currentXattribute)
-        else:
-            self.currentYaxis = self.data.axes[self.data.currentYattribute]
-            ax = self.svgLayer.svg.yAxis
-            ax.label.setText(self.data.currentYattribute)
-            ax.lowLabel.setText(self.fitInSevenChars(self.currentYaxis.getMin()))
-            ax.highLabel.setText(self.fitInSevenChars(self.currentYaxis.getMax()))
-            self.yAxisRatio = float(self.currentYaxis.getMax() - self.currentYaxis.getMin()) / float(self.scatterBounds[3] - self.scatterBounds[1])
-            self.notifySelection(self.data.currentYattribute)
-notifyselection
-            if axis == self.data.currentXaxis:
-            dataAxis = self.currentXaxis
-            visRanges = self.xRanges
-            pixelRatio = self.xAxisRatio
-            numericLeftPixel = self.scatterBounds[0]
-            numericRightPixel = self.scatterBounds[2]
-            
-            i = len(visRanges) - 1
-            while len(visRanges) > len(dataAxis.selectedValueRanges):
-                visRanges[i].delete()
-                del visRanges[i]
-                i -= 1
-            
-            while len(visRanges) < len(dataAxis.selectedValueRanges):
-                visRanges.append(visRanges[0].clone())
-            
-            for i,r in enumerate(dataAxis.selectedValueRanges):
-                l = r[0]
-                h = r[1]
-                
-                v = visRanges[i]
-                
-                # are parts (or all) of the selection hidden?
-                rightPixel = numericRightPixel - (dataAxis.getMax()-h)/pixelRatio
-                leftPixel = numericLeftPixel + (l-dataAxis.getMin())/pixelRatio
-                
-                if rightPixel + v.rightHandle.width() < numericLeftPixel or rightPixel > numericRightPixel:
-                    v.rightHandle.hide()
-                else:
-                    v.rightHandle.label.setText(self.fitInSevenChars(h))
-                    v.rightHandle.moveTo(rightPixel,v.rightHandle.top())
-                    v.rightHandle.show()
-                rightPixel = max(rightPixel,numericLeftPixel)
-                rightPixel = min(rightPixel,numericRightPixel)
-                
-                if leftPixel < numericLeftPixel or leftPixel - v.leftHandle.width() > numericRightPixel:
-                    v.leftHandle.hide()
-                else:
-                    v.leftHandle.label.setText(self.fitInSevenChars(l))
-                    v.leftHandle.moveTo(leftPixel - v.leftHandle.width(), v.leftHandle.top())
-                    v.leftHandle.show()
-                leftPixel = min(numericRightPixel,leftPixel)
-                leftPixel = max(numericLeftPixel,leftPixel)
-                
-                if leftPixel >= rightPixel:
-                    v.bar.setSize(1,v.bar.height())
-                
-                v.bar.moveTo(leftPixel,v.bar.top())
-                v.bar.setSize(rightPixel-leftPixel,v.bar.height())
-                v.bar.show()
-                
-        elif axis == self.data.currentYaxis:
-            dataAxis = self.currentYaxis
-            visRanges = self.yRanges
-            pixelRatio = self.yAxisRatio
-            numericBottomPixel = self.scatterBounds[3]
-            numericTopPixel = self.scatterBounds[1]
-            
-            i = len(visRanges) - 1
-            while len(visRanges) > len(dataAxis.selectedValueRanges):
-                visRanges[i].delete()
-                del visRanges[i]
-                i -= 1
-            
-            while len(visRanges) < len(dataAxis.selectedValueRanges):
-                visRanges.append(visRanges[0].clone())
-            
-            for i,r in enumerate(dataAxis.selectedValueRanges):
-                l = r[0]
-                h = r[1]
-                
-                v = visRanges[i]
-                
-                # are parts (or all) of the selection hidden?
-                topPixel = numericTopPixel + (dataAxis.getMax()-h)/pixelRatio
-                bottomPixel = numericBottomPixel - (l-dataAxis.getMin())/pixelRatio
-                
-                if topPixel - v.topHandle.height() > numericBottomPixel or topPixel < numericTopPixel:
-                    v.topHandle.hide()
-                else:
-                    v.topHandle.label.setText(self.fitInSevenChars(h))
-                    v.topHandle.moveTo(v.topHandle.left(),topPixel - v.topHandle.height())
-                    v.topHandle.show()
-                topPixel = max(topPixel,numericTopPixel)
-                topPixel = min(topPixel,numericBottomPixel)
-                
-                if bottomPixel > numericBottomPixel or bottomPixel + v.bottomHandle.height() < numericTopPixel:
-                    v.bottomHandle.hide()
-                else:
-                    v.bottomHandle.label.setText(self.fitInSevenChars(l))
-                    v.bottomHandle.moveTo(v.bottomHandle.left(),bottomPixel)
-                    v.bottomHandle.show()
-                bottomPixel = min(bottomPixel,numericBottomPixel)
-                bottomPixel = max(bottomPixel,numericTopPixel)
-                
-                if topPixel >= bottomPixel:
-                    v.bar.setSize(v.bar.width(),1)
-                
-                v.bar.moveTo(v.bar.left(),topPixel)
-                v.bar.setSize(v.bar.width(),bottomPixel-topPixel)
-                v.bar.show()
-        else:
-            return
-
-
-'''

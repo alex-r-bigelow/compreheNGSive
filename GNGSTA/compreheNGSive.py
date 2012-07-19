@@ -1,7 +1,7 @@
 from gui.treeSelectionWidget import treeSelectionWidget
 from gui.treeTagWidget import treeTagWidget
 from gui.scatterplotWidget import scatterplotWidget
-#from gui.parallelCoordinateWidget import parallelCoordinateWidget
+from gui.parallelCoordinateWidget import parallelCoordinateWidget
 from dataModels.setupData import *
 from dataModels.variantData import selectionState, operation
 from PySide.QtCore import *
@@ -139,8 +139,8 @@ class singleVariantApp:
         progressWidget.setValue(1000)
         progressWidget.setLabelText('Drawing Parallel Coordinates')
         
-        #self.pc = parallelCoordinateWidget(data=vData,app=self,parent=self.window.pcScrollArea)
-        #self.window.pcScrollArea.setWidget(self.pc)
+        self.pc = parallelCoordinateWidget(data=vData,app=self,parent=self.window.pcScrollArea)
+        self.window.pcScrollArea.setWidget(self.pc)
         
         if progressWidget.wasCanceled():
             self.close()
@@ -151,7 +151,8 @@ class singleVariantApp:
         self.scatter = scatterplotWidget(data=vData,app=self,parent=self.window.scatterWidget)
         
         progressWidget.close()
-        self.window.showMaximized()
+        #self.window.showMaximized()
+        self.window.show()
     
     def newOperation(self, opCode, **kwargs):
         newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)
@@ -189,12 +190,12 @@ class singleVariantApp:
         return len(self.selections.activeSelections) > 1
     
     def notifySelection(self, axis=None):
-        #self.pc.notifySelection(rsNumbers,params,axis)
+        self.pc.notifySelection(self.activeRsNumbers,self.activeParams,axis)
         self.scatter.notifySelection(self.activeRsNumbers,self.activeParams,axis)
     
     def notifyHighlight(self, rsNumbers):
         self.highlightedRsNumbers = rsNumbers
-        #self.pc.notifyHighlight()
+        self.pc.notifyHighlight(rsNumbers)
         self.scatter.notifyHighlight(rsNumbers)
     
     def notifyAxisChange(self, xAxis=True):

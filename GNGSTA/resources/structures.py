@@ -1,4 +1,10 @@
-import math
+import math, sys
+#sys.setrecursionlimit(10000)
+RECURSION_ESTIMATE = sys.getrecursionlimit() - 500  # a generous estimate about the stack frames a program will already be using before calling our structures...
+                                                    # this will sort of guard against exceeding the maximum recursion depth. If this is still broken, it's likely
+                                                    # only slightly broken by an already-complex program that they might need to boost the recursion limit on its own
+                                                    # anyway; otherwise the programmer's doing something stupid like creating these recursive structures inside
+                                                    # some kind of recursive algorithm... if that's the case, he deserves the crash
 
 class recursiveDict(dict):
     def __init__(self, generateFrom=None):
@@ -57,9 +63,24 @@ class TwoNode:
         
         self.cacheNext = None
         self.cachePrevious = None
+        
+        self.deepChildPool = set() # resort to a presorted list of children when the recursion depth is exceeded
     
-    def addChild(self, newNode):
+    def addChild(self, newNode, depth=0):
         self.population += newNode.population
+        
+        if depth > RECURSION_ESTIMATE:
+            '''if len(self.deepChildPool) == 0:
+                self.deepChildPool.append(newNode)
+            else:
+                target = len(self.deepChildPool)
+                for i,n in enumerate(self.deepChildPool):
+                    if n.value > newNode.value:
+                        target = i
+                        break
+                self.deepChildPool.insert(target, newNode)'''
+            self.deepChildPool.add(newNode)
+            return
         
         if newNode.value < self.value:
             if newNode.value < self.low:
@@ -67,18 +88,21 @@ class TwoNode:
             if self.lowerChildren == None:
                 self.lowerChildren = newNode
             else:
-                self.lowerChildren.addChild(newNode)
+                self.lowerChildren.addChild(newNode, depth+1)
         else:   # lump greater than OR EQUAL in the same direction
             if newNode.value > self.high:
                 self.high = newNode.value
             if self.higherChildren == None:
                 self.higherChildren = newNode
             else:
-                self.higherChildren.addChild(newNode)
+                self.higherChildren.addChild(newNode, depth+1)
     
     def getSubselectionNoCheck(self):
         results = set()
         results.add(self.id)
+        for n in self.deepChildPool:
+            results.add(n.id)
+        
         if self.lowerChildren != None:
             results.update(self.lowerChildren.getSubselectionNoCheck())
         if self.higherChildren != None:
@@ -93,6 +117,9 @@ class TwoNode:
         results = set()
         if self.value >= low and self.value <= high:
             results.add(self.id)
+        for n in self.deepChildPool:
+            if n.value >= low and n.value <= high:
+                results.add(n.id)
         if self.lowerChildren != None:
             results.update(self.lowerChildren.getSubselection(low,high))
         if self.higherChildren != None:
@@ -107,6 +134,9 @@ class TwoNode:
         count = 0
         if self.value >= low and self.value <= high:
             count += 1
+        for n in self.deepChildPool:
+            if n.value >= low and n.value <= high:
+                count += 1
         if self.lowerChildren != None:
             count += self.lowerChildren.countPopulation(low,high)
         if self.higherChildren != None:
@@ -334,9 +364,15 @@ class FourNode:
         self.highX = x
         self.lowY = y
         self.highY = y
+        
+        self.deepChildPool = set() # resort to unsorted set of children when the recursion depth is exceeded
     
-    def addChild(self, newNode):
+    def addChild(self, newNode, depth=0):
         self.population += newNode.population
+        
+        if depth > RECURSION_ESTIMATE:
+            self.deepChildPool.add(newNode)
+            return
         
         if newNode.x < self.x:
             if newNode.x < self.lowX:
@@ -349,7 +385,7 @@ class FourNode:
                 if self.lowerChildren == None:
                     self.lowerChildren = newNode
                 else:
-                    self.lowerChildren.addChild(newNode)
+                    self.lowerChildren.addChild(newNode,depth+1)
             else:   # lump greater than OR EQUAL in the same direction
                 if newNode.y > self.highY:
                     self.highY = newNode.y
@@ -357,7 +393,7 @@ class FourNode:
                 if self.higherYChildren == None:
                     self.higherYChildren = newNode
                 else:
-                    self.higherYChildren.addChild(newNode)
+                    self.higherYChildren.addChild(newNode,depth+1)
         else:   # lump greater than OR EQUAL in the same direction
             if newNode.x > self.highX:
                 self.highX = newNode.x
@@ -369,7 +405,7 @@ class FourNode:
                 if self.higherXChildren == None:
                     self.higherXChildren = newNode
                 else:
-                    self.higherXChildren.addChild(newNode)
+                    self.higherXChildren.addChild(newNode,depth+1)
             else:   # lump greater than OR EQUAL in the same direction
                 if newNode.y > self.highY:
                     self.highY = newNode.y
@@ -377,11 +413,13 @@ class FourNode:
                 if self.higherChildren == None:
                     self.higherChildren = newNode
                 else:
-                    self.higherChildren.addChild(newNode)
+                    self.higherChildren.addChild(newNode,depth+1)
     
     def getSubselectionNoCheck(self):
         results = set()
         results.add(self.id)
+        for n in self.deepChildPool:
+            results.add(n.id)
         if self.lowerChildren != None:
             results.update(self.lowerChildren.getSubselectionNoCheck())
         if self.higherXChildren != None:
@@ -400,6 +438,9 @@ class FourNode:
         results = set()
         if self.x >= lowX and self.x <= highX and self.y >= lowY and self.y <= highY:
             results.add(self.id)
+        for n in self.deepChildPool:
+            if n.x >= lowX and n.x <= highX and n.y >= lowY and n.y <= highY:
+                results.add(n.id)
         if self.lowerChildren != None:
             results.update(self.lowerChildren.getSubselection(lowX,lowY,highX,highY))
         if self.higherXChildren != None:
@@ -418,6 +459,9 @@ class FourNode:
         count = 0
         if self.x >= lowX and self.x <= highX and self.y >= lowY and self.y <= highY:
             count += 1
+        for n in self.deepChildPool:
+            if n.x >= lowX and n.x <= highX and n.y >= lowY and n.y <= highY:
+                count += 1
         if self.lowerChildren != None:
             count += self.lowerChildren.countPopulation(lowX,lowY,highX,highY)
         if self.higherXChildren != None:
