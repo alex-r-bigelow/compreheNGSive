@@ -337,6 +337,16 @@ self.controller.endNumericRangeDrag()">
             </g>
           </g>
         </g>
+        <rect
+           style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+           id="rect3891"
+           width="10"
+           height="320"
+           x="97.5"
+           y="45.000031"
+           __globalProperty="rangeArea"
+           __eventCode="self.controller.mouseIn(event.x, event.y)"
+           __resetCode="self.controller.mouseOut()" />
       </g>
       <g
          id="g3039"
@@ -534,16 +544,6 @@ self.controller.endAxisDrag()">
            id="text3018"
            sodipodi:linespacing="100%">CASES AF</text>
       </g>
-      <rect
-         style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-         id="rect3891"
-         width="10"
-         height="320"
-         x="97.5"
-         y="14.999969"
-         __globalProperty="rangeArea"
-         __eventCode="self.controller.mouseIn(event.x, event.y)"
-         __resetCode="self.controller.mouseOut()" />
     </g>
   </g>
   <path
