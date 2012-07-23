@@ -67,7 +67,7 @@ class rasterLayer(layer):
             yDat += self.yIncrement
         
         # Draw the missing values in x
-        if self.controller.currentXaxis.hasNumeric():
+        if self.controller.currentYaxis.hasNumeric():
             yPix = self.controller.scatterBounds[1]
             yDat = self.controller.currentYaxis.getMax()
             while yPix <= self.controller.scatterBounds[3]:
@@ -79,9 +79,9 @@ class rasterLayer(layer):
                 yPix += 1
                 yDat += self.yIncrement
         # Draw the missing values in y
-        if self.controller.currentYaxis.hasNumeric():
+        if self.controller.currentXaxis.hasNumeric():
             xPix = self.controller.scatterBounds[0]
-            xDat = self.controller.currentYaxis.getMin()
+            xDat = self.controller.currentXaxis.getMin()
             while xPix <= self.controller.scatterBounds[2]:
                 rsNumsInRange = self.controller.currentXaxis.tree.select(low=xDat-self.xRadius, high=xDat+self.xRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
                 rsNumsInRange.difference_update(self.controller.currentYaxis.rsValues.iterkeys())
@@ -101,14 +101,20 @@ class selectionLayer(layer):
         self.dotColor.setNamedColor(prototypeDot.getAttribute('fill'))
         self.dotColor.setAlphaF(float(prototypeDot.getAttribute('fill-opacity')))
         self.dotWidth = prototypeDot.width()
-        self.xoffset = self.controller.scatterBounds[0]-self.dotWidth/2+1
+        self.xoffset = self.controller.svgLayer.svg.xZeroBar.left()-self.dotWidth/2+1
+        #self.xoffset = self.controller.scatterBounds[0]-self.dotWidth/2+1
         self.dotHeight = prototypeDot.height()
-        self.yoffset = self.controller.scatterBounds[3]-self.dotHeight/2+1
+        self.yoffset = self.controller.svgLayer.svg.yZeroBar.bottom()-self.dotWidth/2+1
+        #self.yoffset = self.controller.scatterBounds[3]-self.dotHeight/2+1
         self.xNonNumeric = (self.controller.svgLayer.svg.xNonNumericIcon.left() + self.controller.svgLayer.svg.xNonNumericIcon.right())/2 - self.dotWidth/2
         self.yNonNumeric = (self.controller.svgLayer.svg.yNonNumericIcon.top() + self.controller.svgLayer.svg.yNonNumericIcon.bottom())/2 - self.dotHeight/2
     
     def handleFrame(self, event, signals):
         return signals
+    
+    def updateAxes(self):
+        self.xoffset = self.controller.svgLayer.svg.xZeroBar.left()-self.dotWidth/2+1
+        self.yoffset = self.controller.svgLayer.svg.yZeroBar.bottom()-self.dotWidth/2+1
     
     def update(self, rsNumbers):
         self.rsNumbers = rsNumbers
@@ -218,6 +224,8 @@ class scatterplotWidget(layeredWidget):
             self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentXaxis)
             if applyImmediately:
                 self.allDataLayer.setup(self.data.scatter)
+                self.selectedLayer.updateAxes()
+                self.highlightedLayer.updateAxes()
         else:
             self.currentYaxis = self.data.axes[self.data.currentYattribute]
             ax = self.svgLayer.svg.yAxis
@@ -235,6 +243,8 @@ class scatterplotWidget(layeredWidget):
             self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentYaxis)
             if applyImmediately:
                 self.allDataLayer.setup(self.data.scatter)
+                self.selectedLayer.updateAxes()
+                self.highlightedLayer.updateAxes()
     
     def notifySelection(self, rsNumbers, params, axis=None):
         self.selectedLayer.update(rsNumbers)

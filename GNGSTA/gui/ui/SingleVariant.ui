@@ -143,6 +143,7 @@
     </property>
     <addaction name="actionBack_To_Setup"/>
     <addaction name="separator"/>
+    <addaction name="actionExport_History"/>
     <addaction name="actionExport"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
@@ -264,6 +265,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+D</string>
+   </property>
+  </action>
+  <action name="actionExport_History">
+   <property name="text">
+    <string>Export History...</string>
    </property>
   </action>
  </widget>
