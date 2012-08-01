@@ -204,7 +204,7 @@ class layeredWidget(QWidget):
             painter.end()'''
             pass
         else:
-            eventResults = {'__EVENT__ABSORBED__':False}
+            eventResults = {'__EVENT__ABSORBED__':not self.underMouse()}
             for l in self.layers:
                 if not eventResults.get('__EVENT__ABSORBED__',True):
                     eventResults.update(l.handleFrame(self.userState,signals=eventResults))

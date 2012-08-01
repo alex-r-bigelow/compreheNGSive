@@ -48,6 +48,12 @@ class recursiveDict(dict):
             temp[columns[0]] = recursiveDict.generateFromList(columns[1:])
             return temp
 
+class countingDict(dict):
+    def __missing__(self, key):
+        returnValue = 0
+        self[key] = returnValue
+        return returnValue
+
 class TwoNode:
     def __init__(self, identifier, value):
         self.id = identifier

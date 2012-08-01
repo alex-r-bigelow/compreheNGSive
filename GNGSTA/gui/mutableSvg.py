@@ -2,7 +2,7 @@ from resources.structures import recursiveDict
 from pyquery import PyQuery as pq
 from PySide.QtCore import Qt, QByteArray, QRectF
 from PySide.QtSvg import QSvgRenderer
-from PySide.QtGui import QPixmap, QCursor, QPainter
+from PySide.QtGui import QCursor, QPainter, QPixmap
 import sys, math
 from copy import deepcopy
 
@@ -15,129 +15,104 @@ abstraction layer for manipulating SVG. This is a really hacked-together approac
 with this API as I go.
 
 custom events:
-                Python implementation namespace:
-                Implement custom events as if you were filling in this stub with no accessible global variables:
-                
-                def handleEvent(self, event, signals={'__SVG__DIRTY__':True}):
-                    
-                    ... your code here ...
-                    
-                    return signals
-                
-                self is a mutableSvgNode object; you can use this to query/manipulate it or other SVG elements that it can access
-                
-                event is an eventPacket object (see gui/layeredWidget.py for its code); with it you can access details about the
-                state of the user's actions in the current and previous frame (e.g. which keys/mouse buttons are down, the current
-                mouse location, and the movement of the mouse since the previous frame)
-                
-                signals is a dictionary object that you can use to pass high-level interpretations to your controller
-                (e.g. signals['toy_icon_was_dragged']=(event.deltaX(),event.deltaY()) ). You can access the final signals dict
-                from the parameter that is passed into your overridden handleEvents() function in your widget class that inherits from
-                gui/layeredWidget.
-                
-                You should NOT include the return statement; whatever is in the signals dict will be returned. If you wish to
-                yield the event on to other nodes as well as perform custom code locally, be sure to set the __EVENT__ABSORBED__
-                signal
-                appropriately. You can also pass messages between nodes via the signals dict, though remember that children
-                will access this before ancestors or lower(z-coordinate) siblings. A better way to do this (especially
-                considering the complications that could arise from the clone() method) is to use local/global references.
-                
-                Event propagation:
-                The most precise selected element will initially be be the only element that receives an event
-                packet. The most precise element is the deepest child of the frontmost element in the SVG XML tree; checking
-                if the mouse is in the rectangle of elements relies on the id attribute, so if your SVG is ill-formed,
-                it is possible that elements will be chosen that aren't under the cursor.
-                
-                To implement a custom event handler, set the __eventCode attribute on any element in the SVG
-                document; whether it will receive the event or not is explained as follows:
-                
-                <g id='a'>
-                    <g id='b' __eventCode="self.translate(event.deltaX,0)">
-                        <g id='c' __eventCode="self.translate(0,event.deltaY)">
-                            <g id='d' __eventCode="">
-                                <g id='e' __eventCode="self.translate(event.deltaX,event.deltaY)"\>
-                                <g id='f'\>
-                            <\g>
-                            <g id='g'\>
-                        <\g>
-                        <g id='h'\>
-                    <\g>
-                    <g id='i'\>
-                <\g>
-                
-                No action is the default behavior for the root element. For all others, default behavior is
-                to yield the event to its closest sibling and then ancestor that implements the __eventCode
-                attribute, or no action if no such ancestor exists.
-                
-                For example:
-                
-                Assuming a is the root SVG element or no elements above a have the __eventCode attribute:
-                    Moving the mouse over a will have no effect
-                    Moving the mouse over b will move b,c,d,e,f,g and h in the x direction only
-                    Moving the mouse over c will move c,d,e,f and g in the y direction only
-                    Moving the mouse over d will have no effect
-                    Moving the mouse over e will move e in both directions
-                    Moving the mouse over f will have no effect
-                    Moving the mouse over g will move c,d,e,f and g in the y direction only
-                    Moving the mouse over h will move b,c,d,e,f,g and h in the x direction only
-                    Moving the mouse over i will have no effect
-                
-                (of course a more practical implementation would include checks to see if the mouse button was down before
-                translating, which would give us simple dragging functionality - but for readability I left that out. For
-                better dragging, you probably should also set the reserved __LOCK__ signal as True)
+Python implementation namespace:
+Implement custom events as if you were filling in this stub with no accessible global variables:
+def handleEvent(self, event, signals={'__SVG__DIRTY__':True}):
+... your code here ...
+return signals
+self is a mutableSvgNode object; you can use this to query/manipulate it or other SVG elements that it can access
+event is an eventPacket object (see gui/layeredWidget.py for its code); with it you can access details about the
+state of the user's actions in the current and previous frame (e.g. which keys/mouse buttons are down, the current
+mouse location, and the movement of the mouse since the previous frame)
+signals is a dictionary object that you can use to pass high-level interpretations to your controller
+(e.g. signals['toy_icon_was_dragged']=(event.deltaX(),event.deltaY()) ). You can access the final signals dict
+from the parameter that is passed into your overridden handleEvents() function in your widget class that inherits from
+gui/layeredWidget.
+You should NOT include the return statement; whatever is in the signals dict will be returned. If you wish to
+yield the event on to other nodes as well as perform custom code locally, be sure to set the __EVENT__ABSORBED__
+signal
+appropriately. You can also pass messages between nodes via the signals dict, though remember that children
+will access this before ancestors or lower(z-coordinate) siblings. A better way to do this (especially
+considering the complications that could arise from the clone() method) is to use local/global references.
+Event propagation:
+The most precise selected element will initially be be the only element that receives an event
+packet. The most precise element is the deepest child of the frontmost element in the SVG XML tree; checking
+if the mouse is in the rectangle of elements relies on the id attribute, so if your SVG is ill-formed,
+it is possible that elements will be chosen that aren't under the cursor.
+To implement a custom event handler, set the __eventCode attribute on any element in the SVG
+document; whether it will receive the event or not is explained as follows:
+<g id='a'>
+<g id='b' __eventCode="self.translate(event.deltaX,0)">
+<g id='c' __eventCode="self.translate(0,event.deltaY)">
+<g id='d' __eventCode="">
+<g id='e' __eventCode="self.translate(event.deltaX,event.deltaY)"\>
+<g id='f'\>
+<\g>
+<g id='g'\>
+<\g>
+<g id='h'\>
+<\g>
+<g id='i'\>
+<\g>
+No action is the default behavior for the root element. For all others, default behavior is
+to yield the event to its closest sibling and then ancestor that implements the __eventCode
+attribute, or no action if no such ancestor exists.
+For example:
+Assuming a is the root SVG element or no elements above a have the __eventCode attribute:
+Moving the mouse over a will have no effect
+Moving the mouse over b will move b,c,d,e,f,g and h in the x direction only
+Moving the mouse over c will move c,d,e,f and g in the y direction only
+Moving the mouse over d will have no effect
+Moving the mouse over e will move e in both directions
+Moving the mouse over f will have no effect
+Moving the mouse over g will move c,d,e,f and g in the y direction only
+Moving the mouse over h will move b,c,d,e,f,g and h in the x direction only
+Moving the mouse over i will have no effect
+(of course a more practical implementation would include checks to see if the mouse button was down before
+translating, which would give us simple dragging functionality - but for readability I left that out. For
+better dragging, you probably should also set the reserved __LOCK__ signal as True)
 
-    __eventCode
-    
-    __resetCode
+__eventCode
+__resetCode
 
 signals:
-    __SVG__DIRTY__ ******TODO - rewrite
-                used to notify the renderer that the view needs to be updated. Only set this to False if your custom code does
-                not modify the appearance of the resulting SVG. You should really only bother setting this to False if you
-                are merely translating an interaction in the signals dict and it's affecting performance.
-    __EVENT__ABSORBED__
-    
-    __LOCK__
+__SVG__DIRTY__ ******TODO - rewrite
+used to notify the renderer that the view needs to be updated. Only set this to False if your custom code does
+not modify the appearance of the resulting SVG. You should really only bother setting this to False if you
+are merely translating an interaction in the signals dict and it's affecting performance.
+__EVENT__ABSORBED__
+__LOCK__
 
 local/global references:
-                For performance/code readability, it might be a good idea to store references to frequently used parent/child elements
-                as a node's attribute (in the python, not SVG sense) for easy access. To do this, begin a parameter value with "__".
-                
-                For example:
-                
-                <g id='a' C='__childNamedC' __eventCode='self.C.hide()'>
-                    <g id='b'>
-                        <g id='c' __parentProperty='__childNamedC'/>
-                    </g>
-                </g>
-                
-                would hide c when a is moused over.
-                
-                These links are preserved across clones if their specificity isn't violated; for example:
-                
-                <g id='a' __globalProperty='A' __childProperty='__parentNamedA' C='__childNamedC' >
-                    <g id='b' __globalProperty='B'>
-                        <g id='c' __globalProperty='C' __parentProperty='__childNamedC' A='__parentNamedA'/>
-                    </g>
-                </g>
-                
-                ... (code in main controller that extends layeredWidget):
-                
-                document.A.C == document.C      # True
-                document.C.A == document.A      # True
-                
-                A2 = document.A.clone()    # Creates an intact copy with no intersecting references
-                document.A == A2                # False
-                document.C == A2.C              # False
-                A2.C.A == A2                    # True
-                A2.C.A == document.A            # False
-                document.A.C == document.C      # Still True
-                document.C.A == document.A      # Still True
-                
-                C2 = document.C.clone()    # Creates an orphan... has no references to its' prototype's parent
-                document.C == C2                # False
-                document.C2.A                   # None
-                document.A.C == C2              # False
+For performance/code readability, it might be a good idea to store references to frequently used parent/child elements
+as a node's attribute (in the python, not SVG sense) for easy access. To do this, begin a parameter value with "__".
+For example:
+<g id='a' C='__childNamedC' __eventCode='self.C.hide()'>
+<g id='b'>
+<g id='c' __parentProperty='__childNamedC'/>
+</g>
+</g>
+would hide c when a is moused over.
+These links are preserved across clones if their specificity isn't violated; for example:
+<g id='a' __globalProperty='A' __childProperty='__parentNamedA' C='__childNamedC' >
+<g id='b' __globalProperty='B'>
+<g id='c' __globalProperty='C' __parentProperty='__childNamedC' A='__parentNamedA'/>
+</g>
+</g>
+... (code in main controller that extends layeredWidget):
+document.A.C == document.C # True
+document.C.A == document.A # True
+A2 = document.A.clone() # Creates an intact copy with no intersecting references
+document.A == A2 # False
+document.C == A2.C # False
+A2.C.A == A2 # True
+A2.C.A == document.A # False
+document.A.C == document.C # Still True
+document.C.A == document.A # Still True
+C2 = document.C.clone() # Creates an orphan... has no references to its' prototype's parent
+document.C == C2 # False
+document.C2.A # None
+document.A.C == C2 # False
 
 __globalProperty
 
@@ -145,13 +120,6 @@ __parentProperty
 
 __childProperty
 
-'''
-
-'''
-TODO:
-render function
-__revertCode attribute
-clone function
 '''
 
 class SvgMapException(Exception):
@@ -315,17 +283,14 @@ class mutableSvgNode:
     
     def setSizeZero(self):
         if self.originalVisibility == None:
-            self.originalVisibility = self.getCSS('visibility')
+            self.originalVisibility = self.getAttribute('visibility')
             if self.originalVisibility == None:
                 self.originalVisibility = 'visible'
         self.hide()
     
     def unsetSizeZero(self):
         if self.originalVisibility != None:
-            self.setCSS('visibility', self.originalVisibility, True)
-            if self.originalVisibility == 'visible':
-                self.originalVisibility = None
-                self.show()
+            self.setAttribute('visibility', self.originalVisibility, True)
         self.originalVisibility = None
     
     # ****** TODO: these are my API... rename them? ******
@@ -389,27 +354,24 @@ class mutableSvgNode:
     
     def matrix(self,a,b,c,d,e,f,applyImmediately=True):
         # Per SVG spec, flatten by multiplying the new matrix to the left of the existing one
-        newTransforms = [0,0,0,0,0,0]
-        newTransforms[0] = a*self.transforms[0] + c*self.transforms[1] # + e*0.0
-        newTransforms[2] = a*self.transforms[2] + c*self.transforms[3] # + e*0.0
-        newTransforms[4] = a*self.transforms[4] + c*self.transforms[5] + e # *1.0
+        temp = list(self.transforms) # copy
+        self.transforms[0] = a*temp[0] + c*temp[1] # + e*0.0
+        self.transforms[2] = a*temp[2] + c*temp[3] # + e*0.0
+        self.transforms[4] = a*temp[4] + c*temp[5] + e # *1.0
         
-        newTransforms[1] = b*self.transforms[0] + d*self.transforms[1] # + e*0.0
-        newTransforms[3] = b*self.transforms[2] + d*self.transforms[3] # + e*0.0
-        newTransforms[5] = b*self.transforms[4] + d*self.transforms[5] + f # *1.0
+        self.transforms[1] = b*temp[0] + d*temp[1] # + e*0.0
+        self.transforms[3] = b*temp[2] + d*temp[3] # + e*0.0
+        self.transforms[5] = b*temp[4] + d*temp[5] + f # *1.0
         
-        if abs(newTransforms[0]*newTransforms[3] - newTransforms[2]*newTransforms[1]) <= 0.00001:  # singular matrix
-            self.setSizeZero()
-        else:
-            self.unsetSizeZero()
-            self.transforms = newTransforms
-            
-            if applyImmediately:
-                self.applyTransforms()
+        if applyImmediately:
+            self.applyTransforms()
     
     def translate(self, deltaX, deltaY, applyImmediately=True):
-        self.matrix(1,0,0,1,deltaX,deltaY,applyImmediately)
-        
+        self.transforms[4] += deltaX
+        self.transforms[5] += deltaY
+        if applyImmediately:
+            self.applyTransforms()
+    
     def moveTo(self, x, y):
         l,t,r,b = self.getBounds()
         deltaX = x-l
@@ -423,7 +385,10 @@ class mutableSvgNode:
             self.translate(-deltaX,-deltaY)
     
     def scale(self, xFactor, yFactor, applyImmediately=True):
-        self.matrix(xFactor,0,0,yFactor,0,0,applyImmediately)
+        self.transforms[0] *= xFactor
+        self.transforms[3] *= yFactor
+        if applyImmediately:
+            self.applyTransforms()
     
     def stretch(self, fromLeft, fromTop, fromRight, fromBottom):
         l,t,r,b = self.getBounds()
@@ -432,8 +397,23 @@ class mutableSvgNode:
         xGrowth = fromLeft + fromRight
         yGrowth = fromTop + fromBottom
         
-        xFactor = (xGrowth + width)/width
-        yFactor = (yGrowth + height)/height
+        xFactor = None
+        yFactor = None
+        if width + xGrowth <= 0:
+            self.setSizeZero()
+            xFactor = 1.0
+        elif self.originalVisibility != None:
+            self.unsetSizeZero()
+        if height + yGrowth <= 0:
+            self.setSizeZero()
+            yFactor = 1.0
+        elif self.originalVisibility != None and xFactor == None:
+            self.unsetSizeZero()
+        
+        if xFactor == None:
+            xFactor = (xGrowth + width)/width
+        if yFactor == None:
+            yFactor = (yGrowth + height)/height
         self.scale(xFactor,yFactor)
         self.moveTo(l-fromLeft, t-fromTop)
     
@@ -460,20 +440,17 @@ class mutableSvgNode:
         '''
     
     def hide(self):
-        if self.originalVisibility != None:
-            self.originalVisibility = 'hidden'
-        else:
-            self.setCSS('visibility', 'hidden', True)
-            for c in self.children:
-                c.hide()
+        self.setAttribute('visibility', 'hidden', True)
+        for c in self.children:
+            c.hide()
     
     def show(self):
         if self.originalVisibility != None:
             self.originalVisibility = 'visible'
         else:
-            self.setCSS('visibility', 'visible', True)
-            for c in self.children:
-                c.show()
+            self.setAttribute('visibility', 'visible', True)
+        for c in self.children:
+            c.show()
     
     def getBounds(self):
         b = self.getRect()
@@ -505,8 +482,8 @@ class mutableSvgNode:
     def contains(self,other):
         return self.getRect().contains(other.getRect())
     
-    def contains(self,x,y):
-        return self.getRect().contains(x,y)
+#    def contains(self,x,y):
+#        return self.getRect().contains(x,y)
     
     def clone(self):
         if self.parent == None:
@@ -616,10 +593,14 @@ class mutableSvgNode:
         value = self.attributes.get(att,self.getCSS(att))
         if value == None:
             return None
-        try:
-            value = float(value)
-        except ValueError:
-            pass
+        if isinstance(value,str):
+            try:
+                value = int(value)
+            except ValueError:
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
         return value
     
     def getCSS(self, att):
@@ -634,9 +615,12 @@ class mutableSvgNode:
                 endPoint = len(part)-1
             value = part[:endPoint]
             try:
-                value = float(value)
+                value = int(value)
             except ValueError:
-                pass
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
             return value
 
 class mutableSvgRenderer:
@@ -816,5 +800,7 @@ class mutableSvgRenderer:
         self.render(painter,"#" + id)
         painter.end()
         return QCursor(cursorPixmap,hotX,hotY)
+    
+    
     
     

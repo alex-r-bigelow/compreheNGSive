@@ -25,14 +25,14 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="180.12947"
+     inkscape:cx="-139.87053"
      inkscape:cy="283.68867"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1680"
-     inkscape:window-height="1028"
-     inkscape:window-x="1920"
+     inkscape:window-width="1833"
+     inkscape:window-height="1156"
+     inkscape:window-x="87"
      inkscape:window-y="0"
      inkscape:window-maximized="0" />
   <metadata
@@ -81,7 +81,9 @@
        width="499"
        height="499"
        x="0.5"
-       y="0.5" />
+       y="0.5"
+       __eventCode="if 'RightButton' not in event.buttons:\n
+    signals['__EVENT__ABSORBED__'] = False" />
     <rect
        style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        id="rect4413"
@@ -129,9 +131,9 @@
       <text
          sodipodi:linespacing="125%"
          id="text4986"
-         y="-49.52"
+         y="-47.52"
          x="229.83804"
-         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
          xml:space="preserve"
          transform="matrix(0,1,-1,0,0,0)"
          __parentProperty="__yLabel">Background Allele Frequency</text>
@@ -166,9 +168,9 @@
        lowLabel="__xLowLabel">
       <text
          xml:space="preserve"
-         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:center;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:middle;baseline-shift:baseline;color:#000000;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
          x="269.74805"
-         y="450.07654"
+         y="452.07654"
          id="text4982"
          sodipodi:linespacing="125%"
          __parentProperty="__xLabel">Case Allele Frequency</text>
@@ -216,21 +218,8 @@
          __parentProperty="__bottomBottomHandle"
          background="__bottomBottomHandleBackground"
          label="__bottomBottomHandleLabel"
-         __eventCode="if self.controller.canAdjustSelection():\n
-    self.background.setAttribute('fill-opacity',0.75)\n
-    if 'LeftButton' in event.buttons:\n
-        signals['__LOCK__'] = True\n
-        if 'LeftButton' not in event.lastButtons:\n
-            self.controller.startDrag(self)\n
-        else:\n
-            distance = self.controller.handleDrag(event.deltaX)\n
-            self.translate(distance,0)\n
-    else:\n
-        signals['__LOCK__'] = False\n
-        if 'LeftButton' in event.lastButtons:\n
-            self.controller.finishDrag()"
-         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False"
+         __eventCode="if self.controller.canAdjustSelection():\n     self.background.setAttribute('fill-opacity',0.75)\n     if 'LeftButton' in event.buttons:\n         signals['__LOCK__'] = True\n         if 'LeftButton' not in event.lastButtons:\n             self.controller.startDrag(self)\n         else:\n             distance = self.controller.handleDrag(event.deltaX)\n             self.translate(distance,0)\n     else:\n         signals['__LOCK__'] = False\n         if 'LeftButton' in event.lastButtons:\n             self.controller.finishDrag()"
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n signals['__LOCK__'] = False"
          handleName="bottomLeft">
         <path
            style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
@@ -253,21 +242,8 @@ signals['__LOCK__'] = False"
          __parentProperty="__bottomTopHandle"
          background="__bottomTopHandleBackground"
          label="__bottomTopHandleLabel"
-         __eventCode="if self.controller.canAdjustSelection():\n
-    self.background.setAttribute('fill-opacity',0.75)\n
-    if 'LeftButton' in event.buttons:\n
-        signals['__LOCK__'] = True\n
-        if 'LeftButton' not in event.lastButtons:\n
-            self.controller.startDrag(self)\n
-        else:\n
-            distance = self.controller.handleDrag(event.deltaX)\n
-            self.translate(distance,0)\n
-    else:\n
-        signals['__LOCK__'] = False\n
-        if 'LeftButton' in event.lastButtons:\n
-            self.controller.finishDrag()"
-         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False"
+         __eventCode="if self.controller.canAdjustSelection():\n     self.background.setAttribute('fill-opacity',0.75)\n     if 'LeftButton' in event.buttons:\n         signals['__LOCK__'] = True\n         if 'LeftButton' not in event.lastButtons:\n             self.controller.startDrag(self)\n         else:\n             distance = self.controller.handleDrag(event.deltaX)\n             self.translate(distance,0)\n     else:\n         signals['__LOCK__'] = False\n         if 'LeftButton' in event.lastButtons:\n             self.controller.finishDrag()"
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n signals['__LOCK__'] = False"
          handleName="bottomRight">
         <path
            inkscape:connector-curvature="0"
@@ -305,22 +281,9 @@ signals['__LOCK__'] = False"
          __parentProperty="__leftBottomHandle"
          background="__leftBottomHandleBackground"
          label="__leftBottomHandleLabel"
-         __eventCode="if self.controller.canAdjustSelection():\n
-    self.background.setAttribute('fill-opacity',0.75)\n
-    if 'LeftButton' in event.buttons:\n
-        signals['__LOCK__'] = True\n
-        if 'LeftButton' not in event.lastButtons:\n
-            self.controller.startDrag(self)\n
-        else:\n
-            distance = self.controller.handleDrag(event.deltaY)\n
-            self.translate(0,distance)\n
-    else:\n
-        signals['__LOCK__'] = False\n
-        if 'LeftButton' in event.lastButtons:\n
-            self.controller.finishDrag()"
+         __eventCode="if self.controller.canAdjustSelection():\n     self.background.setAttribute('fill-opacity',0.75)\n     if 'LeftButton' in event.buttons:\n         signals['__LOCK__'] = True\n         if 'LeftButton' not in event.lastButtons:\n             self.controller.startDrag(self)\n         else:\n             distance = self.controller.handleDrag(event.deltaY)\n             self.translate(0,distance)\n     else:\n         signals['__LOCK__'] = False\n         if 'LeftButton' in event.lastButtons:\n             self.controller.finishDrag()"
          handleName="leftBottom"
-         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False">
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n signals['__LOCK__'] = False">
         <path
            style="color:#000000;fill:#1b9e77;fill-opacity:0.39215686;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
            d="M 60,440 50,440 50,450 z"
@@ -341,22 +304,9 @@ signals['__LOCK__'] = False">
          __parentProperty="__leftTopHandle"
          background="__leftTopHandleBackground"
          label="__leftTopHandleLabel"
-         __eventCode="if self.controller.canAdjustSelection():\n
-    self.background.setAttribute('fill-opacity',0.75)\n
-    if 'LeftButton' in event.buttons:\n
-        signals['__LOCK__'] = True\n
-        if 'LeftButton' not in event.lastButtons:\n
-            self.controller.startDrag(self)\n
-        else:\n
-            distance = self.controller.handleDrag(event.deltaY)\n
-            self.translate(0,distance)\n
-    else:\n
-        signals['__LOCK__'] = False\n
-        if 'LeftButton' in event.lastButtons:\n
-            self.controller.finishDrag()"
+         __eventCode="if self.controller.canAdjustSelection():\n     self.background.setAttribute('fill-opacity',0.75)\n     if 'LeftButton' in event.buttons:\n         signals['__LOCK__'] = True\n         if 'LeftButton' not in event.lastButtons:\n             self.controller.startDrag(self)\n         else:\n             distance = self.controller.handleDrag(event.deltaY)\n             self.translate(0,distance)\n     else:\n         signals['__LOCK__'] = False\n         if 'LeftButton' in event.lastButtons:\n             self.controller.finishDrag()"
          handleName="leftTop"
-         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n
-signals['__LOCK__'] = False">
+         __resetCode="self.background.setAttribute('fill-opacity',0.39215686)\n signals['__LOCK__'] = False">
         <path
            inkscape:connector-curvature="0"
            id="path4941"
@@ -404,9 +354,7 @@ signals['__LOCK__'] = False">
        width="440"
        id="rect4525"
        style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-       __eventCode="self.controller.handleMouseOver(event.x,event.y)\n
-if 'LeftButton' in event.buttons:\n
-    self.controller.handleMouseClick()"
+       __eventCode="self.controller.handleMouseOver(event.x,event.y)\n if 'LeftButton' in event.buttons:\n     self.controller.handleMouseClick()"
        __resetCode="self.controller.handleMouseOver(None,None)" />
     <rect
        style="color:#000000;fill:#d95f02;fill-opacity:0.09803922;stroke:#d95f02;stroke-width:1;stroke-opacity:0.39215686;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"

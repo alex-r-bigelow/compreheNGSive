@@ -1,7 +1,6 @@
 from dataModels.variantData import variantData
 from dataModels.featureData import featureData
 from resources.utils import vcfFile,csvVariantFile,bedFile,gff3File
-from PySide.QtCore import *
 import os
 
 class individual:
@@ -150,7 +149,6 @@ class fileObj:
             results = []
         inFile.close()
         return results
-            
     
     def extractIndividuals(self):
         inFile = open(self.path)
@@ -223,7 +221,7 @@ class svOptionsModel:
         self.files = {}         # {file name : fileObj}
         self.fileOrder = []     # file name
     
-    def buildDataObjects(self, progressWidget):
+    def buildDataObjects(self, progressWidget, basis="None", fallback="REF"):
         progressWidget.reset()
         progressWidget.setMinimum(0)
         progressWidget.setMaximum(len(self.files) + len(self.groups))
@@ -246,13 +244,13 @@ class svOptionsModel:
             progressWidget.setValue(index)
         
         progressWidget.setLabelText('Recalculating Allele Frequencies')
+        if basis == "None":
+            basisGroup = []
+        else:
+            basisGroup = self.groups[basis].getCheckedIndividualNames()
         for gName,gObj in self.groups.iteritems():
             individuals = gObj.getCheckedIndividualNames()
-            if gObj.alleleBasisGroup == None:
-                basisGroup = []
-            else:
-                basisGroup = gObj.alleleBasisGroup.getCheckedIndividualNames()
-            vData.recalculateAlleleFrequencies(individuals, gName, basisGroup, gObj.fallback)
+            vData.recalculateAlleleFrequencies(individuals, gName, basisGroup, fallback)
             
             if progressWidget.wasCanceled():
                 return None
@@ -301,6 +299,9 @@ class svOptionsModel:
             # Finally add it to our groups
             self.groups[newGroup.name] = newGroup
             self.groupOrder.insert(0,newGroup.name)
+            return newGroup.name
+        else:
+            return None
     
     def hasGroup(self, text):
         return text in self.groupOrder

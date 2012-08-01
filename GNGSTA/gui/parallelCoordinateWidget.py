@@ -1,8 +1,8 @@
 from layeredWidget import mutableSvgLayer, layeredWidget, layer
 from resources.utils import fitInSevenChars
 from dataModels.variantData import operation
-from PySide.QtCore import *
-from PySide.QtGui import *
+from PySide.QtCore import Qt, QSize
+from PySide.QtGui import QColor, QPen, QCursor, QMenu, QActionGroup, QAction, QProgressDialog, QPainter
 import math
 
 class axisHandler:
@@ -44,7 +44,7 @@ class axisHandler:
         self.numericPixelHigh = self.visAxis.numeric.scrollUpBar.bottom()
         self.numericRanges = []
         if not self.dataAxis.hasNumeric():
-            # TODO: hide/show at will....
+            #TODO: hide/show numeric area via context menu....
             self.visAxis.numeric.delete()
             self.visAxis.categorical.scrollUpBar.translate(0,self.visAxis.spacer.top()-self.visAxis.categorical.scrollUpBar.top())
         else:
@@ -62,82 +62,45 @@ class axisHandler:
         self.draggedStart = None
         
         # categorical
-        self.visibleLabels = {}
-        self.visLabels = {}
         self.labelOrder = []
-        self.bottomVisibleLabelIndex = 0
-        self.topVisibleLabelIndex = 0
+        self.visLabels = []
+        self.visibleLabels = {}
         
         # sort the items by set membership size, except put Allele Masked, Missing last
         temp = []
         for label,members in self.dataAxis.labels.iteritems():
             temp.append((len(members),label))
+            self.visibleLabels[label] = True
         
-        numVisibles = 0
+        numTextItems = 0
         for size,label in sorted(temp):
             if label == 'Allele Masked' or label == 'Missing':
                 if size > 0:
-                    self.visibleLabels[label] = True
-                    numVisibles += 1
+                    self.labelOrder.append(label)
             else:
                 self.labelOrder.append(label)    # include other labels, even if their sets are empty
-                self.visibleLabels[label] = size > 0
-                numVisibles += 1
+                numTextItems += 1
         
-        if self.visibleLabels.has_key('Allele Masked'):
-            self.labelOrder.append('Allele Masked')
+        self.labelTop = self.visAxis.categorical.scrollUpBar.bottom()
+        self.labelBottom = self.visAxis.categorical.scrollDownBar.top()
+        self.itemHeight = self.visAxis.categorical.itemGroup.textItem.height()
+        self.yGap = 0
+        self.scrollOffset = None
+        
+        if numTextItems == 0:
+            self.visAxis.categorical.itemGroup.textItem.delete()
+        else:
+            self.visLabels.append(self.visAxis.categorical.itemGroup.textItem)
+        
+        if 'Allele Masked' in self.labelOrder:
+            self.visLabels.append(self.visAxis.categorical.itemGroup.alleleMasked)
         else:
             self.visAxis.categorical.itemGroup.alleleMasked.delete()
         
-        if self.visibleLabels.has_key('Missing'):
-            self.labelOrder.append('Missing')
+        if 'Missing' in self.labelOrder:
+            self.visLabels.append(self.visAxis.categorical.itemGroup.missing)
         else:
             self.visAxis.categorical.itemGroup.missing.delete()
-        
-        # draw the labels
-        prototype = self.visAxis.categorical.itemGroup.textItem
-        # attempt to distribute the labels evenly over the space we have... if there's not enough, leave a gap that's half the height of an element
-        # TODO: also hide the arrows if we don't need them
-        yTop = self.visAxis.categorical.scrollUpBar.bottom()
-        self.labelTop = (self.visAxis.categorical.scrollUpBar.top()+yTop)/2
-        yBottom = self.visAxis.categorical.scrollDownBar.top()
-        self.labelBottom = (self.visAxis.categorical.scrollDownBar.bottom()+yBottom)/2
-        self.itemHeight = prototype.height()
-        
-        numVisibles = max(1,numVisibles)
-        self.yGap = max(self.itemHeight/2,(yBottom-(yTop+(numVisibles+1)*self.itemHeight))/numVisibles)  # the +1 accounts for a half height gap on the top and bottom
-        yStart = yBottom-self.yGap-self.itemHeight
-        yOffset = yStart
-        xOffset = prototype.left()
-        prototype.moveTo(xOffset,yOffset)
-        
-        # actually clone the elements bottom to top (we want to start with the missing/masked elements aligned if they exist)
-        i = len(self.labelOrder)-1
-        self.bottomVisibleLabelIndex = i
-        for label in reversed(self.labelOrder):
-            if label == 'Missing':
-                self.visLabels[label] = self.visAxis.categorical.itemGroup.missing
-            elif label == 'Allele Masked':
-                self.visLabels[label] = self.visAxis.categorical.itemGroup.alleleMasked
-            else:
-                if yOffset < yTop:
-                    continue
-                self.visLabels[label] = prototype.clone()
-                # this is an ugly hack to get around SVG (and QtSvg)'s issues with text
-                screenLabel = label
-                if len(screenLabel) > 15:
-                    screenLabel = label[:7] + ".." + label[-6:]
-                self.visLabels[label].label.setText(screenLabel)
-            self.visLabels[label].translate(0,yOffset-yStart)
-            self.visLabels[label].setAttribute('___label',label)
-            if yOffset > yTop:
-                self.topVisibleLabelIndex = i
-            else:
-                pass
-                #self.visLabels[label].hide()
-            yOffset -= self.yGap + self.itemHeight
-            i -= 1
-        prototype.delete()
         
         # (selections will be set by parallelCoordinateWidget.__init__'s call to updateParams)
     
@@ -155,16 +118,12 @@ class axisHandler:
         elif index > self.bottomVisibleLabelIndex:
             return self.labelBottom
         else:
-            return (self.visLabels[value].background.top()+self.visLabels[value].background.bottom())/2
-        
+            return self.labelTop + (index - self.topVisibleLabelIndex)*(self.itemHeight+self.yGap) + self.yGap + self.scrollOffset
     
     def screenToData(self, value):
         return self.numericDataLow + (value-self.numericPixelLow)*self.pixelToDataRatio
     
-    def updateParams(self, paramTuple):
-        ranges = paramTuple[0]
-        labels = paramTuple[1]
-        
+    def updateNumeric(self, ranges):
         if self.dataAxis.hasNumeric():
             while len(self.numericRanges) > len(ranges):
                 self.numericRanges[-1].delete()
@@ -175,8 +134,6 @@ class axisHandler:
             
             for i,(low,high) in enumerate(ranges):
                 v = self.numericRanges[i]
-                screenLow = self.dataToScreen(low)
-                screenHigh = self.dataToScreen(high)
                 
                 # are parts (or all) of the selection hidden?
                 topPixel = self.dataToScreen(high)
@@ -206,12 +163,65 @@ class axisHandler:
                 v.bar.moveTo(v.bar.left(),topPixel)
                 v.bar.setSize(v.bar.width(),bottomPixel-topPixel)
                 v.bar.show()
+    
+    def updateLabels(self, labels):
+        # attempt to distribute the labels evenly over the space we have... if there's not enough, leave a gap that's half the height of an element
+        #TODO: hide/show arrows when they're not needed
+        visibleLabelOrder = []
+        for label in self.labelOrder:
+            if self.visibleLabels[label] == True:
+                visibleLabelOrder.append(label)
+        numItems = max(1,len(visibleLabelOrder))
+        if self.labelBottom-self.labelTop > numItems*self.itemHeight:
+            self.visAxis.categorical.scrollUpBar.hide()
+            self.visAxis.categorical.scrollDownBar.hide()
+            self.yGap = (self.labelBottom-(self.labelTop+(numItems)*self.itemHeight))/numItems
+            self.scrollOffset = 0
+            self.topVisibleLabelIndex = 0
+            self.bottomVisibleLabelIndex = numItems-1
+        else:
+            self.visAxis.categorical.scrollUpBar.show()
+            self.visAxis.categorical.scrollDownBar.show()
+            self.yGap = self.itemHeight/2
+            if self.scrollOffset == None:
+                self.scrollOffset = 0
+                self.topVisibleLabelIndex = 0
+                self.bottomVisibleLabelIndex = int(math.ceil((self.labelBottom-self.labelTop)/(self.itemHeight+self.yGap)))
         
-        for label,element in self.visLabels.iteritems():
+        visibleLabelOrder = visibleLabelOrder[self.topVisibleLabelIndex:self.bottomVisibleLabelIndex+1]
+        
+        while len(self.visLabels) < len(visibleLabelOrder):
+            self.visLabels.append(self.visLabels[-1].clone())
+        
+        while len(self.visLabels) > len(visibleLabelOrder):
+            self.visLabels[-1].delete()
+            del self.visLabels[-1]
+        
+        y = self.labelTop-self.itemHeight/2+self.yGap + self.scrollOffset
+        for i,label in enumerate(visibleLabelOrder):
+            self.visLabels[i].translate(0,-self.visLabels[i].top()+y)
+            screenLabel = label
+            if len(screenLabel) > 15:
+                screenLabel = screenLabel[:10] + ".." + screenLabel[-3:]
+            self.visLabels[i].label.setText(screenLabel)
+            self.visLabels[i].setAttribute('___label',label)
             if labels[label] == True:
-                element.background.setAttribute('fill-opacity',0.19607843)
-            elif labels[label] == False:
-                element.background.setAttribute('fill-opacity',0.0)
+                self.visLabels[i].originalColor = '#1B9E77'
+                self.visLabels[i].background.setAttribute('fill',self.visLabels[i].originalColor)
+            else:
+                self.visLabels[i].originalColor = '#FFFFFF'
+                self.visLabels[i].background.setAttribute('fill',self.visLabels[i].originalColor)
+            y += self.itemHeight
+            y += self.yGap
+        
+        self.scrollLabel(0)
+    
+    def updateParams(self, paramTuple):
+        ranges = paramTuple[0]
+        labels = paramTuple[1]
+        
+        self.updateNumeric(ranges)
+        self.updateLabels(labels)
     
     def startDrag(self, element):
         self.draggedHandle = element
@@ -259,12 +269,17 @@ class axisHandler:
     
     def toggleLabel(self, label):
         self.parent.app.newOperation(operation.LABEL_TOGGLE,axis=self.dataAxis,label=label)
+        return self.parent.app.activeParams[self.dataAxis][1][label]
     
     def queryPixelRange(self, low, high):
         if self.dataAxis.hasNumeric():
             return self.dataAxis.tree.select(low=self.screenToData(low), high=self.screenToData(high), includeMasked=False, includeUndefined=False, includeMissing=False)
         else:
             return set()
+    
+    def scrollLabel(self, delta):
+        # TODO
+        self.scrollOffset += delta
 
 class selectionLayer(layer):
     def __init__(self, size, dynamic, controller, prototypeLine, rsNumbers, opaqueBack = False):
@@ -275,7 +290,6 @@ class selectionLayer(layer):
             self.backgroundColor = Qt.white
         else:
             self.backgroundColor = Qt.transparent
-        
         
         lineColor = QColor()
         lineColor.setNamedColor(prototypeLine.getAttribute('stroke'))
@@ -296,10 +310,13 @@ class selectionLayer(layer):
         
         self.image.fill(self.backgroundColor)
         painter.setPen(self.pen)
+        painter.setRenderHint(QPainter.Antialiasing)
         lastA = self.controller.axisOrder[0]
         lastValues = self.controller.axes[lastA].dataAxis.getValues(rsList)
         lastX = self.controller.axes[lastA].visAxis.axisLine.left()
         for a in self.controller.axisOrder[1:]:
+            if not self.controller.axes[a].visible:
+                continue
             values = self.controller.axes[a].dataAxis.getValues(rsList)
             x = self.controller.axes[a].visAxis.axisLine.left()
             for y0,y1 in zip(lastValues,values):
@@ -349,6 +366,9 @@ class parallelCoordinateWidget(layeredWidget):
         self.setCursor(self.normalCursor)
         self.svgLayer.svg.rangeCursor.delete()
         
+        self.normalHandleColor = self.svgLayer.svg.normalHandleBackground.getAttribute('fill')
+        self.activeHandleColor = self.svgLayer.svg.activeHandleBackground.getAttribute('fill')
+        
         self.lastMouseAxis = None
         self.lastMouseLabel = None
         self.lastMouseNumeric = None
@@ -370,6 +390,10 @@ class parallelCoordinateWidget(layeredWidget):
                 xOffset += self.axisWidth
             else:
                 self.axes[a].visAxis.hide()
+        
+        self.axes[self.data.currentXattribute].visAxis.handle.background.setAttribute('fill',self.activeHandleColor)
+        self.axes[self.data.currentYattribute].visAxis.handle.background.setAttribute('fill',self.activeHandleColor)
+        
         self.totalWidth = xOffset
         newSize = QSize(xOffset,self.axisHeight)
         self.highlightedLayer.resize(newSize)
@@ -390,13 +414,17 @@ class parallelCoordinateWidget(layeredWidget):
             self.alignAxes()
     
     def findVisibleAxisIndex(self, xPosition):
-        index = int(xPosition/self.axisWidth)
+        target = int(xPosition/self.axisWidth)
+        return target
+        index = -1
         i = 0
-        while i < index:
-            if not self.axes[self.axisOrder[i]].visible:
-                index += 1
+        while True:
+            while not self.axes[self.axisOrder[i]].visible:
+                i += 1
+            index += 1
+            if index == target:
+                return i
             i += 1
-        return index
     
     def startAxisDrag(self, element, x):
         if self.dragAxis != None:
@@ -417,18 +445,16 @@ class parallelCoordinateWidget(layeredWidget):
         if delta != 0:
             self.axes[self.dragAxis].visAxis.translate(delta,0)
             if abs(self.dragTargetPixel-self.dragStartPixel) > self.axisWidth:
+                targetColumn = int(self.dragTargetPixel/self.axisWidth)
                 targetIndex = self.findVisibleAxisIndex(self.dragTargetPixel)
+                direction = 1 if targetIndex - self.dragStartIndex > 0 else -1
                 while self.dragStartIndex != targetIndex:
-                    direction = 1 if targetIndex - self.dragStartIndex > 0 else -1
-                    nextVisible = self.dragStartIndex + direction
-                    while not self.axes[self.axisOrder[nextVisible]].visible:
-                        self.swapAxes(nextVisible, self.dragStartIndex, applyImmediately=False)
-                        nextVisible += direction
-                    self.axes[self.axisOrder[nextVisible]].visAxis.translate(-direction*self.axisWidth,0)
-                    self.swapAxes(nextVisible, self.dragStartIndex, applyImmediately=False)
-                    self.dragStartIndex = nextVisible
-                self.dragStartPixel = (self.dragStartIndex + 0.5)*self.axisWidth
-                    
+                    nextIndex = self.dragStartIndex + direction
+                    if self.axes[self.axisOrder[nextIndex]].visible:
+                        self.axes[self.axisOrder[nextIndex]].visAxis.translate(-direction*self.axisWidth,0)
+                        self.dragStartPixel += direction*self.axisWidth
+                    self.swapAxes(nextIndex, self.dragStartIndex, applyImmediately=False)
+                    self.dragStartIndex = nextIndex
     
     def endAxisDrag(self):
         if self.dragAxis != None:
@@ -439,14 +465,20 @@ class parallelCoordinateWidget(layeredWidget):
             self.dragTargetPixel = None
             self.selectedLayer.refreshLines(self.app.activeRsNumbers)
     
-    def hideAxis(self, a):
-        self.axes[a].visible = False
+    def toggleAxis(self, a):
+        self.axes[a].visible = not self.axes[a].visible
+        if not self.axes[a].visible:
+            self.axisOrder.remove(a)
+            self.axisOrder.append(a)
+        else:
+            j = self.axisOrder.index(a)
+            i = j
+            while i-1 >= 0 and not self.axes[self.axisOrder[i-1]].visible:
+                i -= 1
+            self.axisOrder[j] = self.axisOrder[i]
+            self.axisOrder[i] = a
         self.alignAxes()
-    
-    def showAxis(self, a):
-        self.axes[a].visible = True
-        self.alignAxes()
-    
+        
     def notifySelection(self, rsNumbers, params, axis=None):
         if axis != None:
             self.axes[axis.name].updateParams(params[axis])
@@ -470,13 +502,12 @@ class parallelCoordinateWidget(layeredWidget):
     
     def toggleLabel(self, x, element):
         axis = self.axes[self.axisOrder[self.findVisibleAxisIndex(x)]]
-        axis.toggleLabel(element.getAttribute('___label'))
+        return axis.toggleLabel(element.getAttribute('___label'))
     
     def notifyHighlight(self, rsNumbers):
         self.highlightedLayer.refreshLines(rsNumbers)
     
     def mouseLabel(self, x, element):
-        return
         axis = self.axes[self.axisOrder[self.findVisibleAxisIndex(x)]]
         label = element.getAttribute('___label')
         #if self.lastMouseLabel != label or self.lastMouseAxis != axis:
@@ -485,7 +516,6 @@ class parallelCoordinateWidget(layeredWidget):
         self.app.notifyHighlight(axis.dataAxis.labels[label])
     
     def unMouseLabel(self):
-        return
         if self.lastMouseAxis == None and self.lastMouseLabel == None:
             return
         self.lastMouseLabel = None
@@ -510,6 +540,13 @@ class parallelCoordinateWidget(layeredWidget):
         # context menu
         if event.contextRequested:
             contextMenu = QMenu(self)
+            
+            contextMenu.addAction(u'Select all')
+            contextMenu.addAction(u'Select none')
+            
+            contextMenu.addSeparator()
+            
+            
             act = QAction(u'Hide Axis', self)
             contextMenu.addAction(act)
             if len(self.axisOrder) <= 1:
@@ -517,13 +554,10 @@ class parallelCoordinateWidget(layeredWidget):
             
             axesMenu = QMenu(u'Show/Hide Axes', self)
             axesActions = QActionGroup(self)
-            for a in self.axes.iterkeys():
-                if a not in self.axisOrder:
-                    act = QAction(a,self,checkable=True)
-                    axesActions.addAction(act)
             for a in self.axisOrder:
                 act = QAction(a,self,checkable=True)
-                act.toggle()
+                if self.axes[a].visible:
+                    act.toggle()
                 if len(self.axisOrder) <= 1:
                     act.setEnabled(False)
                 axesActions.addAction(act)
@@ -556,18 +590,22 @@ class parallelCoordinateWidget(layeredWidget):
             resultAction = contextMenu.exec_(QCursor.pos())
             
             if resultAction != None and resultAction != 0:
+                # Select all
+                if resultAction.text() == u'Select all':
+                    self.app.newOperation(operation.ALL,axis=self.axes[att].dataAxis)
+                
+                # Select none
+                if resultAction.text() == u'Select none':
+                    self.app.newOperation(operation.NONE,axis=self.axes[att].dataAxis)
+                
                 # Hide axis
                 if resultAction.text() == u'Hide Axis':
-                    if att in self.axisOrder:
-                        self.hideAxis(att)
+                    self.toggleAxis(att)
                     linesMoved = True
                 
                 # Toggle axis
                 if resultAction.actionGroup() == axesActions:
-                    if resultAction.text() in self.axisOrder:
-                        self.hideAxis(resultAction.text())
-                    else:
-                        self.showAxis(resultAction.text())
+                    self.toggleAxis(resultAction.text())
                     linesMoved = True
                 '''
                 # Toggle item
@@ -585,6 +623,12 @@ class parallelCoordinateWidget(layeredWidget):
                     splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
                     splash.setWindowModality(Qt.WindowModal)
                     
+                    if self.data.currentYattribute != self.data.currentXattribute:
+                        self.axes[self.data.currentXattribute].visAxis.handle.background.setAttribute('fill',self.normalHandleColor)
+                        self.axes[self.data.currentXattribute].visAxis.handle.originalBackgroundColor = self.normalHandleColor
+                    self.axes[att].visAxis.handle.background.setAttribute('fill',self.activeHandleColor)
+                    self.axes[att].visAxis.handle.originalBackgroundColor = self.activeHandleColor
+                    
                     self.data.setScatterAxes(att,self.data.currentYattribute,splash)
                     self.app.notifyAxisChange(xAxis=True)
                     splash.close()
@@ -594,12 +638,18 @@ class parallelCoordinateWidget(layeredWidget):
                     splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
                     splash.setWindowModality(Qt.WindowModal)
                     
+                    if self.data.currentXattribute != self.data.currentYattribute:
+                        self.axes[self.data.currentYattribute].visAxis.handle.background.setAttribute('fill',self.normalHandleColor)
+                        self.axes[self.data.currentYattribute].visAxis.handle.originalBackgroundColor = self.normalHandleColor
+                    self.axes[att].visAxis.handle.background.setAttribute('fill',self.activeHandleColor)
+                    self.axes[att].visAxis.handle.originalBackgroundColor = self.activeHandleColor
+                    
                     self.data.setScatterAxes(self.data.currentXattribute,att,splash)
                     self.app.notifyAxisChange(xAxis=False)
                     splash.close()
         
-        if linesMoved:
-            self.highlightedLayer.refreshLines(self.app.highlightedRsNumbers)
+        #if linesMoved:
+        #    self.highlightedLayer.refreshLines(self.app.highlightedRsNumbers)
         
         return signals
 

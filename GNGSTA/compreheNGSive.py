@@ -44,6 +44,7 @@ class setupApp:
         self.window.groupLineEdit.textChanged.connect(self.updateGroupButtons)
         self.window.createNewGroupButton.clicked.connect(self.addGroup)
         self.window.Quit.clicked.connect(self.closeApp)
+        self.window.fallbackRadioButtons.buttonReleased.connect(self.toggleAltEnabled)
         
         ##########
         self.runningApp = None
@@ -52,19 +53,24 @@ class setupApp:
     def addFiles(self):
         newPaths = QFileDialog.getOpenFileNames(filter='Variant, attribute, and/or feature files (*.vcf *.gvf *.csv *.tsv *.bed *.gff3)')
         for path in newPaths[0]:
-            self.svOptions.addFile(path)
+            newGroup = self.svOptions.addFile(path)
+            if newGroup != None:
+                self.window.alleleComboBox.addItem(newGroup)
         self.selectionView.updateList()
         self.tagView.updateList()
     
     def updateGroupButtons(self):
         text = self.window.groupLineEdit.text()
         
-        if len(text) == 0:
+        if len(text) == 0 or text == "None":
             self.window.createNewGroupButton.setText("Create New Group")
             self.window.createNewGroupButton.setEnabled(False)
         elif self.svOptions.hasGroup(text):
             self.window.createNewGroupButton.setText("Remove Group")
-            self.window.createNewGroupButton.setEnabled(True)
+            if self.svOptions.groups[text].userDefined:
+                self.window.createNewGroupButton.setEnabled(True)
+            else:
+                self.window.createNewGroupButton.setEnabled(False)
         else:
             self.window.createNewGroupButton.setText("Create New Group")
             self.window.createNewGroupButton.setEnabled(True)
@@ -72,11 +78,16 @@ class setupApp:
     def addGroup(self):
         text = self.window.groupLineEdit.text()
         if self.svOptions.hasGroup(text):
+            self.window.alleleComboBox.removeItem(self.svOptions.groupOrder.index(text)+1)
             self.svOptions.removeGroup(text)
         else:
+            self.window.alleleComboBox.addItem(text)
             self.svOptions.addGroup(text)
         self.tagView.updateList()
         self.updateGroupButtons()
+    
+    def toggleAltEnabled(self):
+        self.window.altSpinBox.setEnabled(self.window.fallbackRadioButtons.checkedButton() == self.window.altRadioButton)
         
     def runSV(self):
         self.window.hide()
@@ -86,7 +97,10 @@ class setupApp:
         splash.setAutoClose(False)
         splash.setAutoReset(False)
         
-        results = self.svOptions.buildDataObjects(splash)
+        fallbackString = self.window.fallbackRadioButtons.checkedButton().text()
+        if fallbackString == "ALT":
+            fallbackString += " %i" % self.window.altSpinBox.value()
+        results = self.svOptions.buildDataObjects(splash,self.window.alleleComboBox.currentText(),fallbackString)
         
         if results == False:
             splash.close()
@@ -174,7 +188,7 @@ class singleVariantApp:
         self.notifyOperation(self.currentOperation)
     
     def notifyOperation(self, op):
-        if op.type not in operation.DOESNT_DIRTY:
+        if op.opType not in operation.DOESNT_DIRTY:
             self.activeRsNumbers = self.selections.getActiveRsNumbers()
             self.activeParams = self.selections.getActiveParameters()
             if hasattr(op,'axis'):
@@ -194,9 +208,9 @@ class singleVariantApp:
         self.scatter.notifySelection(self.activeRsNumbers,self.activeParams,axis)
     
     def notifyHighlight(self, rsNumbers):
-        self.highlightedRsNumbers = rsNumbers
-        self.pc.notifyHighlight(rsNumbers)
-        self.scatter.notifyHighlight(rsNumbers)
+        self.highlightedRsNumbers = set(rsNumbers)
+        self.pc.notifyHighlight(self.highlightedRsNumbers)
+        self.scatter.notifyHighlight(self.highlightedRsNumbers)
     
     def notifyAxisChange(self, xAxis=True):
         self.scatter.notifyAxisChange(xAxis)

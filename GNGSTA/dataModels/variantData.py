@@ -1,5 +1,4 @@
-from resources.utils import chrLengths, chrOffsets
-from resources.structures import recursiveDict, TwoTree, FourTree
+from resources.structures import countingDict, TwoTree, FourTree
 from copy import deepcopy
 import operator, math, re, sys
 
@@ -25,7 +24,16 @@ class mixedAxis:
         self.isfinished = False
         
         if isinstance(value,list):
-            value = ",".join(value)
+            # TODO: how do I handle this best?
+            if len(value) == 0:
+                value = None
+            else:
+                value = value[0]
+            '''
+            temp = ""
+            for i in value:
+                temp += str(i) + ","
+            value = temp[:-1]'''
         
         if value == None:
             self.labels['Missing'].add(id)
@@ -153,7 +161,7 @@ class selection:
         self.data = data
         
         if name == None:
-            self.name = "Selection %s" % selection.namelessIndex
+            self.name = "Group %s" % selection.namelessIndex
             selection.namelessIndex += 1
         else:
             self.name = name
@@ -402,7 +410,7 @@ class selection:
         for ax,(ranges,labels) in self.params.iteritems():
             newLabels = {}
             for label in labels.iterkeys():
-                newLabels[l] = True
+                newLabels[label] = True
             newParams[ax] = ([(ax.getMin(),ax.getMax())],newLabels)
         new = selection(self.data, name=None, result=set(), params=([(self.getMin(),self.getMax())],{}))
         return new.getDifference(self)
@@ -548,8 +556,8 @@ class operation:
     
     DOESNT_DIRTY = set([SELECTION_RENAME,SELECTION_DUPLICATE,NO_OP])
     
-    def __init__(self, type, selections, previousOp=None, **kwargs):
-        self.type = type
+    def __init__(self, opType, selections, previousOp=None, **kwargs):
+        self.opType = opType
         self.selections = selections
         self.previousOp = previousOp
         self.nextOp = None
@@ -560,21 +568,21 @@ class operation:
         # check that types and parameters are appropriate
         try:
             if len(self.selections.activeSelections) == 1:
-                assert self.type not in operation.MULTIPLE_SELECTION_REQUIRED
+                assert self.opType not in operation.MULTIPLE_SELECTION_REQUIRED
                 self.activeSelection = self.selections.activeSelections[0]
                 
-                if self.type in operation.AXIS_REQUIRED:
+                if self.opType in operation.AXIS_REQUIRED:
                     assert self.kwargs.has_key('axis')
                     self.axis = self.kwargs['axis']
                     
-                    if self.type in operation.SINGLE_LOSSY:
+                    if self.opType in operation.SINGLE_LOSSY:
                         self.previousParams = deepcopy(self.activeSelection.params[self.axis])
             
             else:
-                assert self.type not in operation.SINGLE_SELECTION_REQUIRED
-                self.activeSelections = activeSelections
+                assert self.opType not in operation.SINGLE_SELECTION_REQUIRED
+                self.activeSelections = self.selections.activeSelections
                 
-                if self.type == operation.SELECTION_DELETE:
+                if self.opType == operation.SELECTION_DELETE:
                     self.previousParams = {}
                     for s in self.activeSelections:
                         self.previousParams[s.name] = {}
@@ -582,19 +590,19 @@ class operation:
                             self.previousParams[s.name][ax] = (deepcopy(ranges),deepcopy(labels))
             
             # operation-specific inits
-            if self.type == operation.NUMERIC_CHANGE:
+            if self.opType == operation.NUMERIC_CHANGE:
                 assert self.kwargs.has_key('start') and self.kwargs.has_key('end') and self.kwargs.has_key('isHigh')
                 self.start = self.kwargs['start']
                 self.end = self.kwargs['end']
                 self.isHigh = self.kwargs['isHigh']
                 self.rangeIndex = self.activeSelection.findClosestRange(self.axis, self.start, self.isHigh)
-            elif self.type == operation.LABEL_TOGGLE:
+            elif self.opType == operation.LABEL_TOGGLE:
                 assert self.kwargs.has_key('label')
                 self.label = self.kwargs['label']
-            elif self.type == operation.NUMERIC_ADD or self.type == operation.NUMERIC_REMOVE:
+            elif self.opType == operation.NUMERIC_ADD or self.opType == operation.NUMERIC_REMOVE:
                 assert self.kwargs.has_key('position')
                 self.position = self.kwargs['position']
-            elif self.type == operation.MULTI_ADD:
+            elif self.opType == operation.MULTI_ADD:
                 assert self.kwargs.has_key('secondAxis') and self.kwargs.has_key('position') and self.kwargs.has_key('secondPosition')
                 self.secondAxis = self.kwargs['secondAxis']
                 
@@ -605,23 +613,23 @@ class operation:
                 self.includeAllSecondLabels = self.kwargs.get('includeAllSecondLabels',False)
                 
                 self.secondPreviousParams = deepcopy(self.activeSelection.params[self.secondAxis])
-            elif self.type == operation.SELECTION_RENAME or self.type == operation.SELECTION_INCLUDE:
+            elif self.opType == operation.SELECTION_RENAME or self.opType == operation.SELECTION_INCLUDE:
                 assert self.kwargs.has_key('name')
                 self.oldName = self.activeSelection.name
                 self.name = self.kwargs['name']
-            elif self.type == operation.SELECTION_INCLUDE:
+            elif self.opType == operation.SELECTION_INCLUDE:
                 assert self.kwargs.has_key('name')
                 self.name = self.kwargs['name']
-            elif self.type == operation.SELECTION_EXCLUDE:
+            elif self.opType == operation.SELECTION_EXCLUDE:
                 assert self.kwargs.has_key('name') and len(self.activeSelections) > 1
                 self.name = self.kwargs['name']
-            elif self.type == operation.SELECTION_SWITCH:
+            elif self.opType == operation.SELECTION_SWITCH:
                 assert self.kwargs.has_key('name')
                 self.name = self.kwargs['name']
                 self.oldNames = []
                 for s in selections.activeSelections:
                     self.oldNames.append(s.name)
-            elif self.type == operation.SELECTION_COMPLEMENT:
+            elif self.opType == operation.SELECTION_COMPLEMENT:
                 self.previousParams = {}
                 for ax,(ranges,labels) in self.activeSelection.params.iteritems():
                     self.previousParams[ax] = (deepcopy(ranges),deepcopy(labels))
@@ -632,58 +640,58 @@ class operation:
         if self.isLegal:
             if self.previousOp != None:
                 self.previousOp.nextOp = self
-            self.apply()
+            self.applyOp()
     
-    def apply(self):
+    def applyOp(self):
         assert self.isLegal
         if self.finished:
             return
         self.finished = True
         
-        if self.type == operation.NUMERIC_CHANGE:
+        if self.opType == operation.NUMERIC_CHANGE:
             self.activeSelection.applyNumericSelection(self.axis, self.rangeIndex, self.isHigh, self.end)
-        elif self.type == operation.NUMERIC_ADD:
+        elif self.opType == operation.NUMERIC_ADD:
             self.activeSelection.addNumericRange(self.axis, self.position)
-        elif self.type == operation.NUMERIC_REMOVE:
+        elif self.opType == operation.NUMERIC_REMOVE:
             self.activeSelection.removeNumericRange(self.axis, self.position)
-        elif self.type == operation.MULTI_ADD:
+        elif self.opType == operation.MULTI_ADD:
             if self.includeAllLabels:
                 self.activeSelection.applySelectAllLabels(self.axis, applyImmediately=False)
             if self.includeAllSecondLabels:
                 self.activeSelection.applySelectAllLabels(self.secondAxis, applyImmediately=False)
             self.activeSelection.addNumericRange(self.axis, self.position, applyImmediately=False)
             self.activeSelection.addNumericRange(self.secondAxis, self.secondPosition)
-        elif self.type == operation.NUMERIC_TOP_FIVE_PERCENT:
+        elif self.opType == operation.NUMERIC_TOP_FIVE_PERCENT:
             self.activeSelection.applySelectTopFivePercent(self.axis)
-        elif self.type == operation.ALL:
+        elif self.opType == operation.ALL:
             self.activeSelection.applySelectAll(self.axis)
-        elif self.type == operation.NONE:
+        elif self.opType == operation.NONE:
             self.activeSelection.applySelectNone(self.axis)
-        elif self.type == operation.LABEL_TOGGLE:
+        elif self.opType == operation.LABEL_TOGGLE:
             self.activeSelection.applyLabelToggle(self.axis,self.label)
-        elif self.type == operation.SELECTION_COMPLEMENT:
+        elif self.opType == operation.SELECTION_COMPLEMENT:
             self.selections.invertActiveSelection()
-        elif self.type == operation.SELECTION_DELETE:
+        elif self.opType == operation.SELECTION_DELETE:
             self.selections.deleteActiveSelections()
-        elif self.type == operation.SELECTION_DIFFERENCE:
+        elif self.opType == operation.SELECTION_DIFFERENCE:
             self.selections.differenceActiveSelections()
-        elif self.type == operation.SELECTION_DUPLICATE:
+        elif self.opType == operation.SELECTION_DUPLICATE:
             self.selections.duplicateActiveSelection()
-        elif self.type == operation.SELECTION_EXCLUDE:
+        elif self.opType == operation.SELECTION_EXCLUDE:
             self.selections.deactivateSelection(self.name)
-        elif self.type == operation.SELECTION_INCLUDE:
+        elif self.opType == operation.SELECTION_INCLUDE:
             self.selections.activateSelection(self.name)
-        elif self.type == operation.SELECTION_SWITCH:
+        elif self.opType == operation.SELECTION_SWITCH:
             for n in self.oldNames:
                 self.selections.deactivateSelection(n)
             self.selections.activateSelection(self.name)
-        elif self.type == operation.SELECTION_INTERSECTION:
+        elif self.opType == operation.SELECTION_INTERSECTION:
             self.selections.intersectionActiveSelections()
-        elif self.type == operation.SELECTION_NEW:
+        elif self.opType == operation.SELECTION_NEW:
             self.selections.startNewSelection()
-        elif self.type == operation.SELECTION_RENAME:
+        elif self.opType == operation.SELECTION_RENAME:
             self.selections.renameSelection(self.name)
-        elif self.type == operation.SELECTION_UNION:
+        elif self.opType == operation.SELECTION_UNION:
             self.selections.unionActiveSelections()
     
     def undo(self):
@@ -693,34 +701,34 @@ class operation:
         self.finished = False
         
         # restore data lost by operations
-        if self.type == operation.SELECTION_DELETE:
+        if self.opType == operation.SELECTION_DELETE:
             for name,params in self.previousParams.iteritems():
                 newSelection = selection(self.data,name,set(),params)
                 newSelection.updateResult()
                 self.selections.registerNew(newSelection)
             for name in self.previousParams.iterkeys():
                 self.selections.activateSelection(name)
-        elif self.type == operation.SELECTION_COMPLEMENT:
+        elif self.opType == operation.SELECTION_COMPLEMENT:
             self.activeSelection.params = {}
             for ax,(ranges,labels) in self.previousParams.iteritems():
                 self.activeSelection.params[ax] = (deepcopy(ranges),deepcopy(labels))
             self.activeSelection.updateResult()
-        elif self.type in operation.SINGLE_LOSSY:
+        elif self.opType in operation.SINGLE_LOSSY:
             self.activeSelection.params[self.axis] = deepcopy(self.previousParams)
-            if self.type == operation.MULTI_ADD:
+            if self.opType == operation.MULTI_ADD:
                 self.activeSelection.params[self.secondAxis] = deepcopy(self.secondPreviousParams)
             self.activeSelection.updateResult(self.axis)
         
         # fix easy to restore operations
-        if self.type == operation.LABEL_TOGGLE:
+        if self.opType == operation.LABEL_TOGGLE:
             self.axis.applyLabelToggle(self.axis,self.label)
-        elif self.type == operation.SELECTION_RENAME:
+        elif self.opType == operation.SELECTION_RENAME:
             self.selections.renameSelection(self.oldName)
-        elif self.type == operation.SELECTION_EXCLUDE:
+        elif self.opType == operation.SELECTION_EXCLUDE:
             self.selections.activateSelection(self.name)
-        elif self.type == operation.SELECTION_INCLUDE:
+        elif self.opType == operation.SELECTION_INCLUDE:
             self.selections.deactivateSelection(self.name)
-        elif self.type == operation.SELECTION_SWITCH:
+        elif self.opType == operation.SELECTION_SWITCH:
             self.selections.deactivateSelection(self.name)
             for n in self.oldNames:
                 self.selections.activeSelections(n)
@@ -763,7 +771,7 @@ class variantData:
             self.thaw()
         self.axisLabels.discard(att)
     
-    def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup=[], fallback="ALT"):
+    def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup=[], fallback="REF"):
         if self.isFrozen:
             self.thaw()
         att = "Allele Frequency (%s)" % groupName
@@ -773,37 +781,33 @@ class variantData:
         
         for variantObject in self.data.itervalues():
             # First see if we can find a minor allele with stuff in basisGroup
-            alleleCounts = {}
+            alleleCounts = countingDict()
             for i in basisGroup:
                 if variantObject.genotypes.has_key(i):
                     allele1 = variantObject.genotypes[i].allele1
                     allele2 = variantObject.genotypes[i].allele2
                     if allele1 != None:
-                        alleleCounts[allele1] = alleleCounts.get(allele1,0) + 1
+                        alleleCounts[allele1] += 1
                     if allele2 != None:
-                        alleleCounts[allele2] = alleleCounts.get(allele2,0) + 1
+                        alleleCounts[allele2] += 1
             if len(alleleCounts) > 1:
-                minorAllele = max(alleleCounts.iteritems(), key=operator.itemgetter(1))[0]
+                majorAllele = max(alleleCounts.iteritems(), key=operator.itemgetter(1))[0]
             else:
                 # Okay, we don't have any data for our basisGroup (or our basisGroup is empty)... use the fallback
-                if fallback == None:
+                if fallback == "None":
                     # No minor allele found and no fallback - we've got a masked allele frequency!
                     variantObject.attributes[att] = float('NaN')
                     continue
                 elif fallback == "REF":
-                    minorAllele = 0 #variantObject.ref.text
-                elif fallback == "ALT":
-                    minorAllele = 1 #variantObject.alt[0].text
+                    majorAllele = 0
                 else:
-                    index = int(fallback[4:])
-                    if index < len(variantObject.alt):
-                        minorAllele = variantObject.alt[index]
-                    else:
+                    majorAllele = int(fallback[4:])
+                    if majorAllele > len(variantObject.alt):
                         # Tried to define minor allele as a nonexistent secondary allele
                         variantObject.attributes[att] = float('NaN')
                         continue
-            # Okay, we've found our alternate allele; now let's see how frequent it is
-            minorCount = 0
+            # Okay, we've found our reference allele; now let's see how frequent the others are
+            counts = countingDict()
             allCount = 0
             for i in individuals:
                 if variantObject.genotypes.has_key(i.name):
@@ -811,16 +815,19 @@ class variantData:
                     allele2 = variantObject.genotypes[i.name].allele2
                     if allele1 != None:
                         allCount += 1
-                        if allele1 == minorAllele:
-                            minorCount += 1
+                        if allele1 != majorAllele:
+                            counts[allele1] += 1
                     if allele2 != None:
                         allCount += 1
-                        if allele2 == minorAllele:
-                            minorCount += 1
+                        if allele2 != majorAllele:
+                            counts[allele2] += 1
             if allCount == 0:
                 variantObject.attributes[att] = float('Inf')
             else:
-                variantObject.attributes[att] = minorCount/float(allCount)
+                result = []
+                for c in counts.itervalues():
+                    result.append(c/float(allCount))
+                variantObject.attributes[att] = sorted(result)
     
     def freeze(self, startingXaxis=None, startingYaxis=None, progressWidget=None):
         '''

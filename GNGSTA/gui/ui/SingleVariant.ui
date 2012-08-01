@@ -148,9 +148,9 @@
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
-   <widget class="QMenu" name="menuSelection">
+   <widget class="QMenu" name="menuGroups">
     <property name="title">
-     <string>Selection</string>
+     <string>Group(s)</string>
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
@@ -165,7 +165,7 @@
     <addaction name="actionComplement"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuSelection"/>
+   <addaction name="menuGroups"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionBack_To_Setup">
