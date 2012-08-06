@@ -2,12 +2,12 @@ from gui.treeSelectionWidget import treeSelectionWidget
 from gui.treeTagWidget import treeTagWidget
 from gui.scatterplotWidget import scatterplotWidget
 from gui.parallelCoordinateWidget import parallelCoordinateWidget
-from dataModels.setupData import *
+from dataModels.setupData import svOptionsModel
 from dataModels.variantData import selectionState, operation
-from PySide.QtCore import *
-from PySide.QtGui import *
+from PySide.QtCore import QFile, Qt
+from PySide.QtGui import QFileDialog, QProgressDialog, QApplication
 from PySide.QtUiTools import *
-import sys, os
+import sys
 
 '''
 Link to the color scheme used in this app:
@@ -16,39 +16,42 @@ http://colorbrewer2.org/index.php?type=qualitative&scheme=Dark2&n=8
 '''
 
 class setupApp:
-    def __init__(self):
-        loader = QUiLoader()
-        infile = QFile("gui/ui/Setup.ui")
-        infile.open(QFile.ReadOnly)
-        self.window = loader.load(infile, None)
-        ########
-        
-        ########
-        # Data #
-        ########
-        
-        # data model for setup
-        self.svOptions = svOptionsModel()
-        
-        self.selectionView = treeSelectionWidget(data=self.svOptions, parent=self.window.svFileScrollArea)
-        self.window.svFileScrollArea.setWidget(self.selectionView)
-        self.tagView = treeTagWidget(data=self.svOptions, parent=self.window.svGroupScrollArea)
-        self.window.svGroupScrollArea.setWidget(self.tagView)
-        ##########
-        # Events #
-        ##########
-        
-        # connecting events
-        self.window.runSVbutton.clicked.connect(self.runSV)
-        self.window.addFilesButton.clicked.connect(self.addFiles)
-        self.window.groupLineEdit.textChanged.connect(self.updateGroupButtons)
-        self.window.createNewGroupButton.clicked.connect(self.addGroup)
-        self.window.Quit.clicked.connect(self.closeApp)
-        self.window.fallbackRadioButtons.buttonReleased.connect(self.toggleAltEnabled)
-        
-        ##########
-        self.runningApp = None
-        self.window.show()
+    def __init__(self, params=None):
+        if params != None:
+            self.runSV(params)
+        else:
+            loader = QUiLoader()
+            infile = QFile("gui/ui/Setup.ui")
+            infile.open(QFile.ReadOnly)
+            self.window = loader.load(infile, None)
+            ########
+            
+            ########
+            # Data #
+            ########
+            
+            # data model for setup
+            self.svOptions = svOptionsModel()
+            
+            self.selectionView = treeSelectionWidget(data=self.svOptions, parent=self.window.svFileScrollArea)
+            self.window.svFileScrollArea.setWidget(self.selectionView)
+            self.tagView = treeTagWidget(data=self.svOptions, parent=self.window.svGroupScrollArea)
+            self.window.svGroupScrollArea.setWidget(self.tagView)
+            ##########
+            # Events #
+            ##########
+            
+            # connecting events
+            self.window.runSVbutton.clicked.connect(self.runSV)
+            self.window.addFilesButton.clicked.connect(self.addFiles)
+            self.window.groupLineEdit.textChanged.connect(self.updateGroupButtons)
+            self.window.createNewGroupButton.clicked.connect(self.addGroup)
+            self.window.Quit.clicked.connect(self.closeApp)
+            self.window.fallbackRadioButtons.buttonReleased.connect(self.toggleAltEnabled)
+            
+            ##########
+            self.runningApp = None
+            self.window.show()
     
     def addFiles(self):
         newPaths = QFileDialog.getOpenFileNames(filter='Variant, attribute, and/or feature files (*.vcf *.gvf *.csv *.tsv *.bed *.gff3)')
@@ -89,35 +92,60 @@ class setupApp:
     def toggleAltEnabled(self):
         self.window.altSpinBox.setEnabled(self.window.fallbackRadioButtons.checkedButton() == self.window.altRadioButton)
         
-    def runSV(self):
-        self.window.hide()
-        
-        splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
-        splash.setWindowModality(Qt.WindowModal)
-        splash.setAutoClose(False)
-        splash.setAutoReset(False)
-        
-        fallbackString = self.window.fallbackRadioButtons.checkedButton().text()
-        if fallbackString == "ALT":
-            fallbackString += " %i" % self.window.altSpinBox.value()
-        results = self.svOptions.buildDataObjects(splash,self.window.alleleComboBox.currentText(),fallbackString)
-        
-        if results == False:
-            splash.close()
-            self.window.show()
-            return
+    def runSV(self, params=None):
+        if params != None:
+            splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
+            splash.setWindowModality(Qt.WindowModal)
+            splash.setAutoClose(False)
+            splash.setAutoReset(False)
+            
+            fallbackString = 'REF'
+            self.svOptions = svOptionsModel(params)
+            results = self.svOptions.buildDataObjects(splash)
+            
+            if results == False:
+                splash.close()
+                sys.exit(0)
+            else:
+                vData = results[0]
+                fData = results[1]
+            
+            results = vData.freeze(progressWidget=splash)
+            
+            if results == False:
+                splash.close()
+                sys.exit(0)
+            else:
+                self.runningApp = singleVariantApp(vData,fData,splash,self)
         else:
-            vData = results[0]
-            fData = results[1]
-        
-        results = vData.freeze(progressWidget=splash)
-        
-        if results == False:
-            splash.close()
-            self.window.show()
-            return
-        else:
-            self.runningApp = singleVariantApp(vData,fData,splash,self)
+            self.window.hide()
+            
+            splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
+            splash.setWindowModality(Qt.WindowModal)
+            splash.setAutoClose(False)
+            splash.setAutoReset(False)
+            
+            fallbackString = self.window.fallbackRadioButtons.checkedButton().text()
+            if fallbackString == "ALT":
+                fallbackString += " %i" % self.window.altSpinBox.value()
+            results = self.svOptions.buildDataObjects(splash,self.window.alleleComboBox.currentText(),fallbackString)
+            
+            if results == False:
+                splash.close()
+                self.window.show()
+                return
+            else:
+                vData = results[0]
+                fData = results[1]
+            
+            results = vData.freeze(progressWidget=splash)
+            
+            if results == False:
+                splash.close()
+                self.window.show()
+                return
+            else:
+                self.runningApp = singleVariantApp(vData,fData,splash,self)
         
     def closeApp(self):
         self.window.reject()
@@ -216,8 +244,12 @@ class singleVariantApp:
         self.scatter.notifyAxisChange(xAxis)
 
 def runProgram():
+    if len(sys.argv) == 2:
+        params = sys.argv.pop(1)
+    else:
+        params = None
     app = QApplication(sys.argv)
-    w = setupApp()
+    w = setupApp(params)
     sys.exit(app.exec_())
 
 if __name__ == "__main__":    

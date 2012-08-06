@@ -1,7 +1,8 @@
 from dataModels.variantData import variantData
 from dataModels.featureData import featureData
 from resources.utils import vcfFile,csvVariantFile,bedFile,gff3File
-import os
+from pyquery import PyQuery
+import os, sys
 
 class individual:
     def __init__(self, name):
@@ -111,9 +112,9 @@ class group:
         return results
 
 class fileObj:
-    def __init__(self, path, nameAppend):
+    def __init__(self, path, name):
         self.path = path
-        self.name = os.path.split(path)[1] + nameAppend
+        self.name = name
         self.format = os.path.splitext(path)[1]
         
         self.checked = True
@@ -214,12 +215,30 @@ class fileObj:
             self.attributes[a] = on
         
 class svOptionsModel:
-    def __init__(self):
-        self.individuals = {}   # {individual name : individual}
+    def __init__(self, fromFile=None):
+        self.individuals = {}   # {file name:{individual name : individual}}
         self.groups = {}        # {group name : group}
         self.groupOrder = []    # group name
         self.files = {}         # {file name : fileObj}
         self.fileOrder = []     # file name
+        
+        if fromFile != None:
+            self.buildFromFile(fromFile)
+    
+    def buildFromFile(self, path):
+        queryObj = PyQuery(filename=path)
+        for fobj in queryObj('file'):
+            newName = self.addFile(fobj.attrib['path'], fobj.attrib.get('id',None))
+            if newName != None:
+                self.groups[newName].check(False)   # we won't include the file groups unless the user has specifically added them
+        for gobj in queryObj('group'):
+            if self.hasGroup(gobj.attrib['id']):
+                self.groups[gobj.attrib['id']].check(True)  # include the existing group
+            else:
+                self.addGroup(gobj.attrib['id'])
+                for c in gobj.iterchildren():
+                    if c.tag == 'sample':
+                        self.individuals[c.attrib['file']][c.text].addToGroup(self.groups[gobj.attrib['id']])
     
     def buildDataObjects(self, progressWidget, basis="None", fallback="REF"):
         progressWidget.reset()
@@ -259,42 +278,31 @@ class svOptionsModel:
         
         return (vData,fData)
     
-    def addFile(self, path):
-        fileNameChunk = os.path.split(path)[1]
-        nameAppend = ""
-        i = 1
-        while self.files.has_key(fileNameChunk + nameAppend):
-            i += 1
-            nameAppend = " (%i)" % i
-        newFile = fileObj(path, nameAppend)
+    def addFile(self, path, name=None):
+        if name == None:
+            fileNameChunk = os.path.split(path)[1]
+            nameAppend = ""
+            i = 1
+            while self.files.has_key(fileNameChunk + nameAppend):
+                i += 1
+                nameAppend = " (%i)" % i
+            name = fileNameChunk + nameAppend
+        newFile = fileObj(path, name)
         self.files[newFile.name] = newFile
         self.fileOrder.insert(0,newFile.name)
         
         if newFile.hasGenotypes:
             newGroup = group(newFile.name, userDefined=False, checked=False)
-            hadDuplicate = False
             if self.groups.has_key(newGroup.name):
-                # kick out an existing group if it has my name...
-                while self.groups.has_key(fileNameChunk + nameAppend):
-                    i += 1
-                    nameAppend = " (%i)" % i
-                # update that group's native individual screen names
-                hadDuplicate = True
-                for i in self.groups[newGroup.name].nativeMembers:
-                    del self.individuals[i.name]
-                    i.name = i.originalText + " (" + fileNameChunk + nameAppend + ")"
-                    i.hasDuplicateText = True
-                    self.individuals[i.name] = i
-                # move that group
-                self.groups[fileNameChunk + nameAppend] = self.groups[newGroup.name]
+                print "ERROR: Duplicate group"
+                sys.exit(1)
+            
             # Create all individuals in the file, and add them as native members
+            self.individuals[newFile.name] = {}
             for i in newFile.individuals:
                 newIndividual = individual(i)
-                if hadDuplicate:
-                    newIndividual.name += newIndividual.originalText + " (" + newGroup.name + ")"
-                    newIndividual.hasDuplicateText = True
                 newIndividual.addToGroup(newGroup, native=True)
-                self.individuals[newIndividual.name] = newIndividual
+                self.individuals[newFile.name][newIndividual.name] = newIndividual
             
             # Finally add it to our groups
             self.groups[newGroup.name] = newGroup
@@ -311,8 +319,6 @@ class svOptionsModel:
         self.groupOrder.insert(0,text)
         
     def removeGroup(self, text):
-        for i in self.groups[text].nativeMembers.iterkeys():
-            del self.individuals[i]
         self.groupOrder.remove(text)
         del self.groups[text]
 
