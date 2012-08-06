@@ -120,11 +120,13 @@ class layeredWidget(QWidget):
         
         self.drawingTimer = QTimer()
         self.drawingTimer.setSingleShot(True)
-        self.drawingTimer.timeout.connect(self.drawStatic)
+        #self.drawingTimer.timeout.connect(self.drawStatic)
+        self.connect(self.drawingTimer, SIGNAL("timeout()"), self.drawStatic)
         
         self.animationTimer = QTimer()
         self.animationTimer.setSingleShot(False)
-        self.animationTimer.timeout.connect(self.animate)
+        #self.animationTimer.timeout.connect(self.animate)
+        self.connect(self.animationTimer, SIGNAL("timeout()"), self.animate)
         
         self.loadingImage = QPixmap(QSize(1,1))
         self.loadingImage.fill(QColor.fromRgbF(0.0,0.0,0.0,0.0))
