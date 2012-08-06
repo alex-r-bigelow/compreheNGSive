@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+	<file id="all.vcf" path="/Users/Home/Desktop/all.vcf" build="hg19">
+	
+	</file>
+	<group id="CASES(strict)">
+		<sample file="all.vcf">441_1x</sample>
+		<sample file="all.vcf">441_6x</sample>
+		<sample file="all.vcf">441_15x</sample>
+		<sample file="all.vcf">441_42x</sample>
+	</group>
+	<group id="CONTROLS(strict)">
+		<sample file="all.vcf">441_28x</sample>
+		<sample file="all.vcf">441_29x</sample>
+		<sample file="all.vcf">441_30x</sample>
+		<sample file="all.vcf">441_34x</sample>
+		<sample file="all.vcf">441_36x</sample>
+		<sample file="all.vcf">441_38x</sample>
+		<sample file="all.vcf">441_40x</sample>
+	</group>
+	<group id="CASES(loose)">
+		<sample file="all.vcf">441_1x</sample>
+		<sample file="all.vcf">441_6x</sample>
+		<sample file="all.vcf">441_15x</sample>
+		<sample file="all.vcf">441_42x</sample>
+		<sample file="all.vcf">441_2x</sample>
+		<sample file="all.vcf">441_4x</sample>
+		<sample file="all.vcf">441_7x</sample>
+		<sample file="all.vcf">441_13x</sample>
+		<sample file="all.vcf">441_16x</sample>
+		<sample file="all.vcf">441_17x</sample>
+		<sample file="all.vcf">441_18x</sample>
+		<sample file="all.vcf">441_19x</sample>
+		<sample file="all.vcf">441_22x</sample>
+		<sample file="all.vcf">441_23x</sample>
+		<sample file="all.vcf">441_43x</sample>
+		<sample file="all.vcf">441_45x</sample>
+		<sample file="all.vcf">441_46x</sample>
+		<sample file="all.vcf">441_47x</sample>
+	</group>
+	<group id="CONTROLS(loose)">
+		<sample file="all.vcf">441_28x</sample>
+		<sample file="all.vcf">441_29x</sample>
+		<sample file="all.vcf">441_30x</sample>
+		<sample file="all.vcf">441_34x</sample>
+		<sample file="all.vcf">441_36x</sample>
+		<sample file="all.vcf">441_38x</sample>
+		<sample file="all.vcf">441_40x</sample>
+		<sample file="all.vcf">441_25x</sample>
+		<sample file="all.vcf">441_26x</sample>
+		<sample file="all.vcf">441_31x</sample>
+		<sample file="all.vcf">441_35x</sample>
+		<sample file="all.vcf">441_41x</sample>
+		<sample file="all.vcf">441_48x</sample>
+		<sample file="all.vcf">441_49x</sample>
+	</group>
+	<prefs xaxis="CASES(strict)" yaxis="CONTROLS(strict)" xfilter="top5" yfilter="top5">
+		<param id="X Axis">CASES(strict)</param>
+		<param id="Y Axis">CONTROLS(strict)</param>
+		<param id="X Filter">TOP_FIVE_PERCENT</param>
+		<param id="Y Filter">BOTTOM_FIVE_PERCENT</param>
+	</prefs>
+</root>

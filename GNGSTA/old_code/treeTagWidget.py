@@ -5,18 +5,6 @@ class treeTagWidget(layeredWidget):
     def __init__(self, data, parent = None):
         layeredWidget.__init__(self, parent)
         self.data = data
-        
-        self.svgLayer = mutableSvgLayer('gui/svg/groupTags.svg',self)
-        self.addLayer(self.svgLayer)
-        
-        self.prototypeGroupBlock = self.svgLayer.svg.getElement('groupBlock')
-        self.prototypeIndividualBlock = self.svgLayer.svg.getElement('individualBlock')
-        
-        self.wOffset = self.prototypeGroupBlock.background.left()
-        
-        self.visItems = [(True,self.prototypeGroupBlock),(False,self.prototypeIndividualBlock)]
-        self.tags = {}
-        
         self.updateList()
         self.peeling = None
     
@@ -33,74 +21,22 @@ class treeTagWidget(layeredWidget):
         return results
     
     def updateList(self):
-        return
+        self.clearAllLayers()
+        
         rows = self.getCurrentRows()
+        if len(rows) == 0:
+            return
         
-        # first clone and position the elements, figure out how wide the text goes
-        h = 0
-        w = 0
-        for i,r in enumerate(rows):
-            newItem = None
-            if i < len(self.visItems):
-                if r[0] and not self.visItems[i][0]:    # an individual item exists, but we need a group item
-                    item = self.visItems[i][1]
-                    if item == self.prototypeIndividualBlock:    # we don't want to destroy our prototype... just pull it out of the list, hide it, and we'll throw it at the end later
-                        self.visItems.pop(i)
-                        item.hide()
-                    
-                    newItem = self.prototypeGroupBlock.clone()
-                    self.visItems.insert(i,(True,newItem))
-                    newItem.translate(0,h-newItem.top())
-                    newItem.show()
-                    
-                    if item == self.prototypeIndividualBlock:
-                        self.visItems.append((False,item))
-                elif not r[0] and self.visItems[i][0]:  # a group item exists, but we need an individual one
-                    item = self.visItems[i][1]
-                    if item == self.prototypeGroupBlock:    # we don't want to destroy our prototype... just pull it out of the list, hide it, and we'll throw it at the end later
-                        self.visItems.pop(i)
-                        item.hide()
-                    
-                    newItem = self.prototypeIndividualBlock.clone()
-                    self.visItems.insert(i,(True,newItem))
-                    newItem.translate(0,h-newItem.top())
-                    newItem.show()
-                    
-                    if item == self.prototypeGroupBlock:
-                        self.visItems.append((False,item))
-                else:   # already matching
-                    newItem = self.visItems[i][1]
-            else:
-                if r[0]:
-                    newItem = self.prototypeGroupBlock.clone()
-                    self.visItems.append((True,newItem))
-                    newItem.translate(0,h-newItem.top())
-                    newItem.show()
-                else:
-                    newItem = self.prototypeIndividualBlock.clone()
-                    self.visItems.append((False,newItem))
-                    newItem.translate(0,h-newItem.top())
-                    newItem.show()
-            h += newItem.height()
-        
-        # clean up any leftovers
-        indicesToRemove = []
-        for i,(isgroup,item) in enumerate(self.visItems[len(rows):]):
-            if isgroup:
-                if item != self.prototypeGroupBlock:
-                    indicesToRemove.append(i)
-            else:
-                if item != self.prototypeIndividualBlock:
-                    indicesToRemove.append(i)
-        for i in indicesToRemove:
-            self.visItems[i][1].delete()
-            self.visItems.pop(i)
-        
-        '''
-        # Now figure out the details
+        self.svgLayer = mutableSvgLayer('gui/svg/groupTags.svg',self)
         w = 0
         h = 0
-                
+        
+        prototypeGroupBlock = self.svgLayer.svg.getElement('groupBlock')
+        prototypeIndividualBlock = self.svgLayer.svg.getElement('individualBlock')
+        prototypeTag = self.svgLayer.svg.getElement('tag')
+        
+        wOffset = prototypeGroupBlock.background.left()
+        
         groupClones = []
         individualClones = []
         
@@ -109,7 +45,7 @@ class treeTagWidget(layeredWidget):
         for r in rows:
             obj = r[1]
             if r[0]: # Group
-                newGroupBlock = self.prototypeGroupBlock.clone()
+                newGroupBlock = prototypeGroupBlock.clone()
                 newGroupBlock.moveTo(0,h)
                 newGroupBlock.label.setText(obj.name)
                 newGroupBlock.setAttribute('___associatedGroup',obj.name)
@@ -142,15 +78,20 @@ class treeTagWidget(layeredWidget):
                     newIndividualBlock.checkBox.check.hide()
             h += offset
         
+        # kill off the prototypes
+        prototypeGroupBlock.delete()
+        prototypeIndividualBlock.delete()
+        prototypeTag.delete()
+        
         # Apply the new widths
         for c in groupClones:
             c.background.setSize(w,c.height())
         for c in individualClones:
-            c.background.setSize(w,c.height())'''
+            c.background.setSize(w,c.height())
         
-        self.svgLayer.resize(QSize(w+self.wOffset,h))
+        self.svgLayer.resize(QSize(w+wOffset,h))
         
-        #self.addLayer(self.svgLayer)
+        self.addLayer(self.svgLayer)
     
     def handleEvents(self, event, signals):
         changed = False
