@@ -135,29 +135,29 @@ class layeredWidget(QWidget):
         
         failureCount = 0
         success = False
-        while not success:
-            try:
-                success = self.drawingTimer.timeout.connect(self.drawStatic)
-            except RuntimeError:
-                success = False
-            if not success:
-                failureCount += 1
-                if failureCount > 100:
-                    raise RuntimeError("Sorry, a rendering error occurred, and I couldn't recover... this is a known bug that should be fixed soon.\n"+
-                                       "You should be able to just run the program again.")
+        #while not success:
+        #    try:
+        success = self.drawingTimer.timeout.connect(self.drawStatic)
+        #    except RuntimeError:
+        #        success = False
+        #    if not success:
+        #        failureCount += 1
+        #        if failureCount > 100:
+        #            raise RuntimeError("Sorry, a rendering error occurred, and I couldn't recover... this is a known bug that should be fixed soon.\n"+
+        #                               "You should be able to just run the program again.")
         
         failureCount = 0
         success = False
-        while not success:
-            try:
-                success = self.animationTimer.timeout.connect(self.animate)
-            except RuntimeError:
-                success = False
-            if not success:
-                failureCount += 1
-                if failureCount > 100:
-                    raise RuntimeError("Sorry, a rendering error occurred, and I couldn't recover... this is a known bug that should be fixed soon.\n"+
-                                       "You should be able to just run the program again.")
+        #while not success:
+        #    try:
+        success = self.animationTimer.timeout.connect(self.animate)
+        #    except RuntimeError:
+        #        success = False
+        #    if not success:
+        #        failureCount += 1
+        #        if failureCount > 100:
+        #            raise RuntimeError("Sorry, a rendering error occurred, and I couldn't recover... this is a known bug that should be fixed soon.\n"+
+        #                               "You should be able to just run the program again.")
         
         self.animationTimer.start(100)
         
