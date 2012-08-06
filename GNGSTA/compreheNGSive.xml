@@ -3,13 +3,13 @@
 	<file id="all.vcf" path="/Users/Home/Desktop/all.vcf" build="hg19">
 	
 	</file>
-	<group id="CASES(strict)">
+	<group id="CASES (strict)">
 		<sample file="all.vcf">441_1x</sample>
 		<sample file="all.vcf">441_6x</sample>
 		<sample file="all.vcf">441_15x</sample>
 		<sample file="all.vcf">441_42x</sample>
 	</group>
-	<group id="CONTROLS(strict)">
+	<group id="CONTROLS (strict)">
 		<sample file="all.vcf">441_28x</sample>
 		<sample file="all.vcf">441_29x</sample>
 		<sample file="all.vcf">441_30x</sample>
@@ -18,7 +18,7 @@
 		<sample file="all.vcf">441_38x</sample>
 		<sample file="all.vcf">441_40x</sample>
 	</group>
-	<group id="CASES(loose)">
+	<group id="CASES (loose)">
 		<sample file="all.vcf">441_1x</sample>
 		<sample file="all.vcf">441_6x</sample>
 		<sample file="all.vcf">441_15x</sample>
@@ -38,7 +38,7 @@
 		<sample file="all.vcf">441_46x</sample>
 		<sample file="all.vcf">441_47x</sample>
 	</group>
-	<group id="CONTROLS(loose)">
+	<group id="CONTROLS (loose)">
 		<sample file="all.vcf">441_28x</sample>
 		<sample file="all.vcf">441_29x</sample>
 		<sample file="all.vcf">441_30x</sample>
