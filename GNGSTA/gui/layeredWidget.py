@@ -117,6 +117,15 @@ class layeredWidget(QWidget):
     
     def __init__(self, parent = None):
         QWidget.__init__(self, parent)
+        
+        self.drawingTimer = QTimer()
+        self.drawingTimer.setSingleShot(True)
+        self.drawingTimer.timeout.connect(self.drawStatic)
+        
+        self.animationTimer = QTimer()
+        self.animationTimer.setSingleShot(False)
+        self.animationTimer.timeout.connect(self.animate)
+        
         self.loadingImage = QPixmap(QSize(1,1))
         self.loadingImage.fill(QColor.fromRgbF(0.0,0.0,0.0,0.0))
         self.loadingMode = False
@@ -125,19 +134,13 @@ class layeredWidget(QWidget):
         self.userState = eventPacket()
         self.setMouseTracking(True)
         
-        self.drawingTimer = QTimer()
-        self.drawingTimer.setSingleShot(True)
-        
-        self.animationTimer = QTimer()
-        self.animationTimer.setSingleShot(False)
-        
         # an ugly way to force this to work (sometimes connecting fails... sometimes even with a runtime error)
         
         failureCount = 0
         success = False
         #while not success:
         #    try:
-        success = self.drawingTimer.timeout.connect(self.drawStatic)
+        #        success = self.drawingTimer.timeout.connect(self.drawStatic)
         #    except RuntimeError:
         #        success = False
         #    if not success:
@@ -150,7 +153,7 @@ class layeredWidget(QWidget):
         success = False
         #while not success:
         #    try:
-        success = self.animationTimer.timeout.connect(self.animate)
+        #        success = self.animationTimer.timeout.connect(self.animate)
         #    except RuntimeError:
         #        success = False
         #    if not success:
