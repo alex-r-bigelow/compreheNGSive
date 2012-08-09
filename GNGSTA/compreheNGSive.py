@@ -1,3 +1,21 @@
+'''
+Copyright 2012 Alex Bigelow
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this program. If not, see
+<http://www.gnu.org/licenses/>.
+'''
+
 from gui.treeSelectionWidget import treeSelectionWidget
 from gui.treeTagWidget import treeTagWidget
 from gui.scatterplotWidget import scatterplotWidget
@@ -10,7 +28,7 @@ from PySide.QtUiTools import *
 import sys
 
 '''
-Link to the color scheme used in this app:
+Color scheme used in this app from colorbrewer2.org:
 
 http://colorbrewer2.org/index.php?type=qualitative&scheme=Dark2&n=8
 '''
@@ -243,6 +261,10 @@ class singleVariantApp:
     def notifyAxisChange(self, xAxis=True):
         self.scatter.notifyAxisChange(xAxis)
 
+def trace(frame, event, arg):
+    print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)
+    return trace
+
 def runProgram():
     if len(sys.argv) == 2:
         params = sys.argv.pop(1)
@@ -252,7 +274,8 @@ def runProgram():
     w = setupApp(params)
     sys.exit(app.exec_())
 
-if __name__ == "__main__":    
+if __name__ == "__main__": 
+    #sys.settrace(trace)
     runProgram()
     
     #import cProfile

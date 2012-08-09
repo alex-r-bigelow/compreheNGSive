@@ -1,0 +1,31 @@
+INSTALLATION INSTRUCTIONS
+-------------------------
+
+I would recommend using the binaries available at http://www.sci.utah.edu/~abigelow
+
+If you're REALLY insistent on doing things the hard way, make sure the following is installed (this list is supposed to be helpful, not necessarily comprehensive - if something is missing, please let me know at alex.bigelow@utah.edu):
+
+Python 2.7 (it's possible that an earlier version will work, but I haven't tested it)
+setuptools
+pyquery
+PySide (>= version 1.1.1   WARNING: as of August 2012, the version that comes via Linux package managers is 1.1.0 !!! You will probably need to build this from source on Linux.)
+
+If you're on Windows:
+---------------------
+You'll also need py2exe installed.
+
+TODO
+
+If you're on Mac OS X:
+----------------------
+You'll also need py2app installed.
+
+TODO
+
+If you're on Linux:
+-------------------
+You'll also need cx_Freeze installed.
+
+Run the
+./bundle_linux.sh
+command from any directory. This will create compreheNGSive.tar.gz in the directory from which you ran the script. Your app is inside - enjoy!
