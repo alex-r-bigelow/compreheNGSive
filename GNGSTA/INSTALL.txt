@@ -20,6 +20,10 @@ If you're on Mac OS X:
 ----------------------
 You'll also need py2app installed.
 
+Run the
+./bundle_osx.command
+command from any directory. This will create compreheNGSive.dmg in the directory from which you ran the script. Your app is inside - enjoy!
+
 TODO
 
 If you're on Linux:
