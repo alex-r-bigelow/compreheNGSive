@@ -12,9 +12,14 @@ PySide (>= version 1.1.1   WARNING: as of August 2012, the version that comes vi
 
 If you're on Windows:
 ---------------------
-You'll also need py2exe installed.
+You'll also need py2exe and 7-zip installed.
 
-TODO
+If 7-zip isn't in your path already, type (assuming 7-Zip is installed in c:\Program Files\7-Zip):
+PATH %PATH%"c:\Program Files\7-Zip"
+
+Then run
+bundle_windows.bat
+from this directory. This will create compreheNGSive.zip in this directory - you will probably want to extract this elsewhere. Your app is inside - enjoy!
 
 If you're on Mac OS X:
 ----------------------
