@@ -74,9 +74,9 @@ class setupApp:
     def addFiles(self):
         newPaths = QFileDialog.getOpenFileNames(filter='Variant, attribute, and/or feature files (*.vcf *.gvf *.csv *.tsv *.bed *.gff3)')
         for path in newPaths[0]:
-            newGroup = self.svOptions.addFile(path)
-            if newGroup != None:
-                self.window.alleleComboBox.addItem(newGroup)
+            newFile = self.svOptions.addFile(path)
+            #if newGroup != None:
+            #    self.window.alleleComboBox.addItem(newGroup)
         self.selectionView.updateList()
         self.tagView.updateList()
     
@@ -99,10 +99,10 @@ class setupApp:
     def addGroup(self):
         text = self.window.groupLineEdit.text()
         if self.svOptions.hasGroup(text):
-            self.window.alleleComboBox.removeItem(self.svOptions.groupOrder.index(text)+1)
+            #self.window.alleleComboBox.removeItem(self.svOptions.groupOrder.index(text)+1)
             self.svOptions.removeGroup(text)
         else:
-            self.window.alleleComboBox.addItem(text)
+            #self.window.alleleComboBox.addItem(text)
             self.svOptions.addGroup(text)
         self.tagView.updateList()
         self.updateGroupButtons()
@@ -117,7 +117,7 @@ class setupApp:
             splash.setAutoClose(False)
             splash.setAutoReset(False)
             
-            fallbackString = 'REF'
+            #fallbackString = 'REF'
             self.svOptions = svOptionsModel(params)
             results = self.svOptions.buildDataObjects(splash)
             
@@ -143,10 +143,10 @@ class setupApp:
             splash.setAutoClose(False)
             splash.setAutoReset(False)
             
-            fallbackString = self.window.fallbackRadioButtons.checkedButton().text()
-            if fallbackString == "ALT":
-                fallbackString += " %i" % self.window.altSpinBox.value()
-            results = self.svOptions.buildDataObjects(splash,self.window.alleleComboBox.currentText(),fallbackString)
+            #fallbackString = self.window.fallbackRadioButtons.checkedButton().text()
+            #if fallbackString == "ALT":
+            #    fallbackString += " %i" % self.window.altSpinBox.value()
+            results = self.svOptions.buildDataObjects(splash)
             
             if results == False:
                 splash.close()

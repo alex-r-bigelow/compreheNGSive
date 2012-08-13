@@ -26,9 +26,9 @@
      inkscape:pageshadow="2"
      inkscape:zoom="1.88"
      inkscape:cx="-94.260276"
-     inkscape:cy="244.51336"
+     inkscape:cy="372.17293"
      inkscape:document-units="px"
-     inkscape:current-layer="g4498"
+     inkscape:current-layer="root"
      showgrid="false"
      inkscape:window-width="1833"
      inkscape:window-height="1156"
@@ -342,17 +342,8 @@
              __parentProperty="__missing"
              id="g4356"
              background="__missingBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n
-    self.background.setAttribute('fill',self.originalColor)\n
-self.controller.unMouseLabel()"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
              label="__missingLabel">
             <path
                transform="matrix(0.37030301,0,0,0.37030301,82.015153,275.50042)"
@@ -378,17 +369,8 @@ self.controller.unMouseLabel()"
              __parentProperty="__alleleMasked"
              id="g4352"
              background="__alleleMaskedBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n
-    self.background.setAttribute('fill',self.originalColor)\n
-self.controller.unMouseLabel()"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
              label="__alleleMaskedLabel">
             <path
                sodipodi:type="star"
@@ -421,17 +403,8 @@ self.controller.unMouseLabel()"
              __parentProperty="__textItem"
              id="g4348"
              background="__textItemBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n
-    self.background.setAttribute('fill',self.originalColor)\n
-self.controller.unMouseLabel()">
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()">
             <path
                inkscape:connector-curvature="0"
                id="rect3779"
@@ -564,9 +537,9 @@ self.controller.unMouseLabel()">
   <rect
      style="color:#000000;fill:#d95f02;fill-opacity:0.39215686;fill-rule:nonzero;stroke:#d95f02;stroke-width:1;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
      id="rect3048"
-     width="15"
-     height="15"
-     x="15.425534"
-     y="-30.638298"
+     width="31"
+     height="9"
+     x="15.425535"
+     y="-24.638298"
      __globalProperty="rangeCursor" />
 </svg>

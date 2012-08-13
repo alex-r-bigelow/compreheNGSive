@@ -86,6 +86,8 @@ class TwoNode:
                         break
                 self.deepChildPool.insert(target, newNode)'''
             self.deepChildPool.add(newNode)
+            self.low = min(newNode.value,self.low)
+            self.high = max(newNode.value,self.high)
             return
         
         if newNode.value < self.value:
@@ -378,6 +380,10 @@ class FourNode:
         
         if depth > RECURSION_ESTIMATE:
             self.deepChildPool.add(newNode)
+            self.lowY = min(newNode.y,self.lowY)
+            self.lowX = min(newNode.x,self.lowX)
+            self.highY = max(newNode.y,self.highY)
+            self.highX = max(newNode.x,self.highX)
             return
         
         if newNode.x < self.x:

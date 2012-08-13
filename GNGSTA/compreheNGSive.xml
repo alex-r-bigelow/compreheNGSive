@@ -1,58 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-	<file id="all.vcf" path="/Users/Home/Desktop/all.vcf" build="hg19">
-	
-	</file>
+	<file id="alex_old.vcf" path="/Users/Home/Desktop/casp8bundle/alex_old.vcf" build="hg19">
+        <attribute>QUAL</attribute>
+        <attribute>FILTER</attribute>
+        <attribute>QD</attribute>
+        <attribute>FS</attribute>
+    </file>
+	<file id="weiYu.vcf" path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
+        <attribute>QUAL</attribute>
+        <attribute>FILTER</attribute>
+        <attribute>QD</attribute>
+        <attribute>FS</attribute>
+    </file>
+	<file id="annotations" path="/Users/Home/Desktop/casp8bundle/angiesList.csv" build="hg19">
+        <attribute>stop_anno</attribute>
+        <attribute>ref_anno</attribute>
+        <attribute>observed_anno</attribute>
+        <attribute>allele1kceugbr</attribute>
+        <attribute>maf1kceugbr</attribute>
+        <attribute>location</attribute>
+        <attribute>type</attribute>
+        <attribute>casp8_als2cr12</attribute>
+        <attribute>function</attribute>
+        <attribute>polyphen</attribute>
+        <attribute>siftscores</attribute>
+        <attribute>transcriptiongm12878</attribute>
+        <attribute>transcrgmhi_lo</attribute>
+        <attribute>layeredgm12878h3k4me1stdsig</attribute>
+        <attribute>gmh3k4me1hi_lo</attribute>
+        <attribute>layeredhmech3k4me3stdsig</attribute>
+        <attribute>hmech3k4me3hi_lo</attribute>
+        <attribute>layeredhmech3k27acstdsig</attribute>
+        <attribute>hmech3k27achi_lo</attribute>
+        <attribute>txnfactorchip</attribute>
+        <attribute>txnfchiphi_lo</attribute>
+        <attribute>openchromsynthgm12878pk</attribute>
+        <attribute>openchromgmhi_lo</attribute>
+        <attribute>conservation</attribute>
+        <attribute>conservationhi_lo</attribute>
+        <attribute>histone_all3pos</attribute>
+        <attribute>availibility</attribute>
+    </file>
 	<group id="CASES (strict)">
-		<sample file="all.vcf">441_1x</sample>
-		<sample file="all.vcf">441_6x</sample>
-		<sample file="all.vcf">441_15x</sample>
-		<sample file="all.vcf">441_42x</sample>
+		<sample file="alex_old.vcf">441_1x</sample>
+		<sample file="alex_old.vcf">441_6x</sample>
+		<sample file="alex_old.vcf">441_15x</sample>
+		<sample file="alex_old.vcf">441_42x</sample>
 	</group>
 	<group id="CONTROLS (strict)">
-		<sample file="all.vcf">441_28x</sample>
-		<sample file="all.vcf">441_29x</sample>
-		<sample file="all.vcf">441_30x</sample>
-		<sample file="all.vcf">441_34x</sample>
-		<sample file="all.vcf">441_36x</sample>
-		<sample file="all.vcf">441_38x</sample>
-		<sample file="all.vcf">441_40x</sample>
+		<sample file="alex_old.vcf">441_28x</sample>
+		<sample file="alex_old.vcf">441_29x</sample>
+		<sample file="alex_old.vcf">441_30x</sample>
+		<sample file="alex_old.vcf">441_34x</sample>
+		<sample file="alex_old.vcf">441_36x</sample>
+		<sample file="alex_old.vcf">441_38x</sample>
+		<sample file="alex_old.vcf">441_40x</sample>
 	</group>
 	<group id="CASES (loose)">
-		<sample file="all.vcf">441_1x</sample>
-		<sample file="all.vcf">441_6x</sample>
-		<sample file="all.vcf">441_15x</sample>
-		<sample file="all.vcf">441_42x</sample>
-		<sample file="all.vcf">441_2x</sample>
-		<sample file="all.vcf">441_4x</sample>
-		<sample file="all.vcf">441_7x</sample>
-		<sample file="all.vcf">441_13x</sample>
-		<sample file="all.vcf">441_16x</sample>
-		<sample file="all.vcf">441_17x</sample>
-		<sample file="all.vcf">441_18x</sample>
-		<sample file="all.vcf">441_19x</sample>
-		<sample file="all.vcf">441_22x</sample>
-		<sample file="all.vcf">441_23x</sample>
-		<sample file="all.vcf">441_43x</sample>
-		<sample file="all.vcf">441_45x</sample>
-		<sample file="all.vcf">441_46x</sample>
-		<sample file="all.vcf">441_47x</sample>
+		<sample file="alex_old.vcf">441_1x</sample>
+		<sample file="alex_old.vcf">441_6x</sample>
+		<sample file="alex_old.vcf">441_15x</sample>
+		<sample file="alex_old.vcf">441_42x</sample>
+		<sample file="alex_old.vcf">441_2x</sample>
+		<sample file="alex_old.vcf">441_4x</sample>
+		<sample file="alex_old.vcf">441_7x</sample>
+		<sample file="alex_old.vcf">441_13x</sample>
+		<sample file="alex_old.vcf">441_16x</sample>
+		<sample file="alex_old.vcf">441_17x</sample>
+		<sample file="alex_old.vcf">441_18x</sample>
+		<sample file="alex_old.vcf">441_19x</sample>
+		<sample file="alex_old.vcf">441_22x</sample>
+		<sample file="alex_old.vcf">441_23x</sample>
+		<sample file="alex_old.vcf">441_43x</sample>
+		<sample file="alex_old.vcf">441_45x</sample>
+		<sample file="alex_old.vcf">441_46x</sample>
+		<sample file="alex_old.vcf">441_47x</sample>
 	</group>
 	<group id="CONTROLS (loose)">
-		<sample file="all.vcf">441_28x</sample>
-		<sample file="all.vcf">441_29x</sample>
-		<sample file="all.vcf">441_30x</sample>
-		<sample file="all.vcf">441_34x</sample>
-		<sample file="all.vcf">441_36x</sample>
-		<sample file="all.vcf">441_38x</sample>
-		<sample file="all.vcf">441_40x</sample>
-		<sample file="all.vcf">441_25x</sample>
-		<sample file="all.vcf">441_26x</sample>
-		<sample file="all.vcf">441_31x</sample>
-		<sample file="all.vcf">441_35x</sample>
-		<sample file="all.vcf">441_41x</sample>
-		<sample file="all.vcf">441_48x</sample>
-		<sample file="all.vcf">441_49x</sample>
+		<sample file="alex_old.vcf">441_28x</sample>
+		<sample file="alex_old.vcf">441_29x</sample>
+		<sample file="alex_old.vcf">441_30x</sample>
+		<sample file="alex_old.vcf">441_34x</sample>
+		<sample file="alex_old.vcf">441_36x</sample>
+		<sample file="alex_old.vcf">441_38x</sample>
+		<sample file="alex_old.vcf">441_40x</sample>
+		<sample file="alex_old.vcf">441_25x</sample>
+		<sample file="alex_old.vcf">441_26x</sample>
+		<sample file="alex_old.vcf">441_31x</sample>
+		<sample file="alex_old.vcf">441_35x</sample>
+		<sample file="alex_old.vcf">441_41x</sample>
+		<sample file="alex_old.vcf">441_48x</sample>
+		<sample file="alex_old.vcf">441_49x</sample>
 	</group>
 	<prefs xaxis="CASES(strict)" yaxis="CONTROLS(strict)" xfilter="top5" yfilter="top5">
 		<param id="X Axis">CASES(strict)</param>

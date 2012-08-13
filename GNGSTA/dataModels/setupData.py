@@ -229,8 +229,11 @@ class svOptionsModel:
         queryObj = PyQuery(filename=path)
         for fobj in queryObj('file'):
             newName = self.addFile(fobj.attrib['path'], fobj.attrib.get('id',None))
-            if newName != None:
-                self.groups[newName].check(False)   # we won't include the file groups unless the user has specifically added them
+            self.files[newName].check(on=False)
+            for c in fobj.iterchildren():
+                if c.tag == 'attribute':
+                    self.files[newName].attributes[c.text] = True
+            
         for gobj in queryObj('group'):
             if self.hasGroup(gobj.attrib['id']):
                 self.groups[gobj.attrib['id']].check(True)  # include the existing group
@@ -268,8 +271,9 @@ class svOptionsModel:
         else:
             basisGroup = self.groups[basis].getCheckedIndividualNames()
         for gName,gObj in self.groups.iteritems():
-            individuals = gObj.getCheckedIndividualNames()
-            vData.recalculateAlleleFrequencies(individuals, gName, basisGroup, fallback)
+            if gObj.isChecked() == True:
+                individuals = gObj.getCheckedIndividualNames()
+                vData.recalculateAlleleFrequencies(individuals, gName, basisGroup, fallback)
             
             if progressWidget.wasCanceled():
                 return None
@@ -307,9 +311,10 @@ class svOptionsModel:
             # Finally add it to our groups
             self.groups[newGroup.name] = newGroup
             self.groupOrder.insert(0,newGroup.name)
-            return newGroup.name
-        else:
-            return None
+            
+            # don't include the file-based groups by default
+            newGroup.check(on=False)
+        return newFile.name
     
     def hasGroup(self, text):
         return text in self.groupOrder

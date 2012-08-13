@@ -343,6 +343,7 @@ class parallelCoordinateWidget(layeredWidget):
         
         self.axisTop = prototype.top()
         self.axisWidth = prototype.spacer.width()
+        self.columnConversion = 1.0/self.axisWidth
         self.axisHeight = prototype.spacer.height()
         
         for a in self.axisOrder:
@@ -350,6 +351,8 @@ class parallelCoordinateWidget(layeredWidget):
             dataObj = self.data.axes[a]
             self.axes[a] = axisHandler(a,dataObj,current,True,self)
             self.axes[a].updateParams(self.app.activeParams[dataObj])
+        
+        self.numVisibleAxes = len(self.axisOrder)
         
         prototype.delete()
         
@@ -381,11 +384,11 @@ class parallelCoordinateWidget(layeredWidget):
         
         self.alignAxes()
     
-    def alignAxes(self):
+    def alignAxes(self, refreshImmediately=True):
         xOffset = 0
         for a in self.axisOrder:
+            self.axes[a].visAxis.moveTo(xOffset,self.axisTop)
             if self.axes[a].visible:
-                self.axes[a].visAxis.moveTo(xOffset,self.axisTop)
                 self.axes[a].visAxis.show()
                 xOffset += self.axisWidth
             else:
@@ -396,40 +399,38 @@ class parallelCoordinateWidget(layeredWidget):
         
         self.totalWidth = xOffset
         newSize = QSize(xOffset,self.axisHeight)
-        self.highlightedLayer.resize(newSize)
-        self.selectedLayer.resize(newSize)
-        self.svgLayer.resize(newSize)
-        self.selectedLayer.refreshLines(self.app.activeRsNumbers)
+        if refreshImmediately:
+            self.svgLayer.resize(newSize)
+            self.highlightedLayer.resize(newSize)
+            self.selectedLayer.resize(newSize)
+            self.selectedLayer.refreshLines(self.app.activeRsNumbers)
     
-    def toggleVisible(self, toggleVisible, applyImmediately=False):
+    def toggleVisible(self, toggleVisible, refreshImmediately=True):
         self.axes[toggleVisible].visible = not self.axes[toggleVisible].visible
-        if applyImmediately:
-            self.alignAxes()
+        if not self.axes[toggleVisible].visible:
+            self.axisOrder.remove(toggleVisible)
+            self.axisOrder.append(toggleVisible)
+            self.numVisibleAxes -= 1
+        else:
+            self.numVisibleAxes += 1
+        self.alignAxes(refreshImmediately)
     
-    def swapAxes(self, left, right, applyImmediately=False):
+    def swapAxes(self, left, right, refreshImmediately=True):
         temp = self.axisOrder[left]
         self.axisOrder[left] = self.axisOrder[right]
         self.axisOrder[right] = temp
-        if applyImmediately:
-            self.alignAxes()
+        self.alignAxes(refreshImmediately)
     
-    def findVisibleAxisIndex(self, xPosition):
-        target = int(xPosition/self.axisWidth)
+    def findAxisIndex(self, x):
+        target = int(x*self.columnConversion)
+        target = max(0,target)
+        target = min(self.numVisibleAxes-1,target)
         return target
-        index = -1
-        i = 0
-        while True:
-            while not self.axes[self.axisOrder[i]].visible:
-                i += 1
-            index += 1
-            if index == target:
-                return i
-            i += 1
     
     def startAxisDrag(self, element, x):
         if self.dragAxis != None:
             self.endAxisDrag()
-        self.dragStartIndex = self.findVisibleAxisIndex(x)
+        self.dragStartIndex = self.findAxisIndex(x)
         self.dragAxis = self.axisOrder[self.dragStartIndex]
         self.dragStartPixel = (self.dragStartIndex + 0.5)*self.axisWidth
         self.dragTargetPixel = self.dragStartPixel
@@ -439,45 +440,29 @@ class parallelCoordinateWidget(layeredWidget):
             self.startAxisDrag(element, x)
         original = self.dragTargetPixel
         self.dragTargetPixel += delta
-        self.dragTargetPixel = max(-self.axisWidth/2,self.dragTargetPixel)
-        self.dragTargetPixel = min(self.totalWidth+self.axisWidth/2,self.dragTargetPixel)
+        self.dragTargetPixel = max(-self.axisWidth*0.5,self.dragTargetPixel)
+        self.dragTargetPixel = min(self.totalWidth+self.axisWidth*0.5,self.dragTargetPixel)
         delta = self.dragTargetPixel - original
         if delta != 0:
             self.axes[self.dragAxis].visAxis.translate(delta,0)
             if abs(self.dragTargetPixel-self.dragStartPixel) > self.axisWidth:
-                targetColumn = int(self.dragTargetPixel/self.axisWidth)
-                targetIndex = self.findVisibleAxisIndex(self.dragTargetPixel)
+                targetIndex = self.findAxisIndex(self.dragTargetPixel)
                 direction = 1 if targetIndex - self.dragStartIndex > 0 else -1
                 while self.dragStartIndex != targetIndex:
                     nextIndex = self.dragStartIndex + direction
-                    if self.axes[self.axisOrder[nextIndex]].visible:
+                    if nextIndex >= 0 and nextIndex <= self.numVisibleAxes-1:
                         self.axes[self.axisOrder[nextIndex]].visAxis.translate(-direction*self.axisWidth,0)
                         self.dragStartPixel += direction*self.axisWidth
-                    self.swapAxes(nextIndex, self.dragStartIndex, applyImmediately=False)
+                        self.swapAxes(nextIndex, self.dragStartIndex, refreshImmediately=False)
                     self.dragStartIndex = nextIndex
     
     def endAxisDrag(self):
         if self.dragAxis != None:
-            self.axes[self.dragAxis].visAxis.translate(self.dragStartPixel-self.dragTargetPixel,0)
+            self.alignAxes(refreshImmediately=True)
             self.dragAxis = None
             self.dragTargetPixel = None
             self.dragStartIndex = None
             self.dragTargetPixel = None
-            self.selectedLayer.refreshLines(self.app.activeRsNumbers)
-    
-    def toggleAxis(self, a):
-        self.axes[a].visible = not self.axes[a].visible
-        if not self.axes[a].visible:
-            self.axisOrder.remove(a)
-            self.axisOrder.append(a)
-        else:
-            j = self.axisOrder.index(a)
-            i = j
-            while i-1 >= 0 and not self.axes[self.axisOrder[i-1]].visible:
-                i -= 1
-            self.axisOrder[j] = self.axisOrder[i]
-            self.axisOrder[i] = a
-        self.alignAxes()
         
     def notifySelection(self, rsNumbers, params, axis=None):
         if axis != None:
@@ -492,7 +477,7 @@ class parallelCoordinateWidget(layeredWidget):
     
     def numericRangeDrag(self, element, delta):
         if self.numericRangeAxis == None:
-            self.numericRangeAxis = self.findVisibleAxisIndex(element.left())
+            self.numericRangeAxis = self.findAxisIndex(element.left())
         return self.axes[self.axisOrder[self.numericRangeAxis]].handleDrag(element, delta)
     
     def endNumericRangeDrag(self):
@@ -501,14 +486,14 @@ class parallelCoordinateWidget(layeredWidget):
         self.numericRangeAxis = None
     
     def toggleLabel(self, x, element):
-        axis = self.axes[self.axisOrder[self.findVisibleAxisIndex(x)]]
+        axis = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         return axis.toggleLabel(element.getAttribute('___label'))
     
     def notifyHighlight(self, rsNumbers):
         self.highlightedLayer.refreshLines(rsNumbers)
     
     def mouseLabel(self, x, element):
-        axis = self.axes[self.axisOrder[self.findVisibleAxisIndex(x)]]
+        axis = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         label = element.getAttribute('___label')
         #if self.lastMouseLabel != label or self.lastMouseAxis != axis:
         self.lastMouseLabel = label
@@ -524,7 +509,7 @@ class parallelCoordinateWidget(layeredWidget):
         
     def mouseIn(self, x, y):
         self.setCursor(self.mouseOverCursor)
-        self.lastMouseNumeric = self.axes[self.axisOrder[self.findVisibleAxisIndex(x)]]
+        self.lastMouseNumeric = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         self.app.notifyHighlight(self.lastMouseNumeric.queryPixelRange(y-self.mouseOverRadius,y+self.mouseOverRadius))
     
     def mouseOut(self):
@@ -535,8 +520,7 @@ class parallelCoordinateWidget(layeredWidget):
         self.app.notifyHighlight(set())
     
     def handleEvents(self, event, signals):
-        linesMoved = False
-        att = self.axisOrder[self.findVisibleAxisIndex(event.x)]
+        att = self.axisOrder[self.findAxisIndex(event.x)]
         # context menu
         if event.contextRequested:
             contextMenu = QMenu(self)
@@ -600,13 +584,11 @@ class parallelCoordinateWidget(layeredWidget):
                 
                 # Hide axis
                 if resultAction.text() == u'Hide Axis':
-                    self.toggleAxis(att)
-                    linesMoved = True
+                    self.toggleVisible(att)
                 
                 # Toggle axis
                 if resultAction.actionGroup() == axesActions:
-                    self.toggleAxis(resultAction.text())
-                    linesMoved = True
+                    self.toggleVisible(resultAction.text())
                 '''
                 # Toggle item
                 if resultAction.actionGroup() == itemsActions:
