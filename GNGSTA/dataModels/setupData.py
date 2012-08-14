@@ -101,7 +101,7 @@ class group:
             for i in g.foreignMembers.iterkeys():
                 i.removeFromGroup(self)
     
-    def getCheckedIndividualNames(self):
+    def getCheckedIndividuals(self):
         results = []
         for i,include in self.nativeMembers.iteritems():
             if include:
@@ -222,6 +222,11 @@ class svOptionsModel:
         self.files = {}         # {file name : fileObj}
         self.fileOrder = []     # file name
         
+        self.startingXattribute = None
+        self.startingYattribute = None
+        self.prefilters = {}    # attribute name : 'top5', 'bottom5'
+        self.alleleMode = '.vcf'
+        
         if fromFile != None:
             self.buildFromFile(fromFile)
     
@@ -242,8 +247,24 @@ class svOptionsModel:
                 for c in gobj.iterchildren():
                     if c.tag == 'sample':
                         self.individuals[c.attrib['file']][c.text].addToGroup(self.groups[gobj.attrib['id']])
+        
+        prefs = queryObj('prefs')[0]
+        self.startingXattribute = prefs.attrib.get('xaxis',None)
+        if self.startingXattribute in self.groups.iterkeys():
+            self.startingXattribute = "%s AF" % self.startingXattribute
+        self.startingYattribute = prefs.attrib.get('yaxis',None)
+        if self.startingYattribute in self.groups.iterkeys():
+            self.startingYattribute = "%s AF" % self.startingYattribute
+        self.alleleMode = prefs.attrib.get('alleleMode','.vcf')
+                
+        for pObj in prefs.iterchildren():
+            if pObj.tag == 'prefilter':
+                att = pObj.attrib['axis']
+                if att in self.groups.iterkeys():
+                    att = "%s AF" % att
+                self.prefilters[att] = pObj.attrib['filter']
     
-    def buildDataObjects(self, progressWidget, basis="None", fallback="REF"):
+    def buildDataObjects(self, progressWidget):
         progressWidget.reset()
         progressWidget.setMinimum(0)
         progressWidget.setMaximum(len(self.files) + len(self.groups))
@@ -266,20 +287,20 @@ class svOptionsModel:
             progressWidget.setValue(index)
         
         progressWidget.setLabelText('Recalculating Allele Frequencies')
-        if basis == "None":
-            basisGroup = []
+        if self.alleleMode == ".vcf":
+            basisGroup = None
         else:
-            basisGroup = self.groups[basis].getCheckedIndividualNames()
+            basisGroup = self.groups[self.alleleMode].getCheckedIndividuals()
         for gName,gObj in self.groups.iteritems():
             if gObj.isChecked() == True:
-                individuals = gObj.getCheckedIndividualNames()
-                vData.recalculateAlleleFrequencies(individuals, gName, basisGroup, fallback)
+                individuals = gObj.getCheckedIndividuals()
+                vData.recalculateAlleleFrequencies(individuals, gName, basisGroup)
             
             if progressWidget.wasCanceled():
                 return None
             index += 1
             progressWidget.setValue(index)
-        
+                
         return (vData,fData)
     
     def addFile(self, path, name=None):

@@ -25,10 +25,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.88"
-     inkscape:cx="-94.260276"
-     inkscape:cy="372.17293"
+     inkscape:cx="-203.56879"
+     inkscape:cy="-10.805793"
      inkscape:document-units="px"
-     inkscape:current-layer="root"
+     inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:window-width="1833"
      inkscape:window-height="1156"
@@ -90,12 +90,12 @@
         <g
            background="__numericDownBarBackground"
            id="g4360"
-           transform="translate(0,-70)"
+           transform="translate(0,-50)"
            __parentProperty="__numericDownBar"
            label="__numericDownBarLabel">
           <rect
              __parentProperty="__numericDownBarBackground"
-             style="color:#000000;fill:#ffffff;fill-opacity:0.39215686999999999;fill-rule:nonzero;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             style="color:#000000;fill:#ffffff;fill-opacity:0.39215686;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
              id="rect4362"
              width="99"
              height="14"
@@ -244,13 +244,13 @@
             <rect
                y="45"
                x="65.596558"
-               height="320"
+               height="340"
                width="10"
                id="rect3796"
                style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                __parentProperty="__selectionRangeBar" />
             <g
-               transform="translate(0,40)"
+               transform="translate(0,60)"
                id="g4449"
                label="__selectionRangeBottomLabel"
                background="__selectionRangeBottomBackground"
@@ -277,7 +277,7 @@
                  id="text4439"
                  y="335.61502"
                  x="13.330003"
-                 style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-linejoin:miter"
+                 style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
                  xml:space="preserve"
                  __parentProperty="__selectionRangeBottomLabel">999.999</text>
             </g>
@@ -342,8 +342,17 @@
              __parentProperty="__missing"
              id="g4356"
              background="__missingBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
+    on = self.controller.toggleLabel(event.x, self)\n
+    if on:\n
+        self.originalColor = '#1B9E77'\n
+    else:\n
+        self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n
+    self.background.setAttribute('fill',self.originalColor)\n
+self.controller.unMouseLabel()"
              label="__missingLabel">
             <path
                transform="matrix(0.37030301,0,0,0.37030301,82.015153,275.50042)"
@@ -403,7 +412,14 @@
              __parentProperty="__textItem"
              id="g4348"
              background="__textItemBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
+    on = self.controller.toggleLabel(event.x, self)\n
+    if on:\n
+        self.originalColor = '#1B9E77'\n
+    else:\n
+        self.originalColor = '#FFFFFF'"
              __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()">
             <path
                inkscape:connector-curvature="0"
@@ -424,10 +440,12 @@
         <g
            id="g4536">
           <g
-             transform="translate(0,350)"
+             transform="translate(0,370)"
              id="g3790"
              background="__scrollUpBackground"
-             __parentProperty="__scrollUpBar">
+             __parentProperty="__scrollUpBar"
+             __eventCode="if 'LeftButton' in event.lastButtons:\n
+    self.controller.scrollCat(event.x,-1)">
             <rect
                style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                id="rect3768"
@@ -445,7 +463,9 @@
           <g
              id="g3786"
              background="__scrollDownBackground"
-             __parentProperty="__scrollDownBar">
+             __parentProperty="__scrollDownBar"
+             __eventCode="if 'LeftButton' in event.lastButtons:\n
+    self.controller.scrollCat(event.x,1)">
             <rect
                y="440.5"
                x="98"

@@ -3,7 +3,17 @@ from resources.utils import fitInSevenChars
 from dataModels.variantData import operation
 from PySide.QtCore import Qt, QSize
 from PySide.QtGui import QColor, QPen, QCursor, QMenu, QActionGroup, QAction, QProgressDialog, QPainter
-import math
+import math, sys
+
+class labelHandler:
+    def __init__(self, name, latticeNumber, p=None, n=None, pv=None, nv=None, visElement=None):
+        self.name = name
+        self.latticeNumber = latticeNumber
+        self.p = p
+        self.n = n
+        self.pv = pv
+        self.nv = nv
+        self.visElement = visElement
 
 class axisHandler:
     def __init__(self, name, dataAxis, visAxis, visible, parent):
@@ -62,47 +72,91 @@ class axisHandler:
         self.draggedStart = None
         
         # categorical
-        self.labelOrder = []
-        self.visLabels = []
-        self.visibleLabels = {}
+        self.rootCatNode = None
+        self.catLattice = {-1:set()}    # index to node; -1 and 1 more than the number of possible spaces are for offscreen, hidden nodes
+        self.cats = {}
         
         # sort the items by set membership size, except put Allele Masked, Missing last
         temp = []
         for label,members in self.dataAxis.labels.iteritems():
-            temp.append((len(members),label))
-            self.visibleLabels[label] = True
-        
-        numTextItems = 0
-        for size,label in sorted(temp):
             if label == 'Allele Masked' or label == 'Missing':
-                if size > 0:
-                    self.labelOrder.append(label)
-            else:
-                self.labelOrder.append(label)    # include other labels, even if their sets are empty
-                numTextItems += 1
+                continue
+            temp.append((len(members),label))
+        temp = sorted(temp)
+        
+        numMasked = len(self.dataAxis.labels.get('Allele Masked',set()))
+        if numMasked > 0:
+            temp.append((numMasked,'Allele Masked'))
+        
+        numMissing = len(self.dataAxis.labels.get('Missing',set()))
+        if numMissing > 0:
+            temp.append((numMissing,'Missing'))
         
         self.labelTop = self.visAxis.categorical.scrollUpBar.bottom()
         self.labelBottom = self.visAxis.categorical.scrollDownBar.top()
-        self.itemHeight = self.visAxis.categorical.itemGroup.textItem.height()
-        self.yGap = 0
-        self.scrollOffset = None
+        self.itemHeight = self.visAxis.categorical.itemGroup.alleleMasked.height()  # allele masked is the tallest one
+        self.numVisibleCats = len(temp)
+        self.maximizeLatticeSpace()
         
-        if numTextItems == 0:
-            self.visAxis.categorical.itemGroup.textItem.delete()
-        else:
-            self.visLabels.append(self.visAxis.categorical.itemGroup.textItem)
+        # create nodes from the end of the list to the beginning
+        self.catLattice[self.latticeLength] = set()
         
-        if 'Allele Masked' in self.labelOrder:
-            self.visLabels.append(self.visAxis.categorical.itemGroup.alleleMasked)
+        latticeNumber = self.latticeLength-1
+        if self.numVisibleCats == 0:
+            self.rootCatNode = None
         else:
+            self.rootCatNode = labelHandler(temp[-1][1], latticeNumber)
+            self.cats[temp[-1][1]] = latticeNumber
+            self.makeNodeVisible(self.rootCatNode, None, temp[-1][1], latticeNumber)
+            
+            lastNode = self.rootCatNode
+            latticeNumber -= 1
+            for size,label in reversed(temp[:-1]):
+                newNode = labelHandler(label,latticeNumber)
+                self.cats[label] = latticeNumber
+                if latticeNumber > -1:
+                    self.makeNodeVisible(newNode, lastNode, label, latticeNumber)
+                    self.catLattice[latticeNumber] = newNode
+                    latticeNumber -= 1
+                else:
+                    self.catLattice[-1].add(newNode)
+                lastNode.p = newNode
+                newNode.n = lastNode
+                lastNode = newNode
+        
+        # delete the prototype and special elements if necessary
+        self.visAxis.categorical.itemGroup.textItem.delete()
+        if numMasked == 0:
             self.visAxis.categorical.itemGroup.alleleMasked.delete()
-        
-        if 'Missing' in self.labelOrder:
-            self.visLabels.append(self.visAxis.categorical.itemGroup.missing)
-        else:
+        if numMissing == 0:
             self.visAxis.categorical.itemGroup.missing.delete()
-        
+                
         # (selections will be set by parallelCoordinateWidget.__init__'s call to updateParams)
+    
+    def maximizeLatticeSpace(self):
+        self.cellSize = (self.labelBottom-self.labelTop)/float(max(1,self.numVisibleCats))  # if they all can fit, use all the space
+        if self.cellSize >= self.itemHeight:
+            self.latticeLength = int((self.labelBottom-self.labelTop)/self.cellSize)
+        else:
+            self.latticeLength = int((self.labelBottom-self.labelTop)/self.itemHeight)
+            self.cellSize = (self.labelBottom-self.labelTop)/float(self.latticeLength)  # otherwise use the most space we can
+    
+    def makeNodeVisible(self, newNode, lastNode, label, latticeNumber):
+        if label == 'Missing':
+            newNode.visElement = self.visAxis.categorical.itemGroup.missing
+        elif label == 'Allele Masked':
+            newNode.visElement = self.visAxis.categorical.itemGroup.alleleMasked
+        else:
+            newNode.visElement = self.visAxis.categorical.itemGroup.textItem.clone()
+        screenLabel = label
+        if len(screenLabel) > 15:
+            screenLabel = screenLabel[:10] + ".." + screenLabel[-3:]
+        newNode.visElement.label.setText(screenLabel)
+        newNode.visElement.setAttribute('___label',label)
+        newNode.visElement.translate(0,self.labelTop-newNode.visElement.top()+self.cellSize*latticeNumber+0.5*(self.cellSize-self.itemHeight))
+        if lastNode != None:
+            lastNode.pv = newNode
+            newNode.nv = lastNode
     
     def dataToScreen(self, value):
         if not isinstance(value,str):
@@ -112,13 +166,13 @@ class axisHandler:
                 value = 'Allele Masked'
             else:
                 return self.numericPixelLow + (value-self.numericDataLow)*self.dataToPixelRatio
-        index = self.labelOrder.index(value)
-        if index < self.topVisibleLabelIndex:
+        index = self.cats[value]
+        if index < 0:
             return self.labelTop
-        elif index > self.bottomVisibleLabelIndex:
+        elif index > self.latticeLength:
             return self.labelBottom
         else:
-            return self.labelTop + (index - self.topVisibleLabelIndex)*(self.itemHeight+self.yGap) + self.yGap + self.scrollOffset
+            return self.labelTop + (index+0.5)*self.cellSize
     
     def screenToData(self, value):
         return self.numericDataLow + (value-self.numericPixelLow)*self.pixelToDataRatio
@@ -165,56 +219,13 @@ class axisHandler:
                 v.bar.show()
     
     def updateLabels(self, labels):
-        # attempt to distribute the labels evenly over the space we have... if there's not enough, leave a gap that's half the height of an element
-        #TODO: hide/show arrows when they're not needed
-        visibleLabelOrder = []
-        for label in self.labelOrder:
-            if self.visibleLabels[label] == True:
-                visibleLabelOrder.append(label)
-        numItems = max(1,len(visibleLabelOrder))
-        if self.labelBottom-self.labelTop > numItems*self.itemHeight:
-            self.visAxis.categorical.scrollUpBar.hide()
-            self.visAxis.categorical.scrollDownBar.hide()
-            self.yGap = (self.labelBottom-(self.labelTop+(numItems)*self.itemHeight))/numItems
-            self.scrollOffset = 0
-            self.topVisibleLabelIndex = 0
-            self.bottomVisibleLabelIndex = numItems-1
-        else:
-            self.visAxis.categorical.scrollUpBar.show()
-            self.visAxis.categorical.scrollDownBar.show()
-            self.yGap = self.itemHeight/2
-            if self.scrollOffset == None:
-                self.scrollOffset = 0
-                self.topVisibleLabelIndex = 0
-                self.bottomVisibleLabelIndex = int(math.ceil((self.labelBottom-self.labelTop)/(self.itemHeight+self.yGap)))
-        
-        visibleLabelOrder = visibleLabelOrder[self.topVisibleLabelIndex:self.bottomVisibleLabelIndex+1]
-        
-        while len(self.visLabels) < len(visibleLabelOrder):
-            self.visLabels.append(self.visLabels[-1].clone())
-        
-        while len(self.visLabels) > len(visibleLabelOrder):
-            self.visLabels[-1].delete()
-            del self.visLabels[-1]
-        
-        y = self.labelTop-self.itemHeight/2+self.yGap + self.scrollOffset
-        for i,label in enumerate(visibleLabelOrder):
-            self.visLabels[i].translate(0,-self.visLabels[i].top()+y)
-            screenLabel = label
-            if len(screenLabel) > 15:
-                screenLabel = screenLabel[:10] + ".." + screenLabel[-3:]
-            self.visLabels[i].label.setText(screenLabel)
-            self.visLabels[i].setAttribute('___label',label)
-            if labels[label] == True:
-                self.visLabels[i].originalColor = '#1B9E77'
-                self.visLabels[i].background.setAttribute('fill',self.visLabels[i].originalColor)
+        n = self.rootCatNode
+        while n != None:
+            if labels[n.name] == True:
+                n.visElement.background.setAttribute('fill','#1B9E77')
             else:
-                self.visLabels[i].originalColor = '#FFFFFF'
-                self.visLabels[i].background.setAttribute('fill',self.visLabels[i].originalColor)
-            y += self.itemHeight
-            y += self.yGap
-        
-        self.scrollLabel(0)
+                n.visElement.background.setAttribute('fill','#FFFFFF')
+            n = n.pv
     
     def updateParams(self, paramTuple):
         ranges = paramTuple[0]
@@ -277,9 +288,9 @@ class axisHandler:
         else:
             return set()
     
-    def scrollLabel(self, delta):
+    def scrollCat(self, delta):
+        pass
         # TODO
-        self.scrollOffset += delta
 
 class selectionLayer(layer):
     def __init__(self, size, dynamic, controller, prototypeLine, rsNumbers, opaqueBack = False):
@@ -338,6 +349,7 @@ class parallelCoordinateWidget(layeredWidget):
         
         self.axes = {}
         self.axisOrder = self.data.defaultAxisOrder()
+        self.numVisibleAxes = len(self.axisOrder)
         
         prototype = self.svgLayer.svg.axis
         
@@ -351,8 +363,6 @@ class parallelCoordinateWidget(layeredWidget):
             dataObj = self.data.axes[a]
             self.axes[a] = axisHandler(a,dataObj,current,True,self)
             self.axes[a].updateParams(self.app.activeParams[dataObj])
-        
-        self.numVisibleAxes = len(self.axisOrder)
         
         prototype.delete()
         
@@ -495,6 +505,7 @@ class parallelCoordinateWidget(layeredWidget):
     def mouseLabel(self, x, element):
         axis = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         label = element.getAttribute('___label')
+        
         #if self.lastMouseLabel != label or self.lastMouseAxis != axis:
         self.lastMouseLabel = label
         self.lastMouseAxis = axis
@@ -518,6 +529,9 @@ class parallelCoordinateWidget(layeredWidget):
         self.lastMouseNumeric = None
         self.setCursor(self.normalCursor)
         self.app.notifyHighlight(set())
+    
+    def scrollCat(self, x, delta):
+        self.axes[self.axisOrder[self.findAxisIndex(x)]].scrollCat(delta)
     
     def handleEvents(self, event, signals):
         att = self.axisOrder[self.findAxisIndex(event.x)]

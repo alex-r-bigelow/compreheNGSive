@@ -122,7 +122,7 @@ class mixedAxis:
                 try:
                     nearestTenMin = -10**math.ceil(math.log10(-self.minimum))
                 except:
-                    print self.minimum
+                    print "ERROR: Can't take log of %f" % self.minimum
                     sys.exit(1)
             
             # prefer nearestTenMax if the gap between it and self.maximum is less than 25% the span of the data
@@ -155,7 +155,7 @@ class mixedAxis:
 
 class selection:
     namelessIndex = 1
-    def __init__(self, data, name=None, result=None, params=None):
+    def __init__(self, data, name=None, result=None, params=None, prefilters=None):
         if not data.isFrozen:
             data.freeze(None,None,None)
         self.data = data
@@ -171,31 +171,55 @@ class selection:
             self.params = params.copy()
         else:
             self.params = {}    # {axis:([(low,high)],{str:bool})}
-            # Default initial selection: select the top 5% of the two scatterplot axes
-            # (including all non-numerics - unless the axis has no numerics. In that
-            # case select nothing), and everything from all other axes
-            
-            # do the x axis first so we have an initial selection
-            ax = self.data.axes[self.data.currentXattribute]
-            if ax.hasNumeric():
+            if prefilters != None and len(prefilters) > 0:
+                # build the selection from the prefiltered axes first... 
+                att_0,fil_0 = prefilters.iteritems().next()   # ugly way of grabbing one of the prefilters
+                ax = self.data.axes[att_0]
                 self.applySelectAll(ax, applyImmediately=False)
-                self.applySelectTopFivePercent(ax, applyImmediately=False)
-            else:
-                self.applySelectNone(ax, applyImmediately=False)
-            self.result = ax.query(self.params[ax][0],self.params[ax][1])
-            # now do all the others that will cut that selection down
-            for a,ax in self.data.axes.iteritems():
-                if a == self.data.currentXattribute:
-                    continue
-                elif a == self.data.currentYattribute:
-                    if ax.hasNumeric():
-                        self.applySelectAll(ax, applyImmediately=False)
-                        self.applySelectTopFivePercent(ax, applyImmediately=False)
+                self.applyCustomFilter(ax, fil_0, applyImmediately=False)
+                self.result = ax.query(self.params[ax][0],self.params[ax][1])
+                # now do the rest of the prefilters to cut that selection down
+                for att,fil in prefilters.iteritems():
+                    if att == att_0:
+                        continue
                     else:
-                        self.applySelectNone(ax, applyImmediately=False)
-                else:
+                        ax = self.data.axes[att]
+                        self.applySelectAll(ax, applyImmediately=False)
+                        self.applyCustomFilter(ax, fil, applyImmediately=False)
+                        self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
+                # now do the rest of the attributes
+                for att,ax in self.data.axes.iteritems():
+                    if att in prefilters.iterkeys():
+                        continue
+                    else:
+                        self.applySelectAll(ax, applyImmediately=False)
+                        self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
+            else:
+                # Default initial selection: select the top 5% of the two scatterplot axes
+                # (including all non-numerics - unless the axis has no numerics. In that
+                # case select nothing), and everything from all other axes
+                
+                # do the x axis first so we have an initial selection
+                ax = self.data.axes[self.data.currentXattribute]
+                if ax.hasNumeric():
                     self.applySelectAll(ax, applyImmediately=False)
-                self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
+                    self.applySelectTopFivePercent(ax, applyImmediately=False)
+                else:
+                    self.applySelectNone(ax, applyImmediately=False)
+                self.result = ax.query(self.params[ax][0],self.params[ax][1])
+                # now do all the others that will cut that selection down
+                for a,ax in self.data.axes.iteritems():
+                    if a == self.data.currentXattribute:
+                        continue
+                    elif a == self.data.currentYattribute:
+                        if ax.hasNumeric():
+                            self.applySelectAll(ax, applyImmediately=False)
+                            self.applySelectTopFivePercent(ax, applyImmediately=False)
+                        else:
+                            self.applySelectNone(ax, applyImmediately=False)
+                    else:
+                        self.applySelectAll(ax, applyImmediately=False)
+                    self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
     
     def findClosestEndpoints(self, axis, value):
         highDiff = sys.float_info.max
@@ -334,6 +358,19 @@ class selection:
         if applyImmediately:
             self.updateResult(axis)
     
+    def applyCustomFilter(self, axis, fil, applyImmediately=True):
+        if not axis.hasNumeric():
+            ranges = []
+        else:
+            fivePercent = (axis.getMax()-axis.getMin()) * 0.05
+            if fil == 'bottom5':
+                ranges = [(axis.getMin(),fivePercent+axis.getMin())]
+            else:
+                ranges = [(axis.getMax()-fivePercent,axis.getMax())]
+        self.params[axis] = (ranges,self.params[axis][1])
+        if applyImmediately:
+            self.updateResult(axis)
+    
     def getUnion(self, others):
         new = selection(self.data, name=None, result=self.result, params=self.params)
         
@@ -443,10 +480,10 @@ class selection:
         return axis.query((),{label:include})
 
 class selectionState:
-    def __init__(self, data):
+    def __init__(self, data, prefilters=None):
         self.data = data
         
-        startingSelection = selection(self.data)
+        startingSelection = selection(self.data,prefilters=prefilters)
         self.selectionOrder = [startingSelection.name]
         self.allSelections = {startingSelection.name:startingSelection}
         self.activeSelections = [startingSelection]
@@ -771,41 +808,35 @@ class variantData:
             self.thaw()
         self.axisLabels.discard(att)
     
-    def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup=[], fallback="REF"):
+    def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup):
         if self.isFrozen:
             self.thaw()
-        att = "Allele Frequency (%s)" % groupName
+        att = "%s AF" % groupName
         self.axisLabels.add(att)
         if att not in self.alleleFrequencyLabels:
             self.alleleFrequencyLabels.append(att)
         
         for variantObject in self.data.itervalues():
-            # First see if we can find a minor allele with stuff in basisGroup
-            alleleCounts = countingDict()
-            for i in basisGroup:
-                if variantObject.genotypes.has_key(i):
-                    allele1 = variantObject.genotypes[i].allele1
-                    allele2 = variantObject.genotypes[i].allele2
-                    if allele1 != None:
-                        alleleCounts[allele1] += 1
-                    if allele2 != None:
-                        alleleCounts[allele2] += 1
-            if len(alleleCounts) > 1:
-                majorAllele = max(alleleCounts.iteritems(), key=operator.itemgetter(1))[0]
+            if basisGroup == None:
+                # by default, just pick the major allele from the REF/ALT columns
+                majorAllele = 0
             else:
-                # Okay, we don't have any data for our basisGroup (or our basisGroup is empty)... use the fallback
-                if fallback == "None":
-                    # No minor allele found and no fallback - we've got a masked allele frequency!
-                    variantObject.attributes[att] = float('NaN')
-                    continue
-                elif fallback == "REF":
-                    majorAllele = 0
+                # First see if we can find a major allele with the people in basisGroup
+                alleleCounts = countingDict()
+                for i in basisGroup:
+                    if variantObject.genotypes.has_key(i.name):
+                        allele1 = variantObject.genotypes[i.name].allele1
+                        allele2 = variantObject.genotypes[i.name].allele2
+                        if allele1 != None:
+                            alleleCounts[allele1] += 1
+                        if allele2 != None:
+                            alleleCounts[allele2] += 1
+                if len(alleleCounts) > 1:
+                    majorAllele = max(alleleCounts.iteritems(), key=operator.itemgetter(1))[0]
                 else:
-                    majorAllele = int(fallback[4:])
-                    if majorAllele > len(variantObject.alt):
-                        # Tried to define minor allele as a nonexistent secondary allele
-                        variantObject.attributes[att] = float('NaN')
-                        continue
+                    variantObject.attributes[att] = float('NaN')    # No major allele found - we've got a masked allele frequency!
+                    continue
+            
             # Okay, we've found our reference allele; now let's see how frequent the others are
             counts = countingDict()
             allCount = 0
@@ -822,7 +853,7 @@ class variantData:
                         if allele2 != majorAllele:
                             counts[allele2] += 1
             if allCount == 0:
-                variantObject.attributes[att] = float('Inf')
+                variantObject.attributes[att] = float('Inf')    # We had no data for this variant, so this thing is undefined
             else:
                 result = []
                 for c in counts.itervalues():
@@ -942,7 +973,7 @@ class variantData:
         
         if not self.axes.has_key(attribute1):
             print self.axes.keys()
-            print attribute1
+            print "ERROR: couldn't find axis: %s" % str(attribute1)
             sys.exit(1)
         axis1 = self.axes[attribute1]
         assert axis1.isfinished

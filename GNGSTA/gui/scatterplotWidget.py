@@ -233,8 +233,8 @@ class scatterplotWidget(layeredWidget):
             ax.lowLabel.setText(fitInSevenChars(self.currentYaxis.getMin()))
             ax.highLabel.setText(fitInSevenChars(self.currentYaxis.getMax()))
             self.yAxisRatio = float(self.currentYaxis.getMax() - self.currentYaxis.getMin()) / float(self.scatterBounds[1] - self.scatterBounds[3])
-            if self.xAxisRatio == 0:
-                self.xAxisRatio = 1.0 / float(self.scatterBounds[1]-self.scatterBounds[3])
+            if self.yAxisRatio == 0:
+                self.yAxisRatio = 1.0 / float(self.scatterBounds[1]-self.scatterBounds[3])
             if self.currentYaxis.getMin() <= 0 and self.currentYaxis.getMax() >= 0:
                 self.svgLayer.svg.yZeroBar.show()
                 self.svgLayer.svg.yZeroBar.moveTo(self.svgLayer.svg.yZeroBar.left(),self.dataToScreenSpace(0.0, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)-self.svgLayer.svg.yZeroBar.height()/2)

@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-	<file id="alex_old.vcf" path="/Users/Home/Desktop/casp8bundle/alex_old.vcf" build="hg19">
-        <attribute>QUAL</attribute>
-        <attribute>FILTER</attribute>
-        <attribute>QD</attribute>
-        <attribute>FS</attribute>
-    </file>
-	<file id="weiYu.vcf" path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
+	<file id="alex_new.vcf" path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
         <attribute>QUAL</attribute>
         <attribute>FILTER</attribute>
         <attribute>QD</attribute>
@@ -41,61 +35,94 @@
         <attribute>histone_all3pos</attribute>
         <attribute>availibility</attribute>
     </file>
-	<group id="CASES (strict)">
-		<sample file="alex_old.vcf">441_1x</sample>
-		<sample file="alex_old.vcf">441_6x</sample>
-		<sample file="alex_old.vcf">441_15x</sample>
-		<sample file="alex_old.vcf">441_42x</sample>
+	<group id="DR4 CASES (strict)">
+		<sample file="alex_new.vcf">441_1x</sample>
+		<sample file="alex_new.vcf">441_6x</sample>
+		<sample file="alex_new.vcf">441_15x</sample>
+		<sample file="alex_new.vcf">441_42x</sample>
 	</group>
-	<group id="CONTROLS (strict)">
-		<sample file="alex_old.vcf">441_28x</sample>
-		<sample file="alex_old.vcf">441_29x</sample>
-		<sample file="alex_old.vcf">441_30x</sample>
-		<sample file="alex_old.vcf">441_34x</sample>
-		<sample file="alex_old.vcf">441_36x</sample>
-		<sample file="alex_old.vcf">441_38x</sample>
-		<sample file="alex_old.vcf">441_40x</sample>
+	<group id="DR4 CONTROLS (strict)">
+		<sample file="alex_new.vcf">441_28x</sample>
+		<sample file="alex_new.vcf">441_29x</sample>
+		<sample file="alex_new.vcf">441_30x</sample>
+		<sample file="alex_new.vcf">441_34x</sample>
+		<sample file="alex_new.vcf">441_36x</sample>
+		<sample file="alex_new.vcf">441_38x</sample>
+		<sample file="alex_new.vcf">441_40x</sample>
 	</group>
-	<group id="CASES (loose)">
-		<sample file="alex_old.vcf">441_1x</sample>
-		<sample file="alex_old.vcf">441_6x</sample>
-		<sample file="alex_old.vcf">441_15x</sample>
-		<sample file="alex_old.vcf">441_42x</sample>
-		<sample file="alex_old.vcf">441_2x</sample>
-		<sample file="alex_old.vcf">441_4x</sample>
-		<sample file="alex_old.vcf">441_7x</sample>
-		<sample file="alex_old.vcf">441_13x</sample>
-		<sample file="alex_old.vcf">441_16x</sample>
-		<sample file="alex_old.vcf">441_17x</sample>
-		<sample file="alex_old.vcf">441_18x</sample>
-		<sample file="alex_old.vcf">441_19x</sample>
-		<sample file="alex_old.vcf">441_22x</sample>
-		<sample file="alex_old.vcf">441_23x</sample>
-		<sample file="alex_old.vcf">441_43x</sample>
-		<sample file="alex_old.vcf">441_45x</sample>
-		<sample file="alex_old.vcf">441_46x</sample>
-		<sample file="alex_old.vcf">441_47x</sample>
+	<group id="DR4 CASES (loose)">
+		<sample file="alex_new.vcf">441_1x</sample>
+		<sample file="alex_new.vcf">441_6x</sample>
+		<sample file="alex_new.vcf">441_15x</sample>
+		<sample file="alex_new.vcf">441_42x</sample>
+		<sample file="alex_new.vcf">441_2x</sample>
+		<sample file="alex_new.vcf">441_4x</sample>
+		<sample file="alex_new.vcf">441_7x</sample>
+		<sample file="alex_new.vcf">441_13x</sample>
+		<sample file="alex_new.vcf">441_16x</sample>
+		<sample file="alex_new.vcf">441_17x</sample>
+		<sample file="alex_new.vcf">441_18x</sample>
+		<sample file="alex_new.vcf">441_19x</sample>
+		<sample file="alex_new.vcf">441_22x</sample>
+		<sample file="alex_new.vcf">441_23x</sample>
+		<sample file="alex_new.vcf">441_43x</sample>
+		<sample file="alex_new.vcf">441_45x</sample>
+		<sample file="alex_new.vcf">441_46x</sample>
+		<sample file="alex_new.vcf">441_47x</sample>
 	</group>
-	<group id="CONTROLS (loose)">
-		<sample file="alex_old.vcf">441_28x</sample>
-		<sample file="alex_old.vcf">441_29x</sample>
-		<sample file="alex_old.vcf">441_30x</sample>
-		<sample file="alex_old.vcf">441_34x</sample>
-		<sample file="alex_old.vcf">441_36x</sample>
-		<sample file="alex_old.vcf">441_38x</sample>
-		<sample file="alex_old.vcf">441_40x</sample>
-		<sample file="alex_old.vcf">441_25x</sample>
-		<sample file="alex_old.vcf">441_26x</sample>
-		<sample file="alex_old.vcf">441_31x</sample>
-		<sample file="alex_old.vcf">441_35x</sample>
-		<sample file="alex_old.vcf">441_41x</sample>
-		<sample file="alex_old.vcf">441_48x</sample>
-		<sample file="alex_old.vcf">441_49x</sample>
+	<group id="DR4 CONTROLS (loose)">
+		<sample file="alex_new.vcf">441_28x</sample>
+		<sample file="alex_new.vcf">441_29x</sample>
+		<sample file="alex_new.vcf">441_30x</sample>
+		<sample file="alex_new.vcf">441_34x</sample>
+		<sample file="alex_new.vcf">441_36x</sample>
+		<sample file="alex_new.vcf">441_38x</sample>
+		<sample file="alex_new.vcf">441_40x</sample>
+		<sample file="alex_new.vcf">441_25x</sample>
+		<sample file="alex_new.vcf">441_26x</sample>
+		<sample file="alex_new.vcf">441_31x</sample>
+		<sample file="alex_new.vcf">441_35x</sample>
+		<sample file="alex_new.vcf">441_41x</sample>
+		<sample file="alex_new.vcf">441_48x</sample>
+		<sample file="alex_new.vcf">441_49x</sample>
 	</group>
-	<prefs xaxis="CASES(strict)" yaxis="CONTROLS(strict)" xfilter="top5" yfilter="top5">
-		<param id="X Axis">CASES(strict)</param>
-		<param id="Y Axis">CONTROLS(strict)</param>
-		<param id="X Filter">TOP_FIVE_PERCENT</param>
-		<param id="Y Filter">BOTTOM_FIVE_PERCENT</param>
+    <group id="CASP8 Cases">
+		<sample file="alex_new.vcf">441_1x</sample>
+		<sample file="alex_new.vcf">441_2x</sample>
+		<sample file="alex_new.vcf">441_4x</sample>
+		<sample file="alex_new.vcf">441_5x</sample>
+		<sample file="alex_new.vcf">441_6x</sample>
+		<sample file="alex_new.vcf">441_7x</sample>
+		<sample file="alex_new.vcf">441_8x</sample>
+		<sample file="alex_new.vcf">441_9x</sample>
+		<sample file="alex_new.vcf">441_10x</sample>
+		<sample file="alex_new.vcf">441_12x</sample>
+		<sample file="alex_new.vcf">441_13x</sample>
+		<sample file="alex_new.vcf">441_14x</sample>
+		<sample file="alex_new.vcf">441_15x</sample>
+		<sample file="alex_new.vcf">441_37x</sample>
+		<sample file="alex_new.vcf">441_38x</sample>
+		<sample file="alex_new.vcf">441_42x</sample>
+		<sample file="alex_new.vcf">441_43x</sample>
+    </group>
+    <group id="CASP8 Controls">
+		<sample file="alex_new.vcf">441_22x</sample>
+		<sample file="alex_new.vcf">441_23x</sample>
+		<sample file="alex_new.vcf">441_24x</sample>
+		<sample file="alex_new.vcf">441_25x</sample>
+		<sample file="alex_new.vcf">441_26x</sample>
+		<sample file="alex_new.vcf">441_27x</sample>
+		<sample file="alex_new.vcf">441_28x</sample>
+		<sample file="alex_new.vcf">441_29x</sample>
+		<sample file="alex_new.vcf">441_30x</sample>
+		<sample file="alex_new.vcf">441_31x</sample>
+		<sample file="alex_new.vcf">441_32x</sample>
+		<sample file="alex_new.vcf">441_33x</sample>
+		<sample file="alex_new.vcf">441_49x</sample>
+		<sample file="alex_new.vcf">441_50x</sample>
+    </group>
+	<prefs xaxis="CASP8 Controls" yaxis="CASP8 Cases" alleleMode="CASP8 Cases">
+		<prefilter axis="CASP8 Controls" filter="bottom5"/>
+		<prefilter axis="CASP8 Cases" filter="top5"/>
 	</prefs>
 </root>

@@ -117,7 +117,6 @@ class setupApp:
             splash.setAutoClose(False)
             splash.setAutoReset(False)
             
-            #fallbackString = 'REF'
             self.svOptions = svOptionsModel(params)
             results = self.svOptions.buildDataObjects(splash)
             
@@ -128,13 +127,13 @@ class setupApp:
                 vData = results[0]
                 fData = results[1]
             
-            results = vData.freeze(progressWidget=splash)
+            results = vData.freeze(startingXaxis=self.svOptions.startingXattribute,startingYaxis=self.svOptions.startingYattribute,progressWidget=splash)
             
             if results == False:
                 splash.close()
                 sys.exit(0)
             else:
-                self.runningApp = singleVariantApp(vData,fData,splash,self)
+                self.runningApp = singleVariantApp(vData,fData,self.svOptions.prefilters,splash,self)
         else:
             self.window.hide()
             
@@ -143,9 +142,7 @@ class setupApp:
             splash.setAutoClose(False)
             splash.setAutoReset(False)
             
-            #fallbackString = self.window.fallbackRadioButtons.checkedButton().text()
-            #if fallbackString == "ALT":
-            #    fallbackString += " %i" % self.window.altSpinBox.value()
+            # TODO: set parameters...
             results = self.svOptions.buildDataObjects(splash)
             
             if results == False:
@@ -163,13 +160,13 @@ class setupApp:
                 self.window.show()
                 return
             else:
-                self.runningApp = singleVariantApp(vData,fData,splash,self)
+                self.runningApp = singleVariantApp(vData,fData,self.svOptions.prefilters,splash,self)
         
     def closeApp(self):
         self.window.reject()
 
 class singleVariantApp:
-    def __init__(self, vData,fData,progressWidget,setupScreen):
+    def __init__(self, vData,fData,prefilters,progressWidget,setupScreen):
         progressWidget.reset()
         progressWidget.setMinimum(0)
         progressWidget.setMaximum(3000)
@@ -180,7 +177,7 @@ class singleVariantApp:
         
         self.vData = vData
         self.fData = fData
-        self.selections = selectionState(self.vData)
+        self.selections = selectionState(self.vData, prefilters)
         self.currentOperation = operation(operation.NO_OP, self.selections, previousOp = None)
         
         self.highlightedRsNumbers = set()
@@ -211,8 +208,8 @@ class singleVariantApp:
         self.scatter = scatterplotWidget(data=vData,app=self,parent=self.window.scatterWidget)
         
         progressWidget.close()
-        #self.window.showMaximized()
-        self.window.show()
+        self.window.showMaximized()
+        #self.window.show()
     
     def newOperation(self, opCode, **kwargs):
         newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)

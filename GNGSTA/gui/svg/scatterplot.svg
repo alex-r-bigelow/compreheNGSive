@@ -82,8 +82,7 @@
        height="499"
        x="0.5"
        y="0.5"
-       __eventCode="if 'RightButton' not in event.buttons:\n
-    signals['__EVENT__ABSORBED__'] = False" />
+       __eventCode="if 'RightButton' not in event.buttons:\n     signals['__EVENT__ABSORBED__'] = False" />
     <rect
        style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        id="rect4413"
@@ -359,10 +358,10 @@
     <rect
        style="color:#000000;fill:#d95f02;fill-opacity:0.09803922;stroke:#d95f02;stroke-width:1;stroke-opacity:0.39215686;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        id="pointCursor"
-       width="19"
-       height="19"
+       width="11"
+       height="11"
        x="40.5"
-       y="-39.5"
+       y="-31.5"
        __globalProperty="pointCursor" />
   </g>
 </svg>
