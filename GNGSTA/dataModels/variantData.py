@@ -42,8 +42,10 @@ class mixedAxis:
                 value = float(value)
                 if math.isinf(value):
                     self.labels['Missing'].add(id)
+                    self.rsLabels[id] = 'Missing'
                 elif math.isnan(value):
                     self.labels['Allele Masked'].add(id)
+                    self.rsLabels[id] = 'Allele Masked'
                 else:
                     self.rsValuePairs.append((id,value))
                     self.rsValues[id] = value
@@ -834,7 +836,10 @@ class variantData:
                 if len(alleleCounts) > 1:
                     majorAllele = max(alleleCounts.iteritems(), key=operator.itemgetter(1))[0]
                 else:
-                    variantObject.attributes[att] = float('NaN')    # No major allele found - we've got a masked allele frequency!
+                    if individuals == basisGroup:
+                        variantObject.attributes[att] = float('Inf')    # There was no data in the allele-defining group; it's missing here, and will be masked everywhere else
+                    else:
+                        variantObject.attributes[att] = float('NaN')    # No major allele found - we've got a masked allele frequency!
                     continue
             
             # Okay, we've found our reference allele; now let's see how frequent the others are
@@ -885,7 +890,7 @@ class variantData:
         for v in self.data.itervalues():
             self.axes["Genome Position"].add(v.name,v.genomePosition)
             for att in self.axisLabels:
-                self.axes[att].add(v.name, v.attributes.get(att,None))
+                self.axes[att].add(v.name, v.attributes.get(att,float('Inf')))
         
         if progressWidget != None:
             progressWidget.setLabelText('Building Axes')

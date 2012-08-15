@@ -91,7 +91,7 @@ class axisHandler:
                 continue
             temp.append((len(members),label))
             poolItem = self.visAxis.categorical.itemGroup.textItem.clone()
-            poolItem.hide()
+            #poolItem.hide()
             self.visPool['Text Items'].append(poolItem)
         temp = sorted(temp)
         self.visAxis.categorical.itemGroup.textItem.delete()
@@ -105,11 +105,11 @@ class axisHandler:
         
         numMissing = len(self.dataAxis.labels.get('Missing',set()))
         # TODO: figure out why values are coming up as missing in spite of our precautions when I SHOULD be comfortable knowing that a column has no missing values
-        #if numMissing > 0:
-        temp.append((numMissing,'Missing'))
-        self.visPool['Missing'] = self.visAxis.categorical.itemGroup.missing
-        #else:
-        #    self.visAxis.categorical.itemGroup.missing.delete()
+        if numMissing > 0:
+            temp.append((numMissing,'Missing'))
+            self.visPool['Missing'] = self.visAxis.categorical.itemGroup.missing
+        else:
+            self.visAxis.categorical.itemGroup.missing.delete()
         
         # Figure out some more globals now that we know how many/which items we have
         self.numVisibleCats = len(temp)
@@ -251,12 +251,16 @@ class axisHandler:
     def dataToScreen(self, value):
         if not isinstance(value,str):
             if value == None or math.isinf(value):
+                if not self.cats.has_key('Missing'):
+                    print value
+                    print self.cats
+                    return 0
                 value = 'Missing'
             elif math.isnan(value):
                 value = 'Allele Masked'
             else:
                 return self.numericPixelLow + (value-self.numericDataLow)*self.dataToPixelRatio
-        # TODO: this is where the missing-when-not-expected error is occurring
+        # TODO: this is where the missing-when-not-expected error is occurring... looks like it's happening with allele mode frequency column
         #if not self.cats.has_key(value):
         #    print self.cats
         #    print value
@@ -318,8 +322,10 @@ class axisHandler:
         while n != None:
             if labels[n.name] == True:
                 n.visElement.background.setAttribute('fill','#1B9E77')
+                n.visElement.originalColor = '#1B9E77'
             else:
                 n.visElement.background.setAttribute('fill','#FFFFFF')
+                n.visElement.originalColor = '#FFFFFF'
             n = n.pv
     
     def updateParams(self, paramTuple):
@@ -606,7 +612,6 @@ class parallelCoordinateWidget(layeredWidget):
         axis = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         label = element.getAttribute('___label')
         
-        #if self.lastMouseLabel != label or self.lastMouseAxis != axis:
         self.lastMouseLabel = label
         self.lastMouseAxis = axis
         self.app.notifyHighlight(axis.dataAxis.labels[label])

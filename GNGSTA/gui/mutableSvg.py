@@ -526,7 +526,7 @@ class mutableSvgNode:
         return self.xmlElement.text
     
     def setAttribute(self, att, value, force=True):
-        '''if att == 'visibility' or att == 'display':
+        if att == 'visibility' or att == 'display':
             # force these changes on the CSS AND SVG levels, but just set 'display'
             self.attributes[att] = value
             self.setCSS(att, value, True)
@@ -536,7 +536,7 @@ class mutableSvgNode:
             else:
                 self.attributes['display'] = 'inherit'
                 self.setCSS('display','inherit',True)
-            return True'''
+            return True
         
         if not self.attributes.has_key(att):
             success = self.setCSS(att,value,force=False)

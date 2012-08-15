@@ -6,35 +6,6 @@
         <attribute>QD</attribute>
         <attribute>FS</attribute>
     </file>
-	<file id="annotations" path="/Users/Home/Desktop/casp8bundle/angiesList.csv" build="hg19">
-        <attribute>stop_anno</attribute>
-        <attribute>ref_anno</attribute>
-        <attribute>observed_anno</attribute>
-        <attribute>allele1kceugbr</attribute>
-        <attribute>maf1kceugbr</attribute>
-        <attribute>location</attribute>
-        <attribute>type</attribute>
-        <attribute>casp8_als2cr12</attribute>
-        <attribute>function</attribute>
-        <attribute>polyphen</attribute>
-        <attribute>siftscores</attribute>
-        <attribute>transcriptiongm12878</attribute>
-        <attribute>transcrgmhi_lo</attribute>
-        <attribute>layeredgm12878h3k4me1stdsig</attribute>
-        <attribute>gmh3k4me1hi_lo</attribute>
-        <attribute>layeredhmech3k4me3stdsig</attribute>
-        <attribute>hmech3k4me3hi_lo</attribute>
-        <attribute>layeredhmech3k27acstdsig</attribute>
-        <attribute>hmech3k27achi_lo</attribute>
-        <attribute>txnfactorchip</attribute>
-        <attribute>txnfchiphi_lo</attribute>
-        <attribute>openchromsynthgm12878pk</attribute>
-        <attribute>openchromgmhi_lo</attribute>
-        <attribute>conservation</attribute>
-        <attribute>conservationhi_lo</attribute>
-        <attribute>histone_all3pos</attribute>
-        <attribute>availibility</attribute>
-    </file>
 	<group id="DR4 CASES (strict)">
 		<sample file="alex_new.vcf">441_1x</sample>
 		<sample file="alex_new.vcf">441_6x</sample>

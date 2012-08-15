@@ -25,10 +25,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.88"
-     inkscape:cx="-203.56879"
-     inkscape:cy="-10.805793"
+     inkscape:cx="-167.66453"
+     inkscape:cy="436.00272"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="root"
      showgrid="false"
      inkscape:window-width="1833"
      inkscape:window-height="1156"
@@ -90,7 +90,7 @@
         <g
            background="__numericDownBarBackground"
            id="g4360"
-           transform="translate(0,-50)"
+           transform="translate(0,-30)"
            __parentProperty="__numericDownBar"
            label="__numericDownBarLabel">
           <rect
@@ -244,13 +244,13 @@
             <rect
                y="45"
                x="65.596558"
-               height="340"
+               height="360"
                width="10"
                id="rect3796"
                style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                __parentProperty="__selectionRangeBar" />
             <g
-               transform="translate(0,60)"
+               transform="translate(0,80)"
                id="g4449"
                label="__selectionRangeBottomLabel"
                background="__selectionRangeBottomBackground"
@@ -319,7 +319,7 @@
            style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
            id="rect3891"
            width="10"
-           height="320"
+           height="360"
            x="97.5"
            y="45.000031"
            __globalProperty="rangeArea"
@@ -333,114 +333,9 @@
          scrollDownBar="__scrollDownBar"
          itemGroup="__itemGroup">
         <g
-           missing="__missing"
-           alleleMasked="__alleleMasked"
-           textItem="__textItem"
-           id="g4498"
-           __parentProperty="__itemGroup">
-          <g
-             __parentProperty="__missing"
-             id="g4356"
-             background="__missingBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n
-    self.background.setAttribute('fill',self.originalColor)\n
-self.controller.unMouseLabel()"
-             label="__missingLabel">
-            <path
-               transform="matrix(0.37030301,0,0,0.37030301,82.015153,275.50042)"
-               d="M 72.872341,421.27658 A 17.553192,17.553192 0 1 1 37.765957,421.27658 17.553192,17.553192 0 1 1 72.872341,421.27658 z"
-               sodipodi:ry="17.553192"
-               sodipodi:rx="17.553192"
-               sodipodi:cy="421.27658"
-               sodipodi:cx="55.319149"
-               id="path3870"
-               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.70049143;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-               sodipodi:type="arc"
-               __parentProperty="__missingBackground" />
-            <text
-               sodipodi:linespacing="125%"
-               id="text4339"
-               y="434.1004"
-               x="92.220001"
-               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-               xml:space="preserve"
-               __parentProperty="__missingLabel">Missing</text>
-          </g>
-          <g
-             __parentProperty="__alleleMasked"
-             id="g4352"
-             background="__alleleMaskedBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
-             label="__alleleMaskedLabel">
-            <path
-               sodipodi:type="star"
-               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.73978448;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-               id="path3037"
-               sodipodi:sides="4"
-               sodipodi:cx="51.595745"
-               sodipodi:cy="368.08511"
-               sodipodi:r1="19.178465"
-               sodipodi:r2="13.561222"
-               sodipodi:arg1="1.5707963"
-               sodipodi:arg2="2.3561945"
-               inkscape:flatsided="true"
-               inkscape:rounded="0"
-               inkscape:randomized="0"
-               d="M 51.595746,387.26358 32.41728,368.08511 51.595745,348.90665 70.77421,368.08511 z"
-               transform="matrix(0.36499272,0,0,0.3649917,83.667929,277.15239)"
-               __parentProperty="__alleleMaskedBackground" />
-            <text
-               xml:space="preserve"
-               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-               x="92.25"
-               y="414.1004"
-               id="text4344"
-               sodipodi:linespacing="125%"
-               __parentProperty="__alleleMaskedLabel">Allele Masked</text>
-          </g>
-          <g
-             label="__textItemLabel"
-             __parentProperty="__textItem"
-             id="g4348"
-             background="__textItemBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()">
-            <path
-               inkscape:connector-curvature="0"
-               id="rect3779"
-               d="M 96.75,385.7504 108.25,385.7504 108.25,397.2504 96.75,397.2504 z"
-               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:0.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-               __parentProperty="__textItemBackground" />
-            <text
-               __parentProperty="__textItemLabel"
-               sodipodi:linespacing="125%"
-               id="text4346"
-               y="394.1004"
-               x="92.220001"
-               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
-               xml:space="preserve">Max 15 chars</text>
-          </g>
-        </g>
-        <g
            id="g4536">
           <g
-             transform="translate(0,370)"
+             transform="translate(0,390)"
              id="g3790"
              background="__scrollUpBackground"
              __parentProperty="__scrollUpBar"
@@ -479,6 +374,121 @@ if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
                d="M 99,441.5 106,441.5 102.5,448.5 z"
                id="path3784"
                inkscape:connector-curvature="0" />
+          </g>
+        </g>
+        <g
+           missing="__missing"
+           alleleMasked="__alleleMasked"
+           textItem="__textItem"
+           id="g4498"
+           __parentProperty="__itemGroup">
+          <g
+             label="__textItemLabel"
+             __parentProperty="__textItem"
+             id="g4348"
+             background="__textItemBackground"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
+    on = self.controller.toggleLabel(event.x, self)\n
+    if on:\n
+        self.originalColor = '#1B9E77'\n
+    else:\n
+        self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
+             transform="translate(0,13.750045)">
+            <path
+               inkscape:connector-curvature="0"
+               id="rect3779"
+               d="M 96.75,385.7504 108.25,385.7504 108.25,397.2504 96.75,397.2504 z"
+               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:0.99999988;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               __parentProperty="__textItemBackground" />
+            <text
+               __parentProperty="__textItemLabel"
+               sodipodi:linespacing="125%"
+               id="text4346"
+               y="394.1004"
+               x="92.220001"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               xml:space="preserve">Max 15 chars</text>
+          </g>
+          <g
+             __parentProperty="__alleleMasked"
+             id="g4352"
+             background="__alleleMaskedBackground"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
+    on = self.controller.toggleLabel(event.x, self)\n
+    if on:\n
+        self.originalColor = '#1B9E77'\n
+    else:\n
+        self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
+             label="__alleleMaskedLabel"
+             transform="translate(0,7.5000242)">
+            <path
+               sodipodi:type="star"
+               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.73978448;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               id="path3037"
+               sodipodi:sides="4"
+               sodipodi:cx="51.595745"
+               sodipodi:cy="368.08511"
+               sodipodi:r1="19.178465"
+               sodipodi:r2="13.561222"
+               sodipodi:arg1="1.5707963"
+               sodipodi:arg2="2.3561945"
+               inkscape:flatsided="true"
+               inkscape:rounded="0"
+               inkscape:randomized="0"
+               d="M 51.595746,387.26358 32.41728,368.08511 51.595745,348.90665 70.77421,368.08511 z"
+               transform="matrix(0.36499272,0,0,0.3649917,83.667929,277.15239)"
+               __parentProperty="__alleleMaskedBackground" />
+            <text
+               xml:space="preserve"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               x="92.25"
+               y="414.1004"
+               id="text4344"
+               sodipodi:linespacing="125%"
+               __parentProperty="__alleleMaskedLabel">Allele Masked</text>
+          </g>
+          <g
+             __parentProperty="__missing"
+             id="g4356"
+             background="__missingBackground"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n
+self.controller.mouseLabel(event.x, self)\n
+if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
+    on = self.controller.toggleLabel(event.x, self)\n
+    if on:\n
+        self.originalColor = '#1B9E77'\n
+    else:\n
+        self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n
+    self.background.setAttribute('fill',self.originalColor)\n
+self.controller.unMouseLabel()"
+             label="__missingLabel"
+             transform="translate(0,2)">
+            <path
+               transform="matrix(0.37030301,0,0,0.37030301,82.015153,275.50042)"
+               d="M 72.872341,421.27658 C 72.872341,430.97094 65.013509,438.82977 55.319149,438.82977 45.624789,438.82977 37.765957,430.97094 37.765957,421.27658 37.765957,411.58222 45.624789,403.72339 55.319149,403.72339 65.013509,403.72339 72.872341,411.58222 72.872341,421.27658 z"
+               sodipodi:ry="17.553192"
+               sodipodi:rx="17.553192"
+               sodipodi:cy="421.27658"
+               sodipodi:cx="55.319149"
+               id="path3870"
+               style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:#000000;stroke-width:2.70049143;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+               sodipodi:type="arc"
+               __parentProperty="__missingBackground" />
+            <text
+               sodipodi:linespacing="125%"
+               id="text4339"
+               y="434.1004"
+               x="92.220001"
+               style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-indent:0;text-align:end;text-decoration:none;line-height:125%;letter-spacing:0px;word-spacing:0px;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:end;baseline-shift:baseline;color:#000000;fill:#7570b3;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1px;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Courier;-inkscape-font-specification:Courier Bold"
+               xml:space="preserve"
+               __parentProperty="__missingLabel">Missing</text>
           </g>
         </g>
       </g>
@@ -546,7 +556,7 @@ if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
      inkscape:connector-curvature="0"
      id="path3863"
      d="M 103,-42.180821 103,-20.37231"
-     style="color:#000000;fill:none;stroke:#d95f02;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     style="color:#000000;fill:none;stroke:#d95f02;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.78431374;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
      __globalProperty="highlightedLinePrototype" />
   <path
      style="color:#000000;fill:none;stroke:#1b9e77;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.29411765;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
