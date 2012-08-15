@@ -14,6 +14,7 @@ class labelHandler:
         self.pv = pv
         self.nv = nv
         self.visElement = visElement
+        self.hidden = False
 
 class axisHandler:
     def __init__(self, name, dataAxis, visAxis, visible, parent):
@@ -73,32 +74,50 @@ class axisHandler:
         
         # categorical
         self.rootCatNode = None
-        self.catLattice = {-1:set()}    # index to node; -1 and 1 more than the number of possible spaces are for offscreen, hidden nodes
-        self.cats = {}
+        self.tailCatNode = None
+        self.catLattice = {-1:set()}    # lattice number to labelHandler; -1 and 1 more than the number of possible spaces are for offscreen, hidden nodes
+        self.cats = {}  # label to lattice number
+        self.visPool = {'Allele Masked':None,'Missing':None,'Text Items':[]}
         
-        # sort the items by set membership size, except put Allele Masked, Missing last
+        # figure out some globals
+        self.labelTop = self.visAxis.categorical.scrollUpBar.bottom()
+        self.labelBottom = self.visAxis.categorical.scrollDownBar.top()
+        self.itemHeight = self.visAxis.categorical.itemGroup.alleleMasked.height()  # allele masked is the tallest one
+        
+        # sort the items by set membership size, except put Allele Masked, Missing last. Also populate the visPool with the right number of elements
         temp = []
         for label,members in self.dataAxis.labels.iteritems():
             if label == 'Allele Masked' or label == 'Missing':
                 continue
             temp.append((len(members),label))
+            poolItem = self.visAxis.categorical.itemGroup.textItem.clone()
+            poolItem.hide()
+            self.visPool['Text Items'].append(poolItem)
         temp = sorted(temp)
+        self.visAxis.categorical.itemGroup.textItem.delete()
         
         numMasked = len(self.dataAxis.labels.get('Allele Masked',set()))
         if numMasked > 0:
             temp.append((numMasked,'Allele Masked'))
+            self.visPool['Allele Masked'] = self.visAxis.categorical.itemGroup.alleleMasked
+        else:
+            self.visAxis.categorical.itemGroup.alleleMasked.delete()
         
         numMissing = len(self.dataAxis.labels.get('Missing',set()))
         if numMissing > 0:
             temp.append((numMissing,'Missing'))
+            self.visPool['Missing'] = self.visAxis.categorical.itemGroup.missing
+        else:
+            self.visAxis.categorical.itemGroup.missing.delete()
         
-        self.labelTop = self.visAxis.categorical.scrollUpBar.bottom()
-        self.labelBottom = self.visAxis.categorical.scrollDownBar.top()
-        self.itemHeight = self.visAxis.categorical.itemGroup.alleleMasked.height()  # allele masked is the tallest one
+        # Figure out some more globals now that we know how many/which items we have
         self.numVisibleCats = len(temp)
-        self.maximizeLatticeSpace()
+        self.allCatsVisible = self.maximizeLatticeSpace()
         
-        # create nodes from the end of the list to the beginning
+        # create nodes from the end of the list to the beginning - we know the bottom scroll arrow will start hidden
+        self.visAxis.categorical.scrollDownBar.hide()
+        if self.allCatsVisible:
+            self.visAxis.categorical.scrollUpBar.hide()
         self.catLattice[self.latticeLength] = set()
         
         latticeNumber = self.latticeLength-1
@@ -107,7 +126,7 @@ class axisHandler:
         else:
             self.rootCatNode = labelHandler(temp[-1][1], latticeNumber)
             self.cats[temp[-1][1]] = latticeNumber
-            self.makeNodeVisible(self.rootCatNode, None, temp[-1][1], latticeNumber)
+            self.assignVisElement(self.rootCatNode, None)
             
             lastNode = self.rootCatNode
             latticeNumber -= 1
@@ -115,48 +134,118 @@ class axisHandler:
                 newNode = labelHandler(label,latticeNumber)
                 self.cats[label] = latticeNumber
                 if latticeNumber > -1:
-                    self.makeNodeVisible(newNode, lastNode, label, latticeNumber)
+                    self.assignVisElement(newNode, lastNode)
                     self.catLattice[latticeNumber] = newNode
                     latticeNumber -= 1
+                    if latticeNumber == 0:
+                        self.tailCatNode = newNode
                 else:
                     self.catLattice[-1].add(newNode)
                 lastNode.p = newNode
                 newNode.n = lastNode
                 lastNode = newNode
-        
-        # delete the prototype and special elements if necessary
-        self.visAxis.categorical.itemGroup.textItem.delete()
-        if numMasked == 0:
-            self.visAxis.categorical.itemGroup.alleleMasked.delete()
-        if numMissing == 0:
-            self.visAxis.categorical.itemGroup.missing.delete()
                 
         # (selections will be set by parallelCoordinateWidget.__init__'s call to updateParams)
     
     def maximizeLatticeSpace(self):
+        # sets some globals, returns true if all the labels fit in the given space
         self.cellSize = (self.labelBottom-self.labelTop)/float(max(1,self.numVisibleCats))  # if they all can fit, use all the space
         if self.cellSize >= self.itemHeight:
             self.latticeLength = int((self.labelBottom-self.labelTop)/self.cellSize)
+            return True
         else:
             self.latticeLength = int((self.labelBottom-self.labelTop)/self.itemHeight)
             self.cellSize = (self.labelBottom-self.labelTop)/float(self.latticeLength)  # otherwise use the most space we can
+            return False
     
-    def makeNodeVisible(self, newNode, lastNode, label, latticeNumber):
-        if label == 'Missing':
-            newNode.visElement = self.visAxis.categorical.itemGroup.missing
-        elif label == 'Allele Masked':
-            newNode.visElement = self.visAxis.categorical.itemGroup.alleleMasked
+    def assignVisElement(self, newNode, lastNode):
+        if newNode.name == 'Missing':
+            newNode.visElement = self.visPool['Missing']
+            newNode.visElement.show()
+            self.visPool['Missing'] = None
+        elif newNode.name == 'Allele Masked':
+            newNode.visElement = self.visPool['Allele Masked']
+            newNode.visElement.show()
+            self.visPool['Allele Masked'] = None
         else:
-            newNode.visElement = self.visAxis.categorical.itemGroup.textItem.clone()
-        screenLabel = label
+            newNode.visElement = self.visPool['Text Items'].pop()
+        screenLabel = newNode.name
         if len(screenLabel) > 15:
             screenLabel = screenLabel[:10] + ".." + screenLabel[-3:]
         newNode.visElement.label.setText(screenLabel)
-        newNode.visElement.setAttribute('___label',label)
-        newNode.visElement.translate(0,self.labelTop-newNode.visElement.top()+self.cellSize*latticeNumber+0.5*(self.cellSize-self.itemHeight))
+        newNode.visElement.setAttribute('___label',newNode.name)
+        newNode.visElement.translate(0,self.labelTop-newNode.visElement.top()+self.cellSize*newNode.latticeNumber+0.5*(self.cellSize-self.itemHeight))
         if lastNode != None:
             lastNode.pv = newNode
             newNode.nv = lastNode
+    
+    def unassignVisElement(self, node):
+        # break the connections
+        if node.pv != None:
+            node.pv.nv = None
+            node.pv = None
+        if node.nv != None:
+            node.nv.pv = None
+            node.nv = None
+        # strip the visElement off the node and return it to the pool
+        if node.name == 'Allele Masked':
+            node.visElement.hide()
+            self.visPool['Allele Masked'] = node.visElement
+        elif node.name == 'Missing':
+            node.visElement.hide()
+            self.visPool['Missing'] = node.visElement
+        else:
+            self.visPool['Text Items'].append(node.visElement)
+        node.visElement = None
+    
+    def scrollDown(self):
+        # find the new node to add stuff to (and make sure we even CAN scroll)
+        nodeToAdd = self.tailCatNode
+        while nodeToAdd != None and nodeToAdd.hidden == True:
+            nodeToAdd = nodeToAdd.p
+        if nodeToAdd == None or nodeToAdd == self.tailCatNode:
+            return
+        
+        # Show the bottom scroll bar, do a quick check to see if we can hide the top
+        self.visAxis.categorical.scrollDownBar.show()
+        hasPrev = False
+        temp = nodeToAdd.p
+        while True:
+            if temp == None:
+                break
+            if temp.hidden == True:
+                temp = temp.p
+            else:
+                hasPrev = True
+                break
+        if not hasPrev:
+            self.visAxis.categorical.scrollUpBar.hide()
+        
+        # update the lattice and move visElements - add one from everybody and reassign to the appropriate bins
+        self.rootCatNode.latticeNumber = self.latticeLength
+        self.catLattice[self.latticeLength].add(self.rootCatNode)
+        temp = self.rootCatNode.pv
+        while temp != None:
+            temp.latticeNumber += 1
+            self.catLattice[temp.latticeNumber] = temp
+            temp.visElement.translate(0,self.cellSize)
+            temp = temp.pv
+        self.catLattice[-1].remove(nodeToAdd)
+        nodeToAdd.latticeNumber = 0
+        self.catLattice[0] = nodeToAdd
+        
+        # reassign the root node
+        temp = self.rootCatNode.pv
+        self.unassignVisElement(self.rootCatNode)
+        self.rootCatNode = temp
+        
+        # reassign the tail node
+        self.assignVisElement(nodeToAdd, self.tailCatNode, 0)
+        self.tailCatNode = nodeToAdd
+    
+    def scrollUp(self):
+        # TODO
+        pass
     
     def dataToScreen(self, value):
         if not isinstance(value,str):
@@ -166,6 +255,10 @@ class axisHandler:
                 value = 'Allele Masked'
             else:
                 return self.numericPixelLow + (value-self.numericDataLow)*self.dataToPixelRatio
+        if not self.cats.has_key(value):
+            print self.cats
+            print value
+            return 0
         index = self.cats[value]
         if index < 0:
             return self.labelTop
@@ -289,8 +382,13 @@ class axisHandler:
             return set()
     
     def scrollCat(self, delta):
-        pass
-        # TODO
+        return
+        while delta > 0:
+            self.scrollUp()
+            delta -= 1
+        while delta < 0:
+            self.scrollDown()
+            delta += 1
 
 class selectionLayer(layer):
     def __init__(self, size, dynamic, controller, prototypeLine, rsNumbers, opaqueBack = False):

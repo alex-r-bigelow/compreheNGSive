@@ -441,16 +441,16 @@ class mutableSvgNode:
     
     def hide(self):
         self.setAttribute('visibility', 'hidden', True)
-        for c in self.children:
-            c.hide()
+        #for c in self.children:
+        #    c.hide()
     
     def show(self):
         if self.originalVisibility != None:
             self.originalVisibility = 'visible'
         else:
             self.setAttribute('visibility', 'visible', True)
-        for c in self.children:
-            c.show()
+        #for c in self.children:
+        #    c.show()
     
     def getBounds(self):
         b = self.getRect()
@@ -526,6 +526,18 @@ class mutableSvgNode:
         return self.xmlElement.text
     
     def setAttribute(self, att, value, force=True):
+        '''if att == 'visibility' or att == 'display':
+            # force these changes on the CSS AND SVG levels, but just set 'display'
+            self.attributes[att] = value
+            self.setCSS(att, value, True)
+            if value == 'hidden' or value == 'none':
+                self.attributes['display'] = 'none'
+                self.setCSS('display','none',True)
+            else:
+                self.attributes['display'] = 'inherit'
+                self.setCSS('display','inherit',True)
+            return True'''
+        
         if not self.attributes.has_key(att):
             success = self.setCSS(att,value,force=False)
         else:
