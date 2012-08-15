@@ -104,11 +104,12 @@ class axisHandler:
             self.visAxis.categorical.itemGroup.alleleMasked.delete()
         
         numMissing = len(self.dataAxis.labels.get('Missing',set()))
-        if numMissing > 0:
-            temp.append((numMissing,'Missing'))
-            self.visPool['Missing'] = self.visAxis.categorical.itemGroup.missing
-        else:
-            self.visAxis.categorical.itemGroup.missing.delete()
+        # TODO: figure out why values are coming up as missing in spite of our precautions when I SHOULD be comfortable knowing that a column has no missing values
+        #if numMissing > 0:
+        temp.append((numMissing,'Missing'))
+        self.visPool['Missing'] = self.visAxis.categorical.itemGroup.missing
+        #else:
+        #    self.visAxis.categorical.itemGroup.missing.delete()
         
         # Figure out some more globals now that we know how many/which items we have
         self.numVisibleCats = len(temp)
@@ -255,10 +256,11 @@ class axisHandler:
                 value = 'Allele Masked'
             else:
                 return self.numericPixelLow + (value-self.numericDataLow)*self.dataToPixelRatio
-        if not self.cats.has_key(value):
-            print self.cats
-            print value
-            return 0
+        # TODO: this is where the missing-when-not-expected error is occurring
+        #if not self.cats.has_key(value):
+        #    print self.cats
+        #    print value
+        #    return 0
         index = self.cats[value]
         if index < 0:
             return self.labelTop
