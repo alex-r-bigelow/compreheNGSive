@@ -35,7 +35,7 @@ class mixedAxis:
                 temp += str(i) + ","
             value = temp[:-1]'''
         
-        if value == None:
+        if value == None or value == "":
             self.labels['Missing'].add(id)
         else:
             try:
@@ -364,11 +364,13 @@ class selection:
         if not axis.hasNumeric():
             ranges = []
         else:
-            fivePercent = (axis.getMax()-axis.getMin()) * 0.05
-            if fil == 'bottom5':
-                ranges = [(axis.getMin(),fivePercent+axis.getMin())]
+            percentage = (axis.getMax()-axis.getMin()) * fil.percent
+            if fil.direction == 'bottom':
+                ranges = [(axis.getMin(),percentage+axis.getMin())]
             else:
-                ranges = [(axis.getMax()-fivePercent,axis.getMax())]
+                ranges = [(axis.getMax()-percentage,axis.getMax())]
+            if fil.excludeMissing and self.params[axis][1].has_key('Missing'):
+                    self.params[axis][1]['Missing'] = False
         self.params[axis] = (ranges,self.params[axis][1])
         if applyImmediately:
             self.updateResult(axis)

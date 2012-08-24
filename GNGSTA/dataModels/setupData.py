@@ -213,7 +213,13 @@ class fileObj:
         self.checked = on
         for a in self.attributes.iterkeys():
             self.attributes[a] = on
-        
+
+class prefilterObj:
+    def __init__(self, direction, percent, excludeMissing):
+        self.direction = direction
+        self.percent = percent
+        self.excludeMissing = excludeMissing
+
 class svOptionsModel:
     def __init__(self, fromFile=None):
         self.individuals = {}   # {file name:{individual name : individual}}
@@ -262,7 +268,7 @@ class svOptionsModel:
                 att = pObj.attrib['axis']
                 if att in self.groups.iterkeys():
                     att = "%s AF" % att
-                self.prefilters[att] = pObj.attrib['filter']
+                self.prefilters[att] = prefilterObj(pObj.attrib['direction'],float(pObj.attrib['percent'])/100.0,pObj.attrib['excludeMissing'].strip().lower() == "true")
     
     def buildDataObjects(self, progressWidget):
         progressWidget.reset()

@@ -91,7 +91,6 @@ class axisHandler:
                 continue
             temp.append((len(members),label))
             poolItem = self.visAxis.categorical.itemGroup.textItem.clone()
-            #poolItem.hide()
             self.visPool['Text Items'].append(poolItem)
         temp = sorted(temp)
         self.visAxis.categorical.itemGroup.textItem.delete()
@@ -145,6 +144,9 @@ class axisHandler:
                 lastNode.p = newNode
                 newNode.n = lastNode
                 lastNode = newNode
+        # hide everything that's unused in the visPool
+        for v in self.visPool['Text Items']:
+            v.hide()
                 
         # (selections will be set by parallelCoordinateWidget.__init__'s call to updateParams)
     
@@ -609,6 +611,7 @@ class parallelCoordinateWidget(layeredWidget):
         self.highlightedLayer.refreshLines(rsNumbers)
     
     def mouseLabel(self, x, element):
+        return
         axis = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         label = element.getAttribute('___label')
         
@@ -617,6 +620,7 @@ class parallelCoordinateWidget(layeredWidget):
         self.app.notifyHighlight(axis.dataAxis.labels[label])
     
     def unMouseLabel(self):
+        return
         if self.lastMouseAxis == None and self.lastMouseLabel == None:
             return
         self.lastMouseLabel = None
@@ -624,11 +628,13 @@ class parallelCoordinateWidget(layeredWidget):
         self.app.notifyHighlight(set())
         
     def mouseIn(self, x, y):
+        return
         self.setCursor(self.mouseOverCursor)
         self.lastMouseNumeric = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         self.app.notifyHighlight(self.lastMouseNumeric.queryPixelRange(y-self.mouseOverRadius,y+self.mouseOverRadius))
     
     def mouseOut(self):
+        return
         if self.lastMouseNumeric == None:
             return
         self.lastMouseNumeric = None

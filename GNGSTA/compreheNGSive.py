@@ -33,6 +33,10 @@ Color scheme used in this app from colorbrewer2.org:
 http://colorbrewer2.org/index.php?type=qualitative&scheme=Dark2&n=8
 '''
 
+def trace(frame, event, arg):
+    print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)
+    return trace
+
 class setupApp:
     def __init__(self, params=None):
         if params != None:
@@ -210,6 +214,7 @@ class singleVariantApp:
         progressWidget.close()
         self.window.showMaximized()
         #self.window.show()
+        #sys.settrace(trace)
     
     def newOperation(self, opCode, **kwargs):
         newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)
@@ -257,10 +262,6 @@ class singleVariantApp:
     
     def notifyAxisChange(self, xAxis=True):
         self.scatter.notifyAxisChange(xAxis)
-
-def trace(frame, event, arg):
-    print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)
-    return trace
 
 def runProgram():
     if len(sys.argv) == 2:

@@ -1,62 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-	<file id="alex_new.vcf" path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
+	<file id="alex_new.vcf" path="c:\Documents and Settings\Home\Desktop\Data\alex_new.vcf" build="hg19">
         <attribute>QUAL</attribute>
         <attribute>FILTER</attribute>
         <attribute>QD</attribute>
         <attribute>FS</attribute>
+        <attribute>MQ</attribute>
+        <attribute>HaplotypeScore</attribute>
+		<attribute>MQRankSum</attribute>
+		<attribute>ReadPosRankSum</attribute>
     </file>
-	<group id="DR4 CASES (strict)">
-		<sample file="alex_new.vcf">441_1x</sample>
-		<sample file="alex_new.vcf">441_6x</sample>
-		<sample file="alex_new.vcf">441_15x</sample>
-		<sample file="alex_new.vcf">441_42x</sample>
-	</group>
-	<group id="DR4 CONTROLS (strict)">
-		<sample file="alex_new.vcf">441_28x</sample>
-		<sample file="alex_new.vcf">441_29x</sample>
-		<sample file="alex_new.vcf">441_30x</sample>
-		<sample file="alex_new.vcf">441_34x</sample>
-		<sample file="alex_new.vcf">441_36x</sample>
-		<sample file="alex_new.vcf">441_38x</sample>
-		<sample file="alex_new.vcf">441_40x</sample>
-	</group>
-	<group id="DR4 CASES (loose)">
-		<sample file="alex_new.vcf">441_1x</sample>
-		<sample file="alex_new.vcf">441_6x</sample>
-		<sample file="alex_new.vcf">441_15x</sample>
-		<sample file="alex_new.vcf">441_42x</sample>
-		<sample file="alex_new.vcf">441_2x</sample>
-		<sample file="alex_new.vcf">441_4x</sample>
-		<sample file="alex_new.vcf">441_7x</sample>
-		<sample file="alex_new.vcf">441_13x</sample>
-		<sample file="alex_new.vcf">441_16x</sample>
-		<sample file="alex_new.vcf">441_17x</sample>
-		<sample file="alex_new.vcf">441_18x</sample>
-		<sample file="alex_new.vcf">441_19x</sample>
-		<sample file="alex_new.vcf">441_22x</sample>
-		<sample file="alex_new.vcf">441_23x</sample>
-		<sample file="alex_new.vcf">441_43x</sample>
-		<sample file="alex_new.vcf">441_45x</sample>
-		<sample file="alex_new.vcf">441_46x</sample>
-		<sample file="alex_new.vcf">441_47x</sample>
-	</group>
-	<group id="DR4 CONTROLS (loose)">
-		<sample file="alex_new.vcf">441_28x</sample>
-		<sample file="alex_new.vcf">441_29x</sample>
-		<sample file="alex_new.vcf">441_30x</sample>
-		<sample file="alex_new.vcf">441_34x</sample>
-		<sample file="alex_new.vcf">441_36x</sample>
-		<sample file="alex_new.vcf">441_38x</sample>
-		<sample file="alex_new.vcf">441_40x</sample>
-		<sample file="alex_new.vcf">441_25x</sample>
-		<sample file="alex_new.vcf">441_26x</sample>
-		<sample file="alex_new.vcf">441_31x</sample>
-		<sample file="alex_new.vcf">441_35x</sample>
-		<sample file="alex_new.vcf">441_41x</sample>
-		<sample file="alex_new.vcf">441_48x</sample>
-		<sample file="alex_new.vcf">441_49x</sample>
-	</group>
+    <file id="weiYu.vcf" path="c:\Documents and Settings\Home\Desktop\Data\weiYu.vcf" build="hg19">
+        <attribute>QUAL</attribute>
+        <attribute>FILTER</attribute>
+        <attribute>QD</attribute>
+        <attribute>FS</attribute>
+        <attribute>MQ</attribute>
+        <attribute>HaplotypeScore</attribute>
+		<attribute>MQRankSum</attribute>
+		<attribute>ReadPosRankSum</attribute>
+    </file>
+	<file id="annotations" path="c:\Documents and Settings\Home\Desktop\Data\reducedAngiesList.csv" build="hg19">
+        <attribute>maf1kceugbr</attribute>
+        <attribute>location</attribute>
+        <attribute>type</attribute>
+        <attribute>function</attribute>
+        <attribute>polyphen</attribute>
+        <attribute>siftscores</attribute>
+        <attribute>transcriptiongm12878</attribute>
+        <attribute>layeredgm12878h3k4me1stdsig</attribute>
+        <attribute>layeredhmech3k4me3stdsig</attribute>
+        <attribute>layeredhmech3k27acstdsig</attribute>
+        <attribute>txnfactorchip</attribute>
+        <attribute>openchromsynthgm12878pk</attribute>
+        <attribute>conservation</attribute>
+        <attribute>histone_all3pos</attribute>
+    </file>
     <group id="CASP8 Cases">
 		<sample file="alex_new.vcf">441_1x</sample>
 		<sample file="alex_new.vcf">441_2x</sample>
@@ -93,7 +72,7 @@
 		<sample file="alex_new.vcf">441_50x</sample>
     </group>
 	<prefs xaxis="CASP8 Controls" yaxis="CASP8 Cases" alleleMode="CASP8 Cases">
-		<prefilter axis="CASP8 Controls" filter="bottom5"/>
-		<prefilter axis="CASP8 Cases" filter="top5"/>
+		<prefilter axis="CASP8 Controls" direction="bottom" percent="100" excludeMissing="False"/>
+		<prefilter axis="CASP8 Cases" direction="top" percent="100" excludeMissing="True"/>
 	</prefs>
 </root>
