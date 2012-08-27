@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-	<file id="alex_new.vcf" path="c:\Documents and Settings\Home\Desktop\Data\alex_new.vcf" build="hg19">
+	<file id="alex_new.vcf" path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
         <attribute>QUAL</attribute>
         <attribute>FILTER</attribute>
         <attribute>QD</attribute>
@@ -10,7 +10,7 @@
 		<attribute>MQRankSum</attribute>
 		<attribute>ReadPosRankSum</attribute>
     </file>
-    <file id="weiYu.vcf" path="c:\Documents and Settings\Home\Desktop\Data\weiYu.vcf" build="hg19">
+    <file id="weiYu.vcf" path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
         <attribute>QUAL</attribute>
         <attribute>FILTER</attribute>
         <attribute>QD</attribute>
@@ -20,7 +20,7 @@
 		<attribute>MQRankSum</attribute>
 		<attribute>ReadPosRankSum</attribute>
     </file>
-	<file id="annotations" path="c:\Documents and Settings\Home\Desktop\Data\reducedAngiesList.csv" build="hg19">
+	<file id="annotations" path="/Users/Home/Desktop/casp8bundle/reducedAngiesList.csv" build="hg19">
         <attribute>maf1kceugbr</attribute>
         <attribute>location</attribute>
         <attribute>type</attribute>
