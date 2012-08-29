@@ -7,11 +7,13 @@ v0.1:
 There are two ways of running the program; if you just want to load an existing .vcf file and/or related .csv files, you can just double-click the app, and load the files using the dialog. Note that none of the options in the dialog other than selecting files work yet.
 The other way is from the command line; edit compreheNGSive.xml to your liking (hopefully it's pretty straightforward from the existing example, but feel free to ask about it if you have questions!), and type:
 
+open -a compreheNGSive.app compreheNGSive.xml
+(Mac OS X)
+
 compreheNGSive.exe compreheNGSive.xml
 (Windows)
 
-open -a compreheNGSive.app compreheNGSive.xml
-(Mac OS X)
+./compreheNGSive compreheNGSive.xml
 
 Features not yet implemented:
 

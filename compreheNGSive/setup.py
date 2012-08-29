@@ -139,7 +139,8 @@ elif sys.platform == 'darwin':
     # the setup call at the end of this file. So, I put all the big lists
     # here and I wrap them using the textwrap module.
     
-    resources = ['gui/svg/fileTags.svg', '/Users/Home/git/GNGSTA/GNGSTA/gui/svg/groupTags.svg',
+    resources = ['gui/svg/fileTags.svg',
+                 'gui/svg/groupTags.svg',
                  'gui/svg/parallelCoordinates.svg',
                  'gui/svg/scatterplot.svg',
                  'gui/ui/Setup.ui',
@@ -172,7 +173,7 @@ elif sys.platform == 'darwin':
     
     setup(
     
-        app = [r'/Users/Home/git/GNGSTA/GNGSTA/compreheNGSive.py'],
+        app = [r'compreheNGSive.py'],
         setup_requires=['py2app'],
         
         options = {"py2app": {"optimize": 0,
