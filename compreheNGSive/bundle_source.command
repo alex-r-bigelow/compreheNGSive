@@ -17,7 +17,5 @@ rm -rf compreheNGSive
 
 echo 'Cloning...'
 cd ..
-cp -r GNGSTA compreheNGSive
-rm -rf compreheNGSive/old_code
 tar -czvf $STARTING_DIR/compreheNGSive$VERSION.tar.gz compreheNGSive
 rm -rf compreheNGSive

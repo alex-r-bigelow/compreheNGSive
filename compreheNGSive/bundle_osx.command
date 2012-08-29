@@ -29,6 +29,7 @@ mkdir gui/ui
 mv *.svg gui/svg
 mv *.ui gui/ui
 # copy documentation and config files
+cd $STARTING_DIR
 cd $SCRIPT_DIR
 cp compreheNGSive.xml compreheNGSive/
 cp COPYING.txt compreheNGSive/
