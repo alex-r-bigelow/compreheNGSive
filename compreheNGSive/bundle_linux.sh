@@ -29,7 +29,7 @@ cp -r gui/svg compreheNGSive/gui/
 cp -r gui/ui compreheNGSive/gui/
 rm -rf build
 # copy documentation and config files
-cp compreheNGSive.xml compreheNGSive/
+cp prefs.xml compreheNGSive/
 cp COPYING.txt compreheNGSive/
 cp COPYING.LESSER.txt compreheNGSive/
 cp README.txt compreheNGSive/

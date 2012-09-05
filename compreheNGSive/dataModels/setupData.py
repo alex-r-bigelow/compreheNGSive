@@ -1,6 +1,6 @@
 from dataModels.variantData import variantData
 from dataModels.featureData import featureData
-from resources.utils import vcfFile,csvVariantFile,bedFile,gff3File
+from resources.genomeUtils import variantFile   #,csvVariantFile,bedFile,gff3File
 from pyquery import PyQuery
 import os, sys
 
@@ -132,16 +132,18 @@ class fileObj:
             self.hasGenotypes = True
     
     def extractHeaders(self):
-        inFile = open(self.path)
+        inFile = self.path
         if self.format == '.vcf':
-            results = vcfFile.extractVariantAttributesInFile(inFile)
+            results = variantFile.extractVcfFileInfo(inFile)
         elif self.format == '.gvf':
             raise NotImplementedError('gvf not implemented yet')
             results = []
         elif self.format == '.csv':
-            results = csvVariantFile.extractVariantAttributesInFile(inFile)
+            raise NotImplementedError('csv not implemented yet')
+            results = []
         elif self.format == '.tsv':
-            results = csvVariantFile.extractVariantAttributesInFile(inFile,'\t',"Chromosome","Position",refHeader="rsNumber")
+            raise NotImplementedError('tsv not implemented yet')
+            results = []
         elif self.format == '.bed':
             raise NotImplementedError('bed not implemented yet')
             results = []
@@ -150,23 +152,13 @@ class fileObj:
             results = []
         inFile.close()
         return results
-    
-    def extractIndividuals(self):
-        inFile = open(self.path)
-        if self.format == '.vcf':
-            results = vcfFile.extractIndividualsInFile(inFile)
-        elif self.format == '.gvf':
-            raise NotImplementedError('gvf not implemented yet')
-            results = []
-        else:
-            results = []
-        inFile.close()
-        return results
         
     def load(self, vData, fData):
+        raise NotImplementedError('todo...')
+        '''
         inFile = open(self.path,'r')
         if self.format == '.vcf':
-            vcfFile.parseVcfFile(inFile,functionToCall=self.addVariant,callbackArgs={'vData':vData},individualsToExclude=[],individualsToInclude=[],mask=None,returnFileObject=False,skipFiltered=False,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=True,includeAdditionalHeaderInfo=False,forceAlleleMatching=True)
+            variantFile.parseVcfFile(inFile,functionToCall=self.addVariant,callbackArgs={'vData':vData},individualsToExclude=[],individualsToInclude=[],mask=None,returnFileObject=False,skipFiltered=False,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=True,includeAdditionalHeaderInfo=False,forceAlleleMatching=True)
         elif self.format == '.gvf':
             raise NotImplementedError('gvf not implemented yet')
         elif self.format == '.csv':
@@ -178,6 +170,7 @@ class fileObj:
         elif self.format == '.gff3':
             raise NotImplementedError('gff3 not implemented yet')
         inFile.close()
+        '''
     
     def addVariant(self, variantObject, vData):
         for att,include in self.attributes.iteritems():

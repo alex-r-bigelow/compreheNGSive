@@ -16,7 +16,7 @@ ren dist compreheNGSive
 rd /S /Q build
 
 :: copy documentation and config files
-copy compreheNGSive.xml compreheNGSive
+copy prefs.xml compreheNGSive
 copy COPYING.txt compreheNGSive
 copy COPYING.LESSER.txt compreheNGSive
 copy README.txt compreheNGSive

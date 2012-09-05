@@ -1,5 +1,5 @@
 from layeredWidget import mutableSvgLayer, layeredWidget, layer
-from resources.utils import fitInSevenChars
+from resources.generalUtils import fitInSevenChars
 from dataModels.variantData import operation
 from PySide.QtCore import Qt,QSize
 from PySide.QtGui import QColor, QCursor

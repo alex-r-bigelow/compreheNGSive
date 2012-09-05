@@ -55,25 +55,32 @@ class setupApp:
             # data model for setup
             self.svOptions = svOptionsModel()
             
-            self.selectionView = treeSelectionWidget(data=self.svOptions, parent=self.window.svFileScrollArea)
-            self.window.svFileScrollArea.setWidget(self.selectionView)
-            self.tagView = treeTagWidget(data=self.svOptions, parent=self.window.svGroupScrollArea)
-            self.window.svGroupScrollArea.setWidget(self.tagView)
+            #self.selectionView = treeSelectionWidget(data=self.svOptions, parent=self.window.svFileScrollArea)
+            #self.window.svFileScrollArea.setWidget(self.selectionView)
+            #self.tagView = treeTagWidget(data=self.svOptions, parent=self.window.svGroupScrollArea)
+            #self.window.svGroupScrollArea.setWidget(self.tagView)
             ##########
             # Events #
             ##########
             
             # connecting events
             self.window.runSVbutton.clicked.connect(self.runSV)
-            self.window.addFilesButton.clicked.connect(self.addFiles)
-            self.window.groupLineEdit.textChanged.connect(self.updateGroupButtons)
-            self.window.createNewGroupButton.clicked.connect(self.addGroup)
+            #self.window.addFilesButton.clicked.connect(self.addFiles)
+            #self.window.groupLineEdit.textChanged.connect(self.updateGroupButtons)
+            #self.window.createNewGroupButton.clicked.connect(self.addGroup)
+            self.window.saveButton.clicked.connect(self.savePrefs)
+            self.loadPrefs()
             self.window.Quit.clicked.connect(self.closeApp)
-            self.window.fallbackRadioButtons.buttonReleased.connect(self.toggleAltEnabled)
+            #self.window.fallbackRadioButtons.buttonReleased.connect(self.toggleAltEnabled)
             
             ##########
             self.runningApp = None
             self.window.show()
+    
+    def loadPrefs(self):
+        infile = open('prefs.xml','r')
+        self.window.textEdit.setPlainText(infile.read())
+        infile.close()
     
     def addFiles(self):
         newPaths = QFileDialog.getOpenFileNames(filter='Variant, attribute, and/or feature files (*.vcf *.gvf *.csv *.tsv *.bed *.gff3)')
@@ -114,58 +121,38 @@ class setupApp:
     def toggleAltEnabled(self):
         self.window.altSpinBox.setEnabled(self.window.fallbackRadioButtons.checkedButton() == self.window.altRadioButton)
         
-    def runSV(self, params=None):
-        if params != None:
-            splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
-            splash.setWindowModality(Qt.WindowModal)
-            splash.setAutoClose(False)
-            splash.setAutoReset(False)
-            
-            self.svOptions = svOptionsModel(params)
-            results = self.svOptions.buildDataObjects(splash)
-            
-            if results == False:
-                splash.close()
-                sys.exit(0)
-            else:
-                vData = results[0]
-                fData = results[1]
-            
-            results = vData.freeze(startingXaxis=self.svOptions.startingXattribute,startingYaxis=self.svOptions.startingYattribute,progressWidget=splash)
-            
-            if results == False:
-                splash.close()
-                sys.exit(0)
-            else:
-                self.runningApp = singleVariantApp(vData,fData,self.svOptions.prefilters,splash,self)
-        else:
-            self.window.hide()
-            
-            splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
-            splash.setWindowModality(Qt.WindowModal)
-            splash.setAutoClose(False)
-            splash.setAutoReset(False)
-            
-            # TODO: set parameters...
-            results = self.svOptions.buildDataObjects(splash)
-            
-            if results == False:
-                splash.close()
-                self.window.show()
-                return
-            else:
-                vData = results[0]
-                fData = results[1]
-            
-            results = vData.freeze(progressWidget=splash)
-            
-            if results == False:
-                splash.close()
-                self.window.show()
-                return
-            else:
-                self.runningApp = singleVariantApp(vData,fData,self.svOptions.prefilters,splash,self)
+    def runSV(self, params='prefs.xml'):
+        self.savePrefs()
+        self.window.hide()
         
+        splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
+        splash.setWindowModality(Qt.WindowModal)
+        splash.setAutoClose(False)
+        splash.setAutoReset(False)
+        
+        self.svOptions = svOptionsModel(params)
+        results = self.svOptions.buildDataObjects(splash)
+        
+        if results == False:
+            splash.close()
+            sys.exit(0)
+        else:
+            vData = results[0]
+            fData = results[1]
+        
+        results = vData.freeze(startingXaxis=self.svOptions.startingXattribute,startingYaxis=self.svOptions.startingYattribute,progressWidget=splash)
+        
+        if results == False:
+            splash.close()
+            sys.exit(0)
+        else:
+            self.runningApp = singleVariantApp(vData,fData,self.svOptions.prefilters,splash,self)
+    
+    def savePrefs(self):
+        outfile=open('prefs.xml','w')
+        outfile.write(self.window.textEdit.toPlainText())
+        outfile.close()
+    
     def closeApp(self):
         self.window.reject()
 

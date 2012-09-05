@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- For a description of how to format this file, see http://www.sci.utah.edu/~abigelow/prefsSpec.php -->
 <root>
-	<file id="alex_new.vcf" path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
+	<alleleOfInterest id="CASP8 Cases" mode="mostFrequent"/>
+	<startingXaxis id="CASP8 Cases" attribute="AF"/>
+	<staringYaxis id="CASP8 Controls" attribute="AF"/>
+	<file path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
         <attribute>QUAL</attribute>
         <attribute>FILTER</attribute>
+        <hardfilter attribute="FILTER" excludeMissing="true">
+        	<value>PASS</value>
+        </hardfilter>
         <attribute>QD</attribute>
         <attribute>FS</attribute>
         <attribute>MQ</attribute>
@@ -10,7 +17,7 @@
 		<attribute>MQRankSum</attribute>
 		<attribute>ReadPosRankSum</attribute>
     </file>
-    <file id="weiYu.vcf" path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
+    <file path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
         <attribute>QUAL</attribute>
         <attribute>FILTER</attribute>
         <attribute>QD</attribute>
@@ -54,6 +61,8 @@
 		<sample file="alex_new.vcf">441_38x</sample>
 		<sample file="alex_new.vcf">441_42x</sample>
 		<sample file="alex_new.vcf">441_43x</sample>
+		<attribute statistic="allele frequency">AF</attribute>
+		<softfilter attribute="AF" direction="top" percent="5" excludeMissing="true"/>
     </group>
     <group id="CASP8 Controls">
 		<sample file="alex_new.vcf">441_22x</sample>
@@ -70,9 +79,7 @@
 		<sample file="alex_new.vcf">441_33x</sample>
 		<sample file="alex_new.vcf">441_49x</sample>
 		<sample file="alex_new.vcf">441_50x</sample>
+		<attribute statistic="allele frequency">AF</attribute>
+		<softfilter attribute="AF" direction="bottom" percent="5" excludeMissing="false"/>
     </group>
-	<prefs xaxis="CASP8 Controls" yaxis="CASP8 Cases" alleleMode="CASP8 Cases">
-		<prefilter axis="CASP8 Controls" direction="bottom" percent="100" excludeMissing="False"/>
-		<prefilter axis="CASP8 Cases" direction="top" percent="100" excludeMissing="True"/>
-	</prefs>
 </root>

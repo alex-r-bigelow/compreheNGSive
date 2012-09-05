@@ -6,6 +6,22 @@ RECURSION_ESTIMATE = sys.getrecursionlimit() - 500  # a generous estimate about 
                                                     # anyway; otherwise the programmer's doing something stupid like creating these recursive structures inside
                                                     # some kind of recursive algorithm... if that's the case, he deserves the crash
 
+class twinDict(dict):
+    def __init__(self):
+        super(twinDict, self).__init__()
+        self.twins = set()
+    
+    def __setitem__(self, key, value):
+        super(twinDict, self).__setitem__(key,value)
+        for c in self.twins:
+            if not c.has_key(key):
+                c[key] = value
+            else:
+                assert c[key] == value
+    
+    def addTwin(self, c):
+        self.twins.add(c)
+
 class recursiveDict(dict):
     def __init__(self, generateFrom=None):
         """
