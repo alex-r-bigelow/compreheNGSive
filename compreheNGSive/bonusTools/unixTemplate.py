@@ -10,7 +10,7 @@ if __name__ == '__main__':
     # BEGIN LOCAL IMPORTS #
     
     from resources.generalUtils import parameterizeArgs
-    from resources.genomeUtils import allele, variant, variantFile, variantLoadingParameters
+    from resources.genomeUtils import genomeUtils, allele, variant, variantFile, variantLoadingParameters
     
     #  END LOCAL IMPORTS  #
     #######################
@@ -19,45 +19,60 @@ if __name__ == '__main__':
 
 ##################
 # BEGIN APP CODE #
+def tick():
+    print ".",
 
 def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o=""):
-    individualList = []
-    infile = open(individuals,'r')
-    for line in infile:
-        individualList.append(line.strip())
-    infile.close()
+    if individuals != None:
+        print "Parsing individual list..."
+        individualList = []
+        infile = open(individuals,'r')
+        for line in infile:
+            individualList.append(line.strip())
+        infile.close()
+        
+    else:
+        individualList = None
     
-    loci = set()
-    firstLine = True
-    infile = open(loci,'r')
-    for line in infile:
-        if firstLine:
-            firstLine = False
-            continue
-        columns = line.split()
-        loci.add(variant(self, chromosome=columns[1], position=columns[2], matchMode=allele.FLEXIBLE, attemptRepairsWhenComparing=True, ref=".*", alt=".*", name=columns[0], build=genomeUtils.hg19, attributeFilters=None))
-    infile.close()
+    lociToKeep = set()
+    if loci != None:
+        print "Parsing loci list..."
+        firstLine = True
+        infile = open(loci,'r')
+        for line in infile:
+            if firstLine:
+                firstLine = False
+                continue
+            columns = line.split()
+            lociToKeep.add(variant(chromosome=columns[0], position=columns[1], matchMode=allele.FLEXIBLE, attemptRepairsWhenComparing=True, ref=".*", alt=".*", name=columns[2], build=genomeUtils.hg19, attributeFilters=None))
+        infile.close()
     
-    # we only care about genotypes; all other details don't matter. I won't even bother returning a file object because the variants in loci will be updated.
-    parseParameters = variantLoadingParameters(  individualsToInclude=individualList,
-                                                 lociToInclude=loci,
+    print "Parsing .vcf file..."
+    # we only care about genotypes; we throw out all other details.
+    parseParameters = variantLoadingParameters(  passFunction=lambda v: lociToKeep.add(v),
+                                                 tickFunction=tick,
+                                                 tickInterval=5,
+                                                 individualsToInclude=individualList,
+                                                 lociToInclude=lociToKeep,
                                                  attributesToInclude={},
                                                  skipGenotypeAttributes=True)
     
     variantFile.parseVcfFile(vcf,parseParameters)
     
+    print "Writing results..."
     outfile = open(out,'w')
-    outfile.write("rs#\tbp")
-    for i in individualsToInclude:
+    outfile.write("rs Number\tChromosome\tPosition")
+    for i in individualList:
         outfile.write("\t%s" % i)
     outfile.write("\n")
     
-    for v in sorted(loci, key=lambda x:x.position):
+    for v in sorted(lociToKeep, key=lambda x:x.position):
         outfile.write("%s\t%i" % (v.name,v.position))
-        for i in individualsToInclude:
+        for i in individualList:
             outfile.write("\t%s" % str(v.genotypes[i]))
         outfile.write("\n")
     outfile.close()
+    print "Done."
     
 
 #  END APP CODE  #
@@ -73,13 +88,14 @@ if __name__ == '__main__':
     ########################
     # BEGIN APP PARAMETERS #
     
-    requiredArgs = [("loci","l","path to .tsv file containing loci to extract with one header. Columns should be:\n"+
-                                "rs Number    Chromosome    Position"),
-                    ("vcf","v","path to .vcf file"),
-                    ("individuals","i","path to .txt file containing a list (one per line) of individuals to include from the .vcf file."),
-                    ("out","o","path to write .tsv file with columns:\n"+
-                               "rs Number    Position    <person 1> Genotype    ...")]
-    optionalArgs = []
+    requiredArgs = [("vcf","v","path to .vcf file"),
+                    ("out","o","path to write .csv file with columns:\n"+
+                               "Chromosome    Position    Rs#    <person 1> Genotype    ...")]
+    optionalArgs = [("loci","l","path to .csv file containing loci to extract with one header. Columns should be:\n"+
+                                "Chromosome    Position    Rs#\n"+
+                                "Default is to include all loci."),
+                    ("individuals","i","path to .txt file containing a list (one per line) of individuals to include from the .vcf file.\n"+
+                                        "Default is to include all individuals. Point this to an empty file to exclude all individuals.")]
     appDescription = ""
     
     #  END APP PARAMETERS  #
@@ -103,6 +119,9 @@ if __name__ == '__main__':
                 vargs[single] = vargs[double]
             elif vargs.has_key(single):
                 vargs[double] = vargs[single]
+            else:
+                vargs[double] = None
+                vargs[single] = None
         
         if help != None or h != None:
             print appDescription

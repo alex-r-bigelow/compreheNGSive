@@ -1,4 +1,4 @@
-import sys, math, re
+import sys, os, math, re
 from structures import recursiveDict
 
 ####################
@@ -375,7 +375,7 @@ class allele:
     
     def __init__(self, text, matchMode, attemptRepairsWhenComparing):
         self.text = text
-        self.matchMode
+        self.matchMode = matchMode
         self.attemptRepairsWhenComparing = attemptRepairsWhenComparing
     
     def __eq__(self, other):
@@ -478,6 +478,12 @@ class genotype:
     
     def __ne__(self, other):
         return not self.__eq__(other)
+    
+    def __str__(self):
+        first = "." if self.allele1 == None else str(self.allele1)
+        slash = "|" if self.isPhased else "/"
+        second = "." if self.allele2 == None else str(self.allele2)
+        return first + slash + second
 
 class variant:
     """
@@ -501,13 +507,13 @@ class variant:
             for a in alt:
                 if a == ".":
                     a = None
-                self.alt.append(allele(a, matchMode, attemptRepairsWhenComparing))
+                self.alleles.append(allele(a, matchMode, attemptRepairsWhenComparing))
         else:
             if alt == ".":
                 alt = None
-            self.alt.append(allele(alt, matchMode, attemptRepairsWhenComparing))
+            self.alleles.append(allele(alt, matchMode, attemptRepairsWhenComparing))
         
-        self.basicName = "%s_%i" % (self.chromosome,self.start)
+        self.basicName = "%s_%i" % (self.chromosome,self.position)
         if name == None or name == ".":
             name = self.basicName
         self.name = name
@@ -612,15 +618,14 @@ class variant:
         We want to say two variants are equal if their chromosome and position match AND
         two matches occur (involving both reference alleles) between variant objects
         """
-        if not self.attemptRepairsWhenComparing or not other.attemptRepairsWhenComparing:
-            return self is other    # only do the dance if we're both in the mood
-        
         if other == None:
             return False
-        assert self.matchMode != other.matchMode
+        if not self.attemptRepairsWhenComparing or not other.attemptRepairsWhenComparing:
+            return self is other    # only do the dance if we're both in the mood
+        assert self.matchMode == other.matchMode
         if self.chromosome != other.chromosome:
             return False
-        elif self.start != other.start:
+        elif self.position != other.position:
             return False
         elif self.matchMode == allele.UNENFORCED:
             self.repair(other)
@@ -871,6 +876,8 @@ class variantLoadingParameters:
                  passFunction=None,
                  rejectFunction=None,
                  callbackArgs={},
+                 tickFunction=None,
+                 tickInterval=10,
                  individualsToInclude=[],
                  lociToInclude=None,
                  mask=None,
@@ -881,16 +888,25 @@ class variantLoadingParameters:
                  attemptRepairsWhenComparing=True):
         """
         :param passFunction:
-            function
+            function or None
             
             This function will be called for every variant that passes all criteria,
             with the variant as the first argument and callbackArgs as **vargs
             
         :param rejectFunction:
-            function
+            function or None
             
             This function will be called for every variant that fails at least one
             criteria or is masked, with the variant as the first argument and callbackArgs as **vargs
+        
+        :param tickFunction:
+            function or None
+            
+            This function will be called approximately every tickInterval percent of the way through the .vcf file;
+            this is useful for progress bars, etc. As this relies on an estimate, it is certainly possible to have
+            more or less ticks than expected; for example, if tickInterval is 5 (i.e. 5%), there could be 21 or 19
+            (or even more or less) total calls to tickFunction(). There would be approximately 20 total calls, but
+            this is an estimate.
             
         :param individualsToInclude:
             list or None
@@ -937,9 +953,12 @@ class variantLoadingParameters:
             allele configurations can not be guaranteed if variants from two
             .vcf files are compared but these orders differ.
         """
+        self.build = build
         self.passFunction = passFunction
         self.rejectFunction = rejectFunction
         self.callbackArgs = callbackArgs
+        self.tickFunction = tickFunction
+        self.tickInterval = tickInterval
         self.individualsToInclude = individualsToInclude
         self.lociToInclude = lociToInclude
         self.mask = mask
@@ -984,9 +1003,11 @@ class variantFile:
         fileAttributes['variant attributes'] = set(['FILTER','QUAL'])
         fileAttributes['genotype attributes'] = set()
         
+        numChars = None
+        
         fileObj = open(path,'r')
-        for line in fileObj:
-            line = line.strip()
+        for regline in fileObj:
+            line = regline.strip()
             if len(line) <= 1:
                 continue
             elif line[0:2] == "##":
@@ -1016,9 +1037,18 @@ class variantFile:
                 columns = line.split()
                 fileAttributes["INDIVIDUALS"] = columns[9:]
             else:
-                # reached real data; we're done
+                # reached real data; use this to estimate the number of lines in the file (estimate is only good for large files
+                # with relatively consistent line lengths)
+                numChars = len(regline)
+                # after that we're done - don't load anything else
                 break
         fileObj.close()
+        
+        if numChars == None:
+            fileAttributes['number of lines'] = 0
+        else:
+            fileAttributes['number of lines'] = os.path.getsize(path)/numChars
+        
         # Set some defaults if they were missing
         if not fileAttributes.has_key("fileformat"):
             fileAttributes["fileformat"] = "VCFv4.1"
@@ -1042,10 +1072,21 @@ class variantFile:
         
         inFile = open(path,'r')
         
+        if parameters.tickFunction != None:
+            currentLine = 0
+            parameters.tickInterval = int((parameters.tickInterval/100.0)*fileAttributes['number of lines'])
+            nextTick = parameters.tickInterval
+        
         for line in inFile:
             line = line.strip()
             if len(line) <= 1 or line.startswith('#'):
                 continue    # skip header and blank lines
+            
+            if parameters.tickFunction != None:
+                currentLine += 1
+                if currentLine >= nextTick:
+                    nextTick += parameters.tickInterval
+                    parameters.tickFunction()
             
             columns = line.split("\t")
             
@@ -1070,9 +1111,9 @@ class variantFile:
             
             if not newVariant.poisoned: # don't bother loading anything else if we know we don't need to
                 # Handle QUAL, FILTER, and INFO
-                if paramters.attributesToInclude == None or parameters.attributesToInclude.has_key("QUAL"):
+                if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key("QUAL"):
                     newVariant.setAttribute("QUAL", columns[5])
-                if paramters.attributesToInclude == None or parameters.attributesToInclude.has_key("FILTER"):
+                if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key("FILTER"):
                     filters = columns[6].split(';')
                     if len(filters) == 1:
                         filters = filters[0]
@@ -1087,7 +1128,7 @@ class variantFile:
                         value = temp[1]
                         if "," in value:
                             value = value.split(',')
-                        if paramters.attributesToInclude == None or parameters.attributesToInclude.has_key(key):
+                        if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(key):
                             newVariant.setAttribute(key,value)
                     else:
                         if paramters.attributesToInclude == None or parameters.attributesToInclude.has_key(chunk):
