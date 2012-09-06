@@ -61,15 +61,15 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o=""):
     
     print "Writing results..."
     outfile = open(out,'w')
-    outfile.write("rs Number\tChromosome\tPosition")
+    outfile.write("Chromosome\tPosition\tRs#")
     for i in individualList:
         outfile.write("\t%s" % i)
     outfile.write("\n")
     
     for v in sorted(lociToKeep, key=lambda x:x.position):
-        outfile.write("%s\t%i" % (v.name,v.position))
+        outfile.write("%s\t%i\t%s" % (v.chromosome,v.position,v.name))
         for i in individualList:
-            outfile.write("\t%s" % str(v.genotypes[i]))
+            outfile.write("\t%s" % str(v.genotypes.get(i,"./.")))
         outfile.write("\n")
     outfile.close()
     print "Done."
