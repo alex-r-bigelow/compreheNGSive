@@ -379,6 +379,8 @@ class allele:
         self.attemptRepairsWhenComparing = attemptRepairsWhenComparing
     
     def __eq__(self, other):
+        if other == None:
+            return False
         assert self.matchMode == other.matchMode
         if self.matchMode == self.UNENFORCED:
             return True
@@ -534,11 +536,12 @@ class variant:
         
         self.genotypes[individual] = g
         
-        for t in self.twins:
-            if not t.genotypes.has_key(individual):
-                t.addGenotype(individual, g)
-            else:
-                assert t.genotypes[individual] == g
+        if self.attemptRepairsWhenComparing:
+            for t in self.twins:
+                if not t.genotypes.has_key(individual):
+                    t.addGenotype(individual, g)
+                else:
+                    assert t.genotypes[individual] == g
     
     def setAttribute(self, key, value):
         if self.poisoned:
@@ -551,11 +554,12 @@ class variant:
                 return
         self.attributes[key] = value
         # it's really important to share last... if one of my twins is poisoned by this value, I don't want to try to add a value to None after that
-        for t in self.twins:
-            if not t.attributes.has_key(key):
-                t.setAttribute(key, value)
-            else:
-                assert t.attributes[key] == value
+        if self.attemptRepairsWhenComparing:
+            for t in self.twins:
+                if not t.attributes.has_key(key):
+                    t.setAttribute(key, value)
+                else:
+                    assert t.attributes[key] == value
     
     def poison(self):
         self.poisoned = True
@@ -609,7 +613,7 @@ class variant:
         away
         """
         if self.attemptRepairsWhenComparing:
-            return hash(self.basicName)
+            return self.genomePosition
         else:
             return hash(self)
     
@@ -644,7 +648,11 @@ class variant:
                 if a in other.alleles:
                     numMatches += 1
                     # even though we only care about two matches here, we'll want to check all of them in order to match/repair allele regexes
-            return numMatches >= 2
+            if numMatches >= 2:
+                self.repair(other)
+                return True
+            else:
+                return False
     
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -1131,7 +1139,7 @@ class variantFile:
                         if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(key):
                             newVariant.setAttribute(key,value)
                     else:
-                        if paramters.attributesToInclude == None or parameters.attributesToInclude.has_key(chunk):
+                        if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(chunk):
                             newVariant.setAttribute(chunk,chunk)
                 
                 # Now for genotypes - first let's figure out the columns we care about
@@ -1197,9 +1205,9 @@ class variantFile:
     def writeVcfFile(self, path, sortMethod=None, includeScriptLine=True):
         if includeScriptLine:
             scriptNumber = 0
-            while fileAttributes['file attributes'].has_key("compreheNGSive script %i" % scriptNumber):
+            while self.fileAttributes['file attributes'].has_key("compreheNGSive script %i" % scriptNumber):
                 scriptNumber += 1
-            fileAttributes['file attributes']["compreheNGSive script %i" % scriptNumber] = '"' + " ".join(sys.argv) + '"'
+            self.fileAttributes['file attributes']["compreheNGSive script %i" % scriptNumber] = '"' + " ".join(sys.argv) + '"'
         
         if sortMethod == "UNIX":
             variantList = sorted(self.variants, cmp=variant.unixCompare)
@@ -1223,7 +1231,7 @@ class variantFile:
         for k in ["FILTER","INFO","FORMAT",'file attributes',"contig"]: # TODO: rearrange?
             if k == 'file attributes':
                 for k2,v2 in fileAttributes['file attributes'].iteritems():
-                    outString += "##%s=%s\n" % (k,v)
+                    outString += "##%s=%s\n" % (k2,v2)
             else:   #if k == "INFO" or k == "FORMAT" or k == "FILTER" or k == "contig":
                 for idstr,values in fileAttributes[k].iteritems():
                     outString += "##%s=<ID=%s" % (k,idstr)
