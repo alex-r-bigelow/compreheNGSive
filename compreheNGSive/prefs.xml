@@ -1,85 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- For a description of how to format this file, see http://www.sci.utah.edu/~abigelow/prefsSpec.php -->
-<root>
-	<alleleOfInterest id="CASP8 Cases" mode="mostFrequent"/>
-	<startingXaxis id="CASP8 Cases" attribute="AF"/>
-	<staringYaxis id="CASP8 Controls" attribute="AF"/>
-	<file path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
-        <attribute>QUAL</attribute>
-        <attribute>FILTER</attribute>
-        <hardfilter attribute="FILTER" excludeMissing="true">
-        	<value>PASS</value>
-        </hardfilter>
-        <attribute>QD</attribute>
-        <attribute>FS</attribute>
-        <attribute>MQ</attribute>
-        <attribute>HaplotypeScore</attribute>
-		<attribute>MQRankSum</attribute>
-		<attribute>ReadPosRankSum</attribute>
-    </file>
-    <file path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
-        <attribute>QUAL</attribute>
-        <attribute>FILTER</attribute>
-        <attribute>QD</attribute>
-        <attribute>FS</attribute>
-        <attribute>MQ</attribute>
-        <attribute>HaplotypeScore</attribute>
-		<attribute>MQRankSum</attribute>
-		<attribute>ReadPosRankSum</attribute>
-    </file>
-	<file id="annotations" path="/Users/Home/Desktop/casp8bundle/reducedAngiesList.csv" build="hg19">
-        <attribute>maf1kceugbr</attribute>
-        <attribute>location</attribute>
-        <attribute>type</attribute>
-        <attribute>function</attribute>
-        <attribute>polyphen</attribute>
-        <attribute>siftscores</attribute>
-        <attribute>transcriptiongm12878</attribute>
-        <attribute>layeredgm12878h3k4me1stdsig</attribute>
-        <attribute>layeredhmech3k4me3stdsig</attribute>
-        <attribute>layeredhmech3k27acstdsig</attribute>
-        <attribute>txnfactorchip</attribute>
-        <attribute>openchromsynthgm12878pk</attribute>
-        <attribute>conservation</attribute>
-        <attribute>histone_all3pos</attribute>
-    </file>
-    <group id="CASP8 Cases">
-		<sample file="alex_new.vcf">441_1x</sample>
-		<sample file="alex_new.vcf">441_2x</sample>
-		<sample file="alex_new.vcf">441_4x</sample>
-		<sample file="alex_new.vcf">441_5x</sample>
-		<sample file="alex_new.vcf">441_6x</sample>
-		<sample file="alex_new.vcf">441_7x</sample>
-		<sample file="alex_new.vcf">441_8x</sample>
-		<sample file="alex_new.vcf">441_9x</sample>
-		<sample file="alex_new.vcf">441_10x</sample>
-		<sample file="alex_new.vcf">441_12x</sample>
-		<sample file="alex_new.vcf">441_13x</sample>
-		<sample file="alex_new.vcf">441_14x</sample>
-		<sample file="alex_new.vcf">441_15x</sample>
-		<sample file="alex_new.vcf">441_37x</sample>
-		<sample file="alex_new.vcf">441_38x</sample>
-		<sample file="alex_new.vcf">441_42x</sample>
-		<sample file="alex_new.vcf">441_43x</sample>
-		<attribute statistic="allele frequency">AF</attribute>
+<root xmlns:prefs="http://www.sci.utah.edu/~abigelow/prefsSpec.php">
+	<prefs:alleleOfInterest id="CASP8 Cases" mode="mostFrequent"/>
+	<prefs:startingXaxis id="CASP8 Cases" attribute="AF"/>
+	<prefs:staringYaxis id="CASP8 Controls" attribute="AF"/>
+	<prefs:file path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
+        <prefs:attribute>QUAL</prefs:attribute>
+        <prefs:attribute>FILTER</prefs:attribute>
+        <prefs:hardfilter attribute="FILTER" excludeMissing="true">
+        	<prefs:value>PASS</prefs:value>
+        </prefs:hardfilter>
+        <prefs:attribute>QD</prefs:attribute>
+        <prefs:attribute>FS</prefs:attribute>
+        <prefs:attribute>MQ</prefs:attribute>
+        <prefs:attribute>HaplotypeScore</prefs:attribute>
+		<prefs:attribute>MQRankSum</prefs:attribute>
+		<prefs:attribute>ReadPosRankSum</prefs:attribute>
+    </prefs:file>
+    <prefs:file path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
+        <prefs:attribute>QUAL</prefs:attribute>
+        <prefs:attribute>FILTER</prefs:attribute>
+        <prefs:attribute>QD</prefs:attribute>
+        <prefs:attribute>FS</prefs:attribute>
+        <prefs:attribute>MQ</prefs:attribute>
+        <prefs:attribute>HaplotypeScore</prefs:attribute>
+		<prefs:attribute>MQRankSum</prefs:attribute>
+		<prefs:attribute>ReadPosRankSum</prefs:attribute>
+    </prefs:file>
+	<prefs:file id="annotations" path="/Users/Home/Desktop/casp8bundle/reducedAngiesList.csv" build="hg19">
+        <prefs:attribute>maf1kceugbr</prefs:attribute>
+        <prefs:attribute>location</prefs:attribute>
+        <prefs:attribute>type</prefs:attribute>
+        <prefs:attribute>function</prefs:attribute>
+        <prefs:attribute>polyphen</prefs:attribute>
+        <prefs:attribute>siftscores</prefs:attribute>
+        <prefs:attribute>transcriptiongm12878</prefs:attribute>
+        <prefs:attribute>layeredgm12878h3k4me1stdsig</prefs:attribute>
+        <prefs:attribute>layeredhmech3k4me3stdsig</prefs:attribute>
+        <prefs:attribute>layeredhmech3k27acstdsig</prefs:attribute>
+        <prefs:attribute>txnfactorchip</prefs:attribute>
+        <prefs:attribute>openchromsynthgm12878pk</prefs:attribute>
+        <prefs:attribute>conservation</prefs:attribute>
+        <prefs:attribute>histone_all3pos</prefs:attribute>
+    </prefs:file>
+    <prefs:group id="CASP8 Cases">
+		<prefs:sample file="alex_new.vcf">441_1x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_2x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_4x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_5x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_6x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_7x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_8x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_9x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_10x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_12x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_13x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_14x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_15x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_37x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_38x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_42x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_43x</prefs:sample>
+		<prefs:attribute statistic="allele frequency">AF</prefs:attribute>
 		<softfilter attribute="AF" direction="top" percent="5" excludeMissing="true"/>
-    </group>
-    <group id="CASP8 Controls">
-		<sample file="alex_new.vcf">441_22x</sample>
-		<sample file="alex_new.vcf">441_23x</sample>
-		<sample file="alex_new.vcf">441_24x</sample>
-		<sample file="alex_new.vcf">441_25x</sample>
-		<sample file="alex_new.vcf">441_26x</sample>
-		<sample file="alex_new.vcf">441_27x</sample>
-		<sample file="alex_new.vcf">441_28x</sample>
-		<sample file="alex_new.vcf">441_29x</sample>
-		<sample file="alex_new.vcf">441_30x</sample>
-		<sample file="alex_new.vcf">441_31x</sample>
-		<sample file="alex_new.vcf">441_32x</sample>
-		<sample file="alex_new.vcf">441_33x</sample>
-		<sample file="alex_new.vcf">441_49x</sample>
-		<sample file="alex_new.vcf">441_50x</sample>
-		<attribute statistic="allele frequency">AF</attribute>
+    </prefs:group>
+    <prefs:group id="CASP8 Controls">
+		<prefs:sample file="alex_new.vcf">441_22x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_23x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_24x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_25x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_26x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_27x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_28x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_29x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_30x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_31x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_32x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_33x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_49x</prefs:sample>
+		<prefs:sample file="alex_new.vcf">441_50x</prefs:sample>
+		<prefs:attribute statistic="allele frequency">AF</prefs:attribute>
 		<softfilter attribute="AF" direction="bottom" percent="5" excludeMissing="false"/>
-    </group>
+    </prefs:group>
 </root>

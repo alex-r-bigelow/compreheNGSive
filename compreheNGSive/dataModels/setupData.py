@@ -1,116 +1,76 @@
 from dataModels.variantData import variantData
 from dataModels.featureData import featureData
-from resources.genomeUtils import variantFile   #,csvVariantFile,bedFile,gff3File
-from pyquery import PyQuery
-import os, sys
+from resources.genomeUtils import variantFile, valueFilter
+from lxml import etree
 
-class individual:
-    def __init__(self, name):
-        self.name = name
-        self.originalText = name
-        self.groups = set()
-        self.hasDuplicateText = False
-    
-    def addToGroup(self, g, native=False):
-        self.groups.add(g)
-        success = False
-        if native:
-            if not g.nativeMembers.has_key(self):
-                g.nativeMembers[self] = True
-                success = True
-        elif not g.nativeMembers.has_key(self) and not g.foreignMembers.has_key(self):
-            g.foreignMembers[self] = True
-            success = True
-        
-        if success and g.expanded == None:
-            g.expanded = False
-    
-    def removeFromGroup(self, g):
-        if g.foreignMembers.has_key(self):
-            del g[self]
-            if len(g.foreignMembers) == 0 and len(g.nativeMembers) == 0:
-                g.expanded = None
+class prefs:
+    def __init__(self, alleleGroupID, alleleMode, xFileID, xAttributeID, yFileID, yAttributeID, files=[], groups=[]):
+        pass
+        '''
+                alleleMode be any of the following:<br/>
+                <ul>
+                    <li>"n": Uses the n-most frequent allele in this group. Negative indicate the n-least frequent alleles.</li>
+                    <li>"leastFrequent": Shortcut for "-1" (e.g. uses the least frequent allele in this group)</li>
+                    <li>"mostFrequent": Shortcut for "1" (e.g. uses the most frequent allele in this group)</li>
+                </ul>
+                
+                Note that if n >=2 or n <=-3, there will probably be many masked allele frequencies (e.g. if no members
+                of a group have the indicated allele of interest, or if the target group does not have more than 2 alleles for
+                a particular variant, the allele frequency for that variant will be masked).<br/><br/>
+                
+                *** In the future, the following syntax will also be supported; 
+                            please send me an email if this is a high priority to you!
+                            I'd like to get a feel for how many people even care about
+                            which features before I take the time to implement them. ***<br/>
+                <ul>
+                    <li>"VCF n": If this group is actually a .vcf file, uses the nth REF or ALT allele as follows:
+                        <ul>
+                            <li>VCF 0: uses REF</li>
+                            <li>VCF 1: uses the first ALT</li>
+                            <li>VCF 2: uses the second ALT</li>
+                            ...
+                            <li>VCF -1: uses the last ALT</li>
+                            <li>VCF -2: uses the second-to-last ALT (or REF if there is only one ALT)</li>
+                        </ul>
+                    </li>
+                </ul>
+            '''
+class startingAxis:
+    def __init__(self, attributeID, attribute):
+        pass
 
-class group:
-    def __init__(self, name, userDefined=False, checked=False):
-        self.name = name
-        self.userDefined = userDefined
-        
-        self.nativeMembers = {}
-        self.foreignMembers = {}
-        self.includeGroups = set()
-        
-        self.expanded = None
-        self.checked = checked
-        self.alleleBasisGroup = None
-        self.fallback = "ALT"
-    
-    def isChecked(self):
-        if len(self.nativeMembers) == 0 and len(self.foreignMembers) == 0:
-            return self.checked
-        hasFalse = None
-        hasTrue = None
-        for i in self.nativeMembers.itervalues():
-            if i:
-                if hasTrue == None:
-                    hasTrue = True
-                elif hasFalse == True:
-                    return None # None indicates that some are checked but others aren't
-            else:
-                if hasFalse == None:
-                    hasFalse = True
-                elif hasTrue == True:
-                    return None
-        for i in self.foreignMembers.itervalues():
-            if i:
-                if hasTrue == None:
-                    hasTrue = True
-                elif hasFalse == True:
-                    return None # None indicates that some are checked but others aren't
-            else:
-                if hasFalse == None:
-                    hasFalse = True
-                elif hasTrue == True:
-                    return None
-        # If we've gotten this far, there are only two possibilities - they're all true, or all false
-        if hasFalse:
-            return False
-        else:
-            return True
-    
-    def check(self, on=True):
-        self.checked = on
-        for i in self.nativeMembers.iterkeys():
-            self.nativeMembers[i] = on
-        for i in self.foreignMembers.iterkeys():
-            self.foreignMembers[i] = on
-    
-    def includeGroup(self, g):
-        if self.userDefined:
-            self.includeGroups.add(g)
-            for i in g.nativeMembers.iterkeys():
-                i.addToGroup(self)
-            for i in g.foreignMembers.iterkeys():
-                i.addToGroup(self)
-    
-    def removeMembership(self, g):
-        if self.userDefined:
-            self.groupMemberships.discard(g)
-            for i in g.nativeMembers.iterkeys():
-                i.removeFromGroup(self)
-            for i in g.foreignMembers.iterkeys():
-                i.removeFromGroup(self)
-    
-    def getCheckedIndividuals(self):
-        results = []
-        for i,include in self.nativeMembers.iteritems():
-            if include:
-                results.append(i)
-        for i,include in self.foreignMembers.iteritems():
-            if include:
-                results.append(i)
-        return results
+class fileObject:
+    def __init__(self, fileID, path, build, attributes=[], hardfilters=[], softfilters=[]):
+        pass
 
+class groupObject:
+    def __init__(self, groupID, samples=[], attributes=[], hardfilters=[], softfilters=[]):
+        pass
+
+class variantFileObject(fileObject, groupObject):
+    pass
+
+class sample:
+    def __init__(self, fileID, sampleID):
+        pass
+
+class attribute:
+    def __init__(self, attributeID, fileID=None, statistic=None, forceCategorical=None, filters=[]):
+        pass
+
+class hardFilter(valueFilter):
+    def __init__(self, excludeMissing=True, excludeMasked=True, percent=100.0, direction="top", values=[]):
+        
+        valueFilter.__init__(self, values, ranges, includeNone, includeInf, includeNaN, includeInvalid, listMode)
+        self.soft = soft
+        self.excludeMissing = excludeMissing
+        self.excludeMasked = excludeMasked
+        self.percent = percent
+        self.direction = direction
+        self.values = values
+
+
+'''
 class fileObj:
     def __init__(self, path, name):
         self.path = path
@@ -346,7 +306,4 @@ class svOptionsModel:
     def removeGroup(self, text):
         self.groupOrder.remove(text)
         del self.groups[text]
-
-
-
-
+'''

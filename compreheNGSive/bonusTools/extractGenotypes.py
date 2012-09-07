@@ -37,7 +37,7 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
         infile.close()
         
     else:
-        individualList = None
+        individualList = variantFile.extractVcfFileInfo(vcf)["INDIVIDUALS"]
     
     if loci != None:
         print "Parsing loci list..."
@@ -50,6 +50,8 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
             columns = line.split()
             lociToKeep.add(variant(chromosome=columns[0], position=columns[1], matchMode=allele.FLEXIBLE, attemptRepairsWhenComparing=True, ref=".*", alt=".*", name=columns[2], build=genomeUtils.hg19, attributeFilters=None))
         infile.close()
+    else:
+        lociToKeep = None
     
     print "Parsing .vcf file..."
     # we only care about genotypes; we throw out all other details.
@@ -61,7 +63,10 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
                                                  attributesToInclude={},
                                                  skipGenotypeAttributes=True)
     
-    variantFile.parseVcfFile(vcf,parseParameters)
+    if lociToKeep == None:
+        parseParameters.returnFileObject = True
+    
+    resultFile = variantFile.parseVcfFile(vcf,parseParameters)
     print ""
     
     print "Writing results..."
@@ -75,7 +80,12 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
         removeFile = open(remove,'w')
         removeFile.write("Chromosome\tPosition\tRs#\tReason\n")
     
-    for v in sorted(lociToKeep, key=lambda x:x.position):
+    if lociToKeep != None:
+        lociToKeep = sorted(lociToKeep, cmp=variant.numXYMCompare)
+    else:
+        lociToKeep = sorted(resultFile.variants, cmp=variant.numXYMCompare)
+    
+    for v in lociToKeep:
         if remove != None and len(v.genotypes) == 0:
             removeFile.write("%s\t%i\t%s\tNo Genotypes\n" % (v.chromosome,v.position,v.name))
         else:

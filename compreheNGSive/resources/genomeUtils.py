@@ -1,5 +1,6 @@
-import sys, os, math, re
+import sys, os, math, re, csv
 from structures import recursiveDict
+from bx.intervals.intersection import IntervalTree, Interval
 
 ####################
 # Helper constants #
@@ -337,6 +338,15 @@ class genomeUtils:
             raise Exception("hg18 is not supported yet.")
             # TODO: wrap liftover?
         return (position,position+genomeUtils.hg19chrOffsets[chromosome])
+    
+    @staticmethod
+    def getChromosomes(build):
+        if build == genomeUtils.hg19:
+            return genomeUtils.hg19chrOrder
+        elif build == genomeUtils.hg18:
+            return genomeUtils.hg18chrOrder
+        else:
+            raise Exception('Unknown build: %s' % str(build))
 
 class parseException(Exception):
     pass
@@ -899,13 +909,13 @@ class variantLoadingParameters:
             function or None
             
             This function will be called for every variant that passes all criteria,
-            with the variant as the first argument and callbackArgs as **vargs
+            with the variant as the first argument and callbackArgs as **kwargs
             
         :param rejectFunction:
             function or None
             
             This function will be called for every variant that fails at least one
-            criteria or is masked, with the variant as the first argument and callbackArgs as **vargs
+            criteria or is masked, with the variant as the first argument and callbackArgs as **kwargs
         
         :param tickFunction:
             function or None
@@ -930,7 +940,7 @@ class variantLoadingParameters:
             Only variants in this set will be included. Set this to None to include all loci.
             
         :param mask:
-            genomeMask or None
+            featureSet or None
             
             Only include variants outside the masked regions. Set to None to include variants anywhere.
             
@@ -1114,7 +1124,7 @@ class variantFile:
             
             if parameters.lociToInclude != None and newVariant not in parameters.lociToInclude:
                 newVariant.poison()
-            if parameters.mask != None and parameters.mask.contains(newVariant):
+            if parameters.mask != None and parameters.mask.contains(newVariant.chromosome,newVariant.position):
                 newVariant.poison()
             
             if not newVariant.poisoned: # don't bother loading anything else if we know we don't need to
@@ -1172,12 +1182,11 @@ class variantFile:
             # We've built the variant object... call the appropriate function if we need to
             if not newVariant.poisoned and parameters.passFunction != None:
                 parameters.passFunction(newVariant,**parameters.callbackArgs)
+                # If we're storing this thing in a file, do that now
+                if parameters.returnFileObject and not newVariant.poisoned:
+                    fileObject.addVariant(newVariant)
             elif newVariant.poisoned and parameters.rejectFunction != None:
                 parameters.rejectFunction(newVariant,**parameters.callbackArgs)
-            
-            # If we're storing this thing in a file, do that now
-            if parameters.returnFileObject and not newVariant.poisoned:
-                fileObject.addVariant(newVariant)
         inFile.close()
         
         # finally set the file attributes to match our parameters (you can get the original
@@ -1291,136 +1300,206 @@ class variantFile:
                 for k in formatList:
                     outString += ":%s" % (v.genotypes[i].attributes.get(k,""))
         return outString
-
-class csvVariantFile:
-    # TODO: migrate this stuff to variantFile
-    def __init__(self):
-        self.fileAttributes = {}
-        self.variants = set()
     
     @staticmethod
-    def extractVariantAttributesInFile(fileObject,delimiter=',',*args,**kwargs):
-        for line in fileObject:
-            results = line[:-1].split(delimiter)
-            break
+    def extractCsvFileInfo(path):
+        # first peek at the first 20 lines or so
+        bloodhound = csv.Sniffer()
+        maxlines = 20
+        linecount = 0
+        text = []
+        infile = open(path,'r')
+        for line in infile:
+            text.append(line)
+            linecount += 1
+            if linecount > maxlines:
+                break
+        infile.close()
         
-        for a in args:
-            if a in results:
-                results.remove(a)
-        for a in kwargs.itervalues():
-            if a in results:
-                results.remove(a)
-        return results
-    
-    @staticmethod
-    def parseCsvVariantFile(fileObject,chromosomeHeader,startHeader,refHeader=None,altHeader=None,nameHeader=None,attemptRepairsWhenComparing=True,forceAlleleMatching=True,delimiter=",",functionToCall=None,callbackArgs={},mask=None,returnFileObject=True):
-        '''
-        Assuming every row in a .csv file, we create the same sort of functionality as if it were one of these other standard formats
-        '''
-        if returnFileObject:
-            newFileObject = csvVariantFile()
+        if len(text) < 2:
+            raise parseException('No data in .csv file')
+        scent = bloodhound.sniff("".join(text))
         
-        headerMappings = {}
-        headers = []
-        firstLine = True
-        
-        for line in fileObject:
-            columns = line[:-1].split(delimiter)
-            if firstLine:
-                headers = columns
-                if chromosomeHeader not in headers or startHeader not in headers:
-                    print "ERROR: %s and %s headers required." % (chromosomeHeader,startHeader)
-                    sys.exit(1)
-                headerMappings[headers.index(chromosomeHeader)] = "chromosome"
-                headerMappings[headers.index(startHeader)] = "start"
+        data = []
+        for line in text:
+            data.append(line.strip().split(scent.delimiter))
                 
-                if refHeader != None and refHeader in headers:
-                    headerMappings[headers.index(refHeader)] = "ref"
-                if altHeader != None and altHeader in headers:
-                    headerMappings[headers.index(altHeader)] = "alt"
-                if nameHeader != None and nameHeader in headers:
-                    headerMappings[headers.index(nameHeader)] = "name"
-                firstLine = False
+        # let's see if we can figure out which columns are the special ones...
+        
+        chrColumn = None
+        posColumn = None
+        rsColumn = None
+        
+        numHeaders = len(data[0])
+        
+        for i,c in enumerate(reversed(data[0])):
+            small = c.lower()
+            if re.match('chr.*',small) != None:
+                chrColumn = numHeaders-i
+            if re.match('bp.*',small) != None:
+                posColumn = numHeaders-i
+            if re.match('pos.*',small) != None:
+                posColumn = numHeaders-i
+            if re.match('.*id.*',small) != None:
+                rsColumn = numHeaders-i
+            if re.match('rs.*',small) != None:
+                rsColumn = numHeaders-i
+        
+        if chrColumn == None:
+            raise parseException("I can't figure out which is the \"chromosome\" column.")
+        if posColumn == None:
+            raise parseException("I can't figure out which is the \"position\" column.")
+        
+        fileAttributes = recursiveDict()
+        fileAttributes['dialect'] = scent
+        fileAttributes['chr column'] = chrColumn
+        fileAttributes['pos column'] = posColumn
+        if rsColumn != None:
+            fileAttributes['rs column'] = rsColumn
+        
+        fileAttributes['variant attributes'] = set()
+        for i,h in data[0]:
+            if i != chrColumn and i != posColumn and i != rsColumn:
+                fileAttributes['HEADERS'][i] = h
+                fileAttributes['variant attributes'].add(h)
+    
+    @staticmethod
+    def parseCsvFile(path, parameters):
+        fileAttributes = variantFile.extractCsvFileInfo(path)
+        
+        if parameters.returnFileObject:
+            fileObject = variantFile(fileAttributes)
+        
+        chrom = fileAttributes['chr column']
+        pos = fileAttributes['pos column']
+        rs = fileAttributes.get('rs column',None)
+        
+        infile = open(path,'r')
+        for columns in csv.reader(infile,fileAttributes['dialect']):
+            if rs != None:
+                rsNumber = columns[rs]
+                if rsNumber == ".":
+                    rsNumber = None
             else:
-                varArgs = {"attemptRepairsWhenComparing":attemptRepairsWhenComparing,"forceAlleleMatching":forceAlleleMatching}
-                tempAttributes = {}
-                for i,c in enumerate(columns):
-                    if headerMappings.has_key(i):
-                        varArgs[headerMappings[i]] = c
-                    else:
-                        tempAttributes[headers[i]] = c
-                
-                newVariant = variant(**varArgs)
-                newVariant.attributes.update(tempAttributes)
-                
-                if mask != None and not mask.contains(chromosome=varArgs["chromosome"],position=varArgs["start"]):
+                rsNumber = None
+            newVariant = variant(chromosome=columns[chrom],
+                                 position=columns[pos],
+                                 matchMode=parameters.alleleMatching,
+                                 attemptRepairsWhenComparing=parameters.attemptRepairsWhenComparing,
+                                 ref=".*",
+                                 alt=".*",
+                                 name=rsNumber,
+                                 build=parameters.build,
+                                 attributeFilters=parameters.attributesToInclude)
+            for i,c in enumerate(columns):
+                if i == chrom or i == pos or i == rs:
                     continue
-                if functionToCall != None:
-                    functionToCall(newVariant,**callbackArgs)
-                if returnFileObject:
-                    newFileObject.variants.add(newVariant)
-        if returnFileObject:
-            newFileObject.fileAttributes["HEADER_MAPPINGS"] = headerMappings
-            newFileObject.fileAttributes["ALL_HEADERS"] = headers
-            return newFileObject
+                newVariant.setAttribute(fileAttributes['HEADERS'][i], c)
+            
+            if not newVariant.poisoned and parameters.passFunction != None:
+                parameters.passFunction(newVariant,**parameters.callbackArgs)
+                # If we're storing this thing in a file, do that now
+                if parameters.returnFileObject and not newVariant.poisoned:
+                    fileObject.addVariant(newVariant)
+            elif newVariant.poisoned and parameters.rejectFunction != None:
+                parameters.rejectFunction(newVariant,**parameters.callbackArgs)
+        infile.close()
+        
+        # TODO: standardize fileAttributes, write export to .csv functions
+        
+        if parameters.returnFileObject:
+            return fileObject
         else:
-            return {"HEADER_MAPPINGS":headerMappings,"ALL_HEADERS":headers}
+            return None
 
 #################################################
 # Feature-level helper classes and file formats #
 #################################################
-'''
-# TODO: probably find a better way to organize these structures using bx.intervals.intersection import Interval, IntervalTree
-
-class feature:
-    def __init__(self, chromosome, start, stop=None, name=None, attemptRepairsWhenComparing=True, build=genomeUtils.hg19):
-        temp = standardizeChromosome(chromosome)
+class feature(Interval):
+    def __init__(self, chromosome, start, end=None, name=None, build=genomeUtils.hg19, strand=None, attributes={}):
+        '''
+        Create a genome feature that spans [start,stop) of chromosome in build (using 0-based BED coordinates)
+        '''
+        temp = genomeUtils.standardizeChromosome(chromosome,build)
         if temp == None:
             raise Exception('Invalid Chromosome: %s' % chromosome)
-        self.chromosome = temp
-        self.start,self.genomeStart = genomeUtils.standardizePosition(self.chromosome, start, build)
-        if stop == None:
-            self.stop = self.start+1
-            self.genomeStop = self.genomeStart+1
+        chromosome = temp
+        
+        start,self.genomeStart = genomeUtils.standardizePosition(chromosome, start, build)
+        if end == None:    # assume that the size is only 1 bp
+            end = start+1
+            self.genomeEnd = self.genomeStart+1
         else:
-            self.stop,self.genomeStop = genomeUtils.standardizePosition(self.chromosome, stop, build)
-        self.basicName = "%s_%i_%i" % (self.chromosome,self.start,self.stop)
+            end,self.genomeEnd = genomeUtils.standardizePosition(chromosome, end, build)
+        
+        self.hashCode = "%s_%i_%i" % (chromosome,start,end)
+        
         if name==None:
-            self.name = self.basicName
+            self.name = self.hashCode
         else:
             self.name = name
-        self.attributes = {}
-        self.attemptRepairsWhenComparing = attemptRepairsWhenComparing
+        
+        self.build = build
+        self.strand = strand
+        self.attributes = attributes
+        
+        Interval.__init__(self, start=start, end=end, value=self.attributes, chrom=chromosome, strand=strand)
+        
+        # I use these objects for nested structures such as exons inside a gene, etc
+        self.queryObjects = set()
+        self.children = set()
+    
+    def applyMask(self,mask):
+        collisions = mask.chromosomes[self.chrom].find(self.start,self.end)
+        if len(collisions) == 0:
+            return [self]
+        else:
+            newBounds = [(self.start,self.end)]
+            for c in collisions:
+                for i,(s,e) in enumerate(newBounds):
+                    if s >= e:  # throw away stuff that's size zero or less 
+                        del newBounds[i]
+                        continue
+                    if s < c.end and c.start < e:   # guarantees overlap
+                        if e > c.end:   # we have a bit of me at the top surviving beyond this collision
+                            if s < c.start: # is there a piece at the bottom too (e.g. am i splitting into two pieces)?
+                                newBounds.append((e,max(c.end)))
+                            else:   # otherwise just modify in place
+                                newBounds[i] = (e,max(c.end))
+                        if s < c.start: # just a piece at the bottom surviving
+                            newBounds[i] = (s,min(e,c.start))
+            results = []
+            for s,e in sorted(newBounds):
+                if s >= e:
+                    continue
+                results.append(feature(chromosome=self.chrom, start=s, end=e, name=self.name, build=self.build, strand=self.strand, attributes=self.attributes))
+            return results
     
     def contains(self, chromosome, position):
-        if self.chromosome != chromosome:
-            return False
-        position = int(position)
-        if position >= self.start and position < self.stop:
-            return True
-        else:
-            return False
+        return self.chrom == chromosome and position >= self.start and position < self.end
     
-    def overlap(self, otherFeature):
-        if self.chromosome != otherFeature.chromosome:
-            return False
-        if self.start > otherFeature.stop:
-            return False
-        if otherFeature.start > self.stop:
-            return False
-        return True
+    def overlaps(self, otherFeature):
+        return self.chrom == otherFeature and not self.start < otherFeature.end and otherFeature.start < self.end
+    
+    def addChild(self, c):
+        assert c.chrom == self.chrom
+        if c in self.children:
+            return
+        self.children.add(c)
+        for q in self.queryObjects:
+            q.addFeature(c)
     
     @staticmethod
     def numXYMCompare(x, y):
-        if x.chromosome == y.chromosome:
+        if x.chrom == y.chrom:
             return feature.positionCompare(x,y)
         else:
-            return genomeUtils.hg19chrOrder.index(x.chromosome)-genomeUtils.hg19chrOrder.index(y.chromosome)
+            return genomeUtils.hg19chrOrder.index(x.chrom)-genomeUtils.hg19chrOrder.index(y.chrom)
     @staticmethod
     def unixCompare(x, y):
-        if x.chromosome == y.chromosome:
+        if x.chrom == y.chrom:
             return feature.positionCompare(x,y)
-        if x.chromosome > y.chromosome:
+        if x.chrom > y.chrom:
             return 1;
         else:
             return -1
@@ -1432,89 +1511,27 @@ class feature:
         return self.genomeStart + self.genomeStop
     
     def __eq__(self, other):
-        if self.basicName == other.basicName:
-            self.repair(other)
+        if self.hashCode == other.hashCode:
             return True
         else:
             return False
     
     def __ne__(self, other):
         return not self.__eq__(other)
-    
-    def repair(self, other):
-        if self.attemptRepairsWhenComparing and other.attemptRepairsWhenComparing:
-            newAttributes = {}
-            
-            for k,v in other.attributes.iteritems():
-                if self.attributes.has_key(k):
-                    if v != self.attributes[k]:
-                        return
-                else:
-                    newAttributes[k] = v
-            
-            for k,v in self.attributes.iteritems():
-                if other.attributes.has_key(k):
-                    if v != other.attributes[k]:
-                        return
-                else:
-                    newAttributes[k] = v
-            
-            self.attributes.update(newAttributes)
-            other.attributes.update(newAttributes)
 
-class genomeMask:
-    INDEL_STRICT = 0  # if either endpoint of an indel is in the mask, it fails
-    INDEL_LOOSE = 1 # if either endpoint is NOT in the mask, it passes
-    def __init__(self, regions, invert=False):
-        self.indelMode = indelMode
-        
-        self.regions = defaultdict(list)   # {chromosome:[feature (sorted by start)]}
-        for f in regions:
-            self.regions[f.chromosome].append(f)
-        for featureList in self.regions.itervalues():
-            featureList.sort(key=lambda x:x.value)
-        
-        if invert:
-            temp = self.regions
-            self.regions = defaultdict(list)
-            for chromosome,size in genomeUtils.hg19chrLengths.iteritems():
-                newFeature = feature(chromosome,start=0,stop=size)
-                self.regions[newFeature.chromosome].append(newFeature)
-            self.subtract(temp)
+class featureSet():
+    def __init__(self, build=genomeUtils.hg19):
+        self.chromosomes = {}
+        for c in genomeUtils.getChromosomes(build):
+            self.chromosomes[c] = IntervalTree()
     
-    def subtract(self, otherMask):
-        newRegions = defaultdict(list)
-        for chr,features in self.regions.iteritems():
-            otherFeatures = otherMask.get(chr,[])
-            newFeatures = []
-            
-            myIndex = 0
-            otherIndex = 0
-            while myIndex < len(features):  # while there's something to subtract from...
-                if otherIndex < len(otherFeatures): # anything left to subtract?
-                    if otherFeatures[otherIndex].stop < features[myIndex].start: # we know that the lists are sorted, so nothing overlaps... look at the next feature
-                        otherIndex += 1
-                        continue
-                    else: # okay, something overlapped...
-                        if otherFeatures[otherIndex].start > features[myIndex].start: # do we need to add a bottom piece of me to the list?
-                            newFeatures.append(feature(chr,start=features[myIndex].start,stop=otherFeatures[otherIndex].start-1))
-                        if otherFeatures[otherIndex].stop < features[myIndex].stop: # is there anything left of me?
-                            features[myIndex].start = otherFeatures[otherIndex.stop] + 1    # look at the slimmer version of me next time around, and we know we've finished with the other piece
-                            features[myIndex].genomeStart = otherFeatures[otherIndex.genomeStop] + 1
-                            otherIndex += 1
-                            continue
-                        else: # nothing left of of me to take (but there could be more of the other piece that affects something else)
-                            myIndex += 1
-                            continue
-                else: # nothing left to subtract from me, so I can add myself and move on
-                    newFeatures.append(features[myIndex])
-                    myIndex += 1
-            # The way we did that, newFeatures will already be sorted
-            newRegions[chr] = newFeatures
-        self.regions = newRegions
+    def addFeature(self, f):
+        self.chromosomes[f.chrom].insert_interval(f)
+        for c in f.children:
+            self.chromosomes[f.chrom].insert_interval(c)
     
-    # TODO: need a method that query whether a variant/feature intersects, and how much is left if it's a feature...
-    # from bx.intervals.intersection import Interval, IntervalTree might help a little (may need the flattening pattern though)
+    def contains(self, chromosome, position):
+        return self.chromosomes[chromosome].find(position,position+1)
 
 class featureLoadingParameters:
     """
@@ -1525,87 +1542,164 @@ class featureLoadingParameters:
                  passFunction=None,
                  rejectFunction=None,
                  callbackArgs={},
+                 tickFunction=None,
+                 tickInterval=10,
                  mask=None,
                  attributesToInclude={},
-                 returnFileObject=False,
-                 attemptRepairsWhenComparing=True):
+                 returnFileObject=False):
         """
         :param passFunction:
-            This function will be called for every variant that passes all criteria,
-            with the variant as the first argument and callbackArgs as **vargs
+            function or None
+            
+            This function will be called for every feature that passes all criteria,
+            with the feature as the first argument and callbackArgs as **kwargs
+            
         :param rejectFunction:
-            This function will be called for every variant that fails at least one
-            criteria or is masked, with the variant as the first argument and callbackArgs as **vargs
+            function or None
+            
+            This function will be called for every feature that fails at least one
+            criteria or is masked, with the feature as the first argument and callbackArgs as **kwargs
+        
+        :param tickFunction:
+            function or None
+            
+            This function will be called approximately every tickInterval percent of the way through the file;
+            this is useful for progress bars, etc. As this relies on an estimate, it is certainly possible to have
+            more or less ticks than expected; for example, if tickInterval is 5 (i.e. 5%), there could be 21 or 19
+            (or even more or less) total calls to tickFunction(). There would be approximately 20 total calls, but
+            this is an estimate.
+            
         :param mask:
-            If not none, this should be a genomeMask object; any part of any features
-            that overlaps the mask will be clipped (or if a feature is entirely in the
-            mask, it will be rejected)
+            featureSet or None
+            
+            Only include features outside the masked regions. If a feature is partially in and out of the mask, it
+            will be clipped. Set to None to include features anywhere.
+            
         :param attributesToInclude:
+            dict {string:valueFilter} or None
+            
             This should be a dict containing strings mapped to valueFilter
-            objects (where the string matches a column header in a .csv
-            variant file, or "QUAL", "FILTER", or an INFO header from a
-            .vcf file). Note that only attributes specified here will
-            be extracted from the file.
-        :param attemptRepairsWhenComparing:
-            Once two variants are identified as equal, enabling this option will
-            attempt to merge the information into a single variant object. Usually
-            this is straightforward, but fails when REF/ALT allele configurations
-            are reversed (to do this correctly, it would involve identifying which
-            allele is the true REF, and reversing genotypes).
+            objects (where the string matches a column name per the appropriate specification:
+            .bed: "name", "score", "strand" ... (see http://genome.ucsc.edu/FAQ/FAQformat.html#format1)
+            .gff3: "seqid", "source", "type" ... or any key in the "attribute" column (see http://www.sequenceontology.org/gff3.shtml)
+            Note that only attributes specified here will be extracted from the file. Set to None to extract all attributes.
         """
-        self.passFunction = passFunction
-        self.rejectFunction = rejectFunction
-        self.callbackArgs = callbackArgs
-        self.mask = mask
-        self.attributesToInclude = attributesToInclude
-        self.returnFileObject = returnFileObject
-        self.attemptRepairsWhenComparing = attemptRepairsWhenComparing
+        self.build=build
+        self.passFunction=passFunction
+        self.rejectFunction=rejectFunction
+        self.callbackArgs=callbackArgs
+        self.tickFunction=tickFunction
+        self.tickInterval=tickInterval
+        self.mask=mask
+        self.attributesToInclude=attributesToInclude
+        self.returnFileObject=returnFileObject
 
-class bedFile:
-    def __init__(self):
-        self.regions = []
-    
-    def numRegions(self):
-        return len(self.regions)
-    
-    def contains(self, chromosome, position):
-        # TODO: this could probably be optimized...
-        for r in self.regions:
-            if r.contains(chromosome, position):
-                return True
-        return False
-    
-    def overlap(self, f):
-        # TODO: this could probably be optimized...
-        for r in self.regions:
-            if r.overlap(f):
-                return True
-        return False
+class featureFile:
+    def __init__(self, fileAttributes):
+        self.regions = featureSet()
+        self.fileAttributes = None
     
     @staticmethod
-    def parseBedFile(path,featureParameters):
-        if returnFileObject:
-            newFileObject = bedFile()
+    def extractBedFileInfo(path):
+        fileAttributes = recursiveDict()
+        fileAttributes['browser'] = []
+        fileAttributes['track'] = {}
+        
+        infile = open(path,'r')
+        for line in infile:
+            line = line.strip()
+            if len(line) <= 1 or line.startswith('#'):
+                continue
+            lowerLine = line.lower()
+            if lowerLine.startswith('browser'):
+                fileAttributes['browser'].append(line[8:].split())
+            elif lowerLine.startswith('track'):
+                for c in line.split():
+                    if c == 'track':
+                        continue
+                    temp = c.split('=')
+                    fileAttributes['track'][temp[0]] = temp[1]
+            else:
+                break   # we're in to real data now
+        infile.close()
+        return fileAttributes
+    
+    @staticmethod
+    def parseBedFile(path,parameters):
+        fileAttributes = featureFile.extractBedFileInfo(path)
+        
+        if parameters.returnFileObject:
+            newFileObject = featureFile()
+            newFileObject.fileAttributes = fileAttributes
+        
+        bedColumns = ['thickStart','thickEnd','itemRgb','blockCount','blockSizes','blockStarts']
+        if fileAttributes['track'].get('type',None) == 'bedDetail':
+            bedColumns.append('ID')
+            bedColumns.append('description')
+        
         fileObject = open(path,'r')
         for line in fileObject:
+            lowerLine = line.lower().strip()
+            if len(lowerLine) <= 1 or lowerLine.startswith('#') or lowerLine.startswith('browser') or lowerLine.startswith('track'):
+                continue
+            
             columns = line.split()
-            if len(columns) < 3:
+            
+            if len(columns) <= 3:
                 name = None
             else:
                 name = columns[3]
-            newRegion = feature(columns[0], int(columns[1])+1, stop=int(columns[2]), name=name, featureParameters.attemptRepairsWhenComparing, featureParameters.build)   # the +1 converts from BED coordinates
-            if mask != None and not mask.overlap(newRegion):
-                continue
-            if functionToCall != None:
-                functionToCall(newRegion,**callbackArgs)
-            if returnFileObject:
-                newFileObject.regions.append(newRegion)
+            
+            if len(columns) <= 4:
+                attributes = {'score':1000}
+            else:
+                attributes = {'score':int(columns[4])}
+            
+            if len(columns) <= 5:
+                strand = None
+            else:
+                strand = columns[5]
+            
+            for i,header in enumerate(bedColumns):
+                if i >= len(columns):
+                    break
+                attributes[header] = columns[i]
+            
+            poisoned = False
+            if parameters.attributesToInclude != None:
+                attsToDel = set()
+                for att,val in attributes.iteritems():
+                    if not parameters.attributesToInclude.has_key(att):
+                        attsToDel.add(att)
+                    else:
+                        if not parameters.attributesToInclude[att].isValid(val):
+                            poisoned = True
+                for att in attsToDel:
+                    del attributes[att]
+            
+            tempFeature = feature(chromosome=columns[0], start=columns[1], end=columns[2], name=name, build=parameters.build, strand=strand, attributes=attributes)
+            if parameters.mask != None:
+                newFeatures = tempFeature.applyMask(parameters.mask)
+            else:
+                newFeatures = [tempFeature]
+            
+            if poisoned and parameters.rejectFunction != None:
+                for f in newFeatures:
+                    parameters.rejectFunction(f)
+            elif not poisoned and parameters.passFunction != None:
+                for f in newFeatures:
+                    parameters.passFunction(f)
+                    if parameters.returnFileObject:
+                        newFileObject.regions.addFeature(f)
         fileObject.close()
-        if returnFileObject:
+        
+        if parameters.returnFileObject:
             return newFileObject
         else:
-            return None # Normally we return file attributes, but the bed file is too simple
-    
+            return
+
+'''
+class bedFile:
     def writeBedFile(self, fileObject, sortMethod=None):
         if sortMethod == "UNIX":
             featureList = sorted(self.regions, cmp=feature.unixCompare)
