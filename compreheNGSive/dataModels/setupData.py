@@ -1,10 +1,11 @@
+import os
+from lxml import etree
+from resources.genomeUtils import variantFile, valueFilter, parseException
 from dataModels.variantData import variantData
 from dataModels.featureData import featureData
-from resources.genomeUtils import variantFile, valueFilter
-from lxml import etree
 
 class prefs:
-    def __init__(self, alleleGroupID, alleleMode, xFileID, xAttributeID, yFileID, yAttributeID, files=[], groups=[]):
+    def __init__(self, alleleGroupID, alleleMode, xFileID, xAttributeID, yFileID, yAttributeID, files={}, groups={}):
         pass
         '''
                 alleleMode be any of the following:<br/>
@@ -35,28 +36,94 @@ class prefs:
                     </li>
                 </ul>
             '''
+    
+    @staticmethod
+    def generateFromText(text):
+        root = etree.fromstring(text)
+        try:
+            # handle files
+            files = {}
+            fileGroupsToMake=[]
+            for f in root.findall('file'):
+                path = f.attrib['path']
+                fileID = f.attrib.get('id',os.path.split(path)[1])
+                assert not files.has_key(fileID)
+                attributes = attribute.generateFromParent(f)
+                if len(attributes) > 0:
+                    fileGroupsToMake.append(fileID)
+                files[fileID] = fileObject(fileID,path,f.attrib['build'],attributes)
+            # handle groups
+            groups = {}
+            for f in fileGroupsToMake:
+                assert not groups.has_key(f.fileID)
+                groups[f.fileID] = f.makeGroup()
+            for g in root.findall('group'):
+                assert not groups.has_key(g.attrib['id'])
+                attributes = attribute.generateFromParent(g)
+                samples = sample.generateFromParent(g)
+                groups[g.attrib['id']] = groupObject(g.attrib['id'],samples,attributes)
+            # handle required stuff
+            prefsObj = prefs(root.find('alleleOfInterest').attrib['id'],
+                             root.find('alleleOfInterest').attrib['mode'],
+                             root.find('startingXaxis').attrib['id'],
+                             root.find('startingXaxis').attrib['attribute'],
+                             root.find('startingYaxis').attrib['id'],
+                             root.find('startingYaxis').attrib['attribute'],
+                             files,
+                             groups)
+            return prefsObj
+        except (AssertionError, AttributeError, KeyError):
+            raise parseException('Bad Prefs string')
+        
 class startingAxis:
     def __init__(self, attributeID, attribute):
         pass
 
 class fileObject:
-    def __init__(self, fileID, path, build, attributes=[], hardfilters=[], softfilters=[]):
+    def __init__(self, fileID, path, build, attributes=[]):
         pass
 
 class groupObject:
-    def __init__(self, groupID, samples=[], attributes=[], hardfilters=[], softfilters=[]):
+    def __init__(self, groupID, samples=[], attributes=[]):
         pass
-
-class variantFileObject(fileObject, groupObject):
-    pass
 
 class sample:
     def __init__(self, fileID, sampleID):
         pass
+    
+    @staticmethod
+    def generateFromParent(node):
+        results = []
+        for s in node.findall('sample'):
+            results.append(sample(s.attrib['file'],s.attrib['id']))
+        return results
 
 class attribute:
-    def __init__(self, attributeID, fileID=None, statistic=None, forceCategorical=None, filters=[]):
+    def __init__(self, attributeID, statistic=None, forceCategorical=None, hardfilters=[], softfilters=[]):
         pass
+    
+    @staticmethod
+    def generateFromParent(node):
+        results = []
+        for r in node.findall('attribute'):
+            statistic = r.attrib.get('statistic',None)
+            if statistic != None and node.tag == 'file' and not node.attrib['path'].endswith('.vcf'):
+                raise parseException('Pref string used a statistic attribute on a non-.vcf file')
+            forceCategorical = True if r.attrib.get('forceCategorical','false') == 'true' else False
+            softfilters=softFilter.generateFromParent(r)
+            hardfilters=hardFilter.generateFromParent(r)
+            results.append(attribute(r.attrib['id'],statistic,forceCategorical,hardfilters,softfilters))
+        return results
+
+class softFilter:
+    def __init__(self, excludeMissing=True, excludeMasked=True):
+        pass
+    
+    @staticmethod
+    def generateFromParent(node):
+        results = []
+        for f in node.findall('softFilter'):
+            
 
 class hardFilter(valueFilter):
     def __init__(self, excludeMissing=True, excludeMasked=True, percent=100.0, direction="top", values=[]):

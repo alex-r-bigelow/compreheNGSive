@@ -1,85 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- For a description of how to format this file, see http://www.sci.utah.edu/~abigelow/prefsSpec.php -->
-<root xmlns:prefs="http://www.sci.utah.edu/~abigelow/prefsSpec.php">
-	<prefs:alleleOfInterest id="CASP8 Cases" mode="mostFrequent"/>
-	<prefs:startingXaxis id="CASP8 Cases" attribute="AF"/>
-	<prefs:staringYaxis id="CASP8 Controls" attribute="AF"/>
-	<prefs:file path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
-        <prefs:attribute>QUAL</prefs:attribute>
-        <prefs:attribute>FILTER</prefs:attribute>
-        <prefs:hardfilter attribute="FILTER" excludeMissing="true">
-        	<prefs:value>PASS</prefs:value>
-        </prefs:hardfilter>
-        <prefs:attribute>QD</prefs:attribute>
-        <prefs:attribute>FS</prefs:attribute>
-        <prefs:attribute>MQ</prefs:attribute>
-        <prefs:attribute>HaplotypeScore</prefs:attribute>
-		<prefs:attribute>MQRankSum</prefs:attribute>
-		<prefs:attribute>ReadPosRankSum</prefs:attribute>
-    </prefs:file>
-    <prefs:file path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
-        <prefs:attribute>QUAL</prefs:attribute>
-        <prefs:attribute>FILTER</prefs:attribute>
-        <prefs:attribute>QD</prefs:attribute>
-        <prefs:attribute>FS</prefs:attribute>
-        <prefs:attribute>MQ</prefs:attribute>
-        <prefs:attribute>HaplotypeScore</prefs:attribute>
-		<prefs:attribute>MQRankSum</prefs:attribute>
-		<prefs:attribute>ReadPosRankSum</prefs:attribute>
-    </prefs:file>
-	<prefs:file id="annotations" path="/Users/Home/Desktop/casp8bundle/reducedAngiesList.csv" build="hg19">
-        <prefs:attribute>maf1kceugbr</prefs:attribute>
-        <prefs:attribute>location</prefs:attribute>
-        <prefs:attribute>type</prefs:attribute>
-        <prefs:attribute>function</prefs:attribute>
-        <prefs:attribute>polyphen</prefs:attribute>
-        <prefs:attribute>siftscores</prefs:attribute>
-        <prefs:attribute>transcriptiongm12878</prefs:attribute>
-        <prefs:attribute>layeredgm12878h3k4me1stdsig</prefs:attribute>
-        <prefs:attribute>layeredhmech3k4me3stdsig</prefs:attribute>
-        <prefs:attribute>layeredhmech3k27acstdsig</prefs:attribute>
-        <prefs:attribute>txnfactorchip</prefs:attribute>
-        <prefs:attribute>openchromsynthgm12878pk</prefs:attribute>
-        <prefs:attribute>conservation</prefs:attribute>
-        <prefs:attribute>histone_all3pos</prefs:attribute>
-    </prefs:file>
-    <prefs:group id="CASP8 Cases">
-		<prefs:sample file="alex_new.vcf">441_1x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_2x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_4x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_5x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_6x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_7x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_8x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_9x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_10x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_12x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_13x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_14x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_15x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_37x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_38x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_42x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_43x</prefs:sample>
-		<prefs:attribute statistic="allele frequency">AF</prefs:attribute>
-		<softfilter attribute="AF" direction="top" percent="5" excludeMissing="true"/>
-    </prefs:group>
-    <prefs:group id="CASP8 Controls">
-		<prefs:sample file="alex_new.vcf">441_22x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_23x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_24x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_25x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_26x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_27x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_28x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_29x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_30x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_31x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_32x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_33x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_49x</prefs:sample>
-		<prefs:sample file="alex_new.vcf">441_50x</prefs:sample>
-		<prefs:attribute statistic="allele frequency">AF</prefs:attribute>
-		<softfilter attribute="AF" direction="bottom" percent="5" excludeMissing="false"/>
-    </prefs:group>
+<root>
+	<alleleOfInterest id="CASP8 Cases" mode="mostFrequent"/>
+	<startingXaxis id="CASP8 Cases" attribute="AF"/>
+	<staringYaxis id="CASP8 Controls" attribute="AF"/>
+	<file path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
+        <attribute id="QUAL">
+        	<hardfilter excludeMissing="true">
+        		<range low="30.0" high="Inf"/>
+        	</hardfilter>
+        </attribute>
+        <attribute id="FILTER">
+	        <hardfilter excludeMissing="true">
+	        	<value text="PASS"/>
+	        </hardfilter>
+	    </attribute>
+        <attribute id="QD"/>
+        <attribute id="FS"/>
+        <attribute id="MQ"/>
+        <attribute id="HaplotypeScore"/>
+		<attribute id="MQRankSum"/>
+		<attribute id="ReadPosRankSum"/>
+    </file>
+    <file path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
+        <attribute id="QUAL"/>
+        <attribute id="FILTER"/>
+        <attribute id="QD"/>
+        <attribute id="FS"/>
+        <attribute id="MQ"/>
+        <attribute id="HaplotypeScore"/>
+		<attribute id="MQRankSum"/>
+		<attribute id="ReadPosRankSum"/>
+    </file>
+	<file id="annotations" path="/Users/Home/Desktop/casp8bundle/reducedAngiesList.csv" build="hg19">
+        <attribute id="maf1kceugbr"/>
+        <attribute id="location"/>
+        <attribute id="type"/>
+        <attribute id="function"/>
+        <attribute id="polyphen"/>
+        <attribute id="siftscores"/>
+        <attribute id="transcriptiongm12878"/>
+        <attribute id="layeredgm12878h3k4me1stdsig"/>
+        <attribute id="layeredhmech3k4me3stdsig"/>
+        <attribute id="layeredhmech3k27acstdsig"/>
+        <attribute id="txnfactorchip"/>
+        <attribute id="openchromsynthgm12878pk"/>
+        <attribute id="conservation"/>
+        <attribute id="histone_all3pos"/>
+    </file>
+    <group id="CASP8 Cases">
+		<sample file="alex_new.vcf" id="441_1x"/>
+		<sample file="alex_new.vcf" id="441_2x"/>
+		<sample file="alex_new.vcf" id="441_4x"/>
+		<sample file="alex_new.vcf" id="441_5x"/>
+		<sample file="alex_new.vcf" id="441_6x"/>
+		<sample file="alex_new.vcf" id="441_7x"/>
+		<sample file="alex_new.vcf" id="441_8x"/>
+		<sample file="alex_new.vcf" id="441_9x"/>
+		<sample file="alex_new.vcf" id="441_10x"/>
+		<sample file="alex_new.vcf" id="441_12x"/>
+		<sample file="alex_new.vcf" id="441_13x"/>
+		<sample file="alex_new.vcf" id="441_14x"/>
+		<sample file="alex_new.vcf" id="441_15x"/>
+		<sample file="alex_new.vcf" id="441_37x"/>
+		<sample file="alex_new.vcf" id="441_38x"/>
+		<sample file="alex_new.vcf" id="441_42x"/>
+		<sample file="alex_new.vcf" id="441_43x"/>
+		<attribute statistic="allele frequency" id="AF">
+			<softfilter>
+				<percentage direction="top" percent="5"/>
+			</softfilter>
+		</attribute>
+    </group>
+    <group id="CASP8 Controls">
+		<sample file="alex_new.vcf" id="441_22x"/>
+		<sample file="alex_new.vcf" id="441_23x"/>
+		<sample file="alex_new.vcf" id="441_24x"/>
+		<sample file="alex_new.vcf" id="441_25x"/>
+		<sample file="alex_new.vcf" id="441_26x"/>
+		<sample file="alex_new.vcf" id="441_27x"/>
+		<sample file="alex_new.vcf" id="441_28x"/>
+		<sample file="alex_new.vcf" id="441_29x"/>
+		<sample file="alex_new.vcf" id="441_30x"/>
+		<sample file="alex_new.vcf" id="441_31x"/>
+		<sample file="alex_new.vcf" id="441_32x"/>
+		<sample file="alex_new.vcf" id="441_33x"/>
+		<sample file="alex_new.vcf" id="441_49x"/>
+		<sample file="alex_new.vcf" id="441_50x"/>
+		<attribute statistic="allele frequency" id="AF">
+			<softfilter excludeMissing="false">
+				<percentage direction="bottom" percent="5"/>
+			</softfilter>
+		</attribute>
+    </group>
 </root>

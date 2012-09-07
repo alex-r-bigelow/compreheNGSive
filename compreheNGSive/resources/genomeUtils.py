@@ -987,8 +987,8 @@ class variantLoadingParameters:
         self.attemptRepairsWhenComparing = attemptRepairsWhenComparing
 
 class variantFile:
-    def __init__(self):
-        self.fileAttributes = None
+    def __init__(self, fileAttributes=None):
+        self.fileAttributes = fileAttributes
         self.variants = set()
     
     def addVariant(self, v):
