@@ -683,7 +683,7 @@ class variant:
             return -1
     @staticmethod
     def positionCompare(x,y):
-        return x.start-y.start
+        return x.position-y.position
     
     def repair(self, other):
         """
