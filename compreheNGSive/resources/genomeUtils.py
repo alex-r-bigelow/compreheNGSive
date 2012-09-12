@@ -492,7 +492,7 @@ class genotype:
     def __ne__(self, other):
         return not self.__eq__(other)
     
-    def __str__(self):
+    def __repr__(self):
         first = "." if self.allele1 == None else str(self.allele1)
         slash = "|" if self.isPhased else "/"
         second = "." if self.allele2 == None else str(self.allele2)
@@ -1048,8 +1048,6 @@ class variantFile:
     
     def addVariant(self, v):
         self.variants.add(v)
-        # after we've tried to add it
-        v.euthanizeTwins()
     
     @staticmethod
     def extractVcfFileInfo(path):

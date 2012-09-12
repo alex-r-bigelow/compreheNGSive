@@ -19,15 +19,17 @@ if __name__ == '__main__':
 
 ##################
 # BEGIN APP CODE #
-lociToKeep = set()
-
-def tick():
-    print ".",
-
-def add(v):
-    lociToKeep.add(v)
 
 def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=""):
+    lociToKeep = set()
+
+    def tick():
+        print ".",
+    
+    def add(v):
+        if lociToKeep != None:
+            lociToKeep.add(v)
+    
     if individuals != None:
         print "Parsing individual list..."
         individualList = []
@@ -38,6 +40,7 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
         
     else:
         individualList = variantFile.extractVcfFileInfo(vcf)["INDIVIDUALS"]
+    individualList.sort()
     
     if loci != None:
         print "Parsing loci list..."
@@ -53,25 +56,28 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
     else:
         lociToKeep = None
     
-    print "Parsing .vcf file..."
-    # we only care about genotypes; we throw out all other details.
-    parseParameters = variantLoadingParameters(  passFunction=add,
-                                                 tickFunction=tick,
-                                                 tickInterval=5,
-                                                 individualsToInclude=individualList,
-                                                 lociToInclude=lociToKeep,
-                                                 attributesToInclude={},
-                                                 skipGenotypeAttributes=True)
-    
-    if lociToKeep == None:
-        parseParameters.returnFileObject = True
-    
-    resultFile = variantFile.parseVcfFile(vcf,parseParameters)
-    print ""
+    if not isinstance(vcf,list):
+        vcf = [vcf]
+    for infile in vcf:
+        print "Parsing %s" % infile
+        # we only care about genotypes; we throw out all other details.
+        parseParameters = variantLoadingParameters(  passFunction=add,
+                                                     tickFunction=tick,
+                                                     tickInterval=5,
+                                                     individualsToInclude=individualList,
+                                                     lociToInclude=lociToKeep,
+                                                     attributesToInclude={},
+                                                     skipGenotypeAttributes=True)
+        
+        if lociToKeep == None:
+            parseParameters.returnFileObject = True
+        
+        resultFile = variantFile.parseVcfFile(infile,parseParameters)
+        print ""
     
     print "Writing results..."
     outfile = open(out,'w')
-    outfile.write("Chromosome\tPosition\tRs#")
+    outfile.write("Chromosome\tPosition\tRs#\tMajor\tMinor")
     for i in individualList:
         outfile.write("\t%s" % i)
     outfile.write("\n")
@@ -81,17 +87,25 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
         removeFile.write("Chromosome\tPosition\tRs#\tReason\n")
     
     if lociToKeep != None:
-        lociToKeep = sorted(lociToKeep, cmp=variant.numXYMCompare)
+        lociToKeep = sorted(lociToKeep, key=lambda v: v.name)
     else:
-        lociToKeep = sorted(resultFile.variants, cmp=variant.numXYMCompare)
+        lociToKeep = sorted(resultFile.variants, key=lambda v: v.name)
     
     for v in lociToKeep:
         if remove != None and len(v.genotypes) == 0:
             removeFile.write("%s\t%i\t%s\tNo Genotypes\n" % (v.chromosome,v.position,v.name))
         else:
-            outfile.write("%s\t%i\t%s" % (v.chromosome,v.position,v.name))
+            outfile.write("%s\t%i\t%s\t%s\t%s" % (v.chromosome,v.position,v.name,v.alleles[0],v.alleles[1]))
             for i in individualList:
-                outfile.write("\t%s" % str(v.genotypes.get(i,"./.")))
+                a1 = "_"
+                a2 = "_"
+                if v.genotypes.has_key(i):
+                    g = v.genotypes[i]
+                    if g.allele1 != None:
+                        a1 = str(g.allele1)
+                    if g.allele2 != None:
+                        a2 = str(g.allele2)
+                outfile.write("\t%s%s" % (a1,a2))
             outfile.write("\n")
     outfile.close()
     if remove != None:
@@ -112,7 +126,7 @@ if __name__ == '__main__':
     ########################
     # BEGIN APP PARAMETERS #
     
-    requiredArgs = [("vcf","v","path to .vcf file"),
+    requiredArgs = [("vcf","v","path(s) to .vcf file"),
                     ("out","o","path to write .csv file with columns:\n"+
                                "Chromosome    Position    Rs#    <person 1> Genotype    ...")]
     optionalArgs = [("loci","l","path to .csv file containing loci to extract with one header. Columns should be:\n"+
