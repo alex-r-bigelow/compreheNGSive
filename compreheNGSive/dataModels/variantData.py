@@ -1,6 +1,6 @@
 from resources.structures import countingDict, TwoTree, FourTree
 from copy import deepcopy
-import operator, math, re, sys
+import math, re, sys
 
 selectionLabelRegex = re.compile('\(\d+\)')
 
@@ -178,7 +178,7 @@ class selection:
                 att_0,fil_0 = prefilters.iteritems().next()   # ugly way of grabbing one of the prefilters
                 ax = self.data.axes[att_0]
                 self.applySelectAll(ax, applyImmediately=False)
-                self.applyCustomFilter(ax, fil_0, applyImmediately=False)
+                self.applyCustomFilters(ax, fil_0, applyImmediately=False)
                 self.result = ax.query(self.params[ax][0],self.params[ax][1])
                 # now do the rest of the prefilters to cut that selection down
                 for att,fil in prefilters.iteritems():
@@ -187,7 +187,7 @@ class selection:
                     else:
                         ax = self.data.axes[att]
                         self.applySelectAll(ax, applyImmediately=False)
-                        self.applyCustomFilter(ax, fil, applyImmediately=False)
+                        self.applyCustomFilters(ax, fil, applyImmediately=False)
                         self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
                 # now do the rest of the attributes
                 for att,ax in self.data.axes.iteritems():
@@ -360,18 +360,38 @@ class selection:
         if applyImmediately:
             self.updateResult(axis)
     
-    def applyCustomFilter(self, axis, fil, applyImmediately=True):
-        if not axis.hasNumeric():
-            ranges = []
-        else:
-            percentage = (axis.getMax()-axis.getMin()) * fil.percent
-            if fil.direction == 'bottom':
-                ranges = [(axis.getMin(),percentage+axis.getMin())]
+    def applyCustomFilters(self, axis, fil, applyImmediately=True):
+        ranges = []
+        if axis.hasNumeric():
+            if fil.percentages == None or len(fil.percentages) == 0:
+                ranges.append((axis.getMin(),axis.getMax()))
             else:
-                ranges = [(axis.getMax()-percentage,axis.getMax())]
-            if fil.excludeMissing and self.params[axis][1].has_key('Missing'):
-                    self.params[axis][1]['Missing'] = False
-        self.params[axis] = (ranges,self.params[axis][1])
+                for p in fil.percentages:
+                    if p < 0:
+                        ranges.append((axis.getMin(),-(axis.getMax()-axis.getMin())*p+axis.getMin()))
+                    else:
+                        ranges.append((axis.getMax()-(axis.getMax()-axis.getMin())*p,axis.getMax()))
+        labels = {}
+        # First limit to labels that exist, but deselect them all
+        if fil.values == None:
+            for l in self.params[axis][1].iterkeys():
+                labels[l] = True
+            if fil.excludeMissing and labels.has_key('Missing'):
+                labels['Missing'] = False
+            if fil.excludeMasked and labels.has_key('Allele Masked'):
+                labels['Allele Masked'] = False
+        else:
+            for l in self.params[axis][1].iterkeys():
+                labels[l] = False
+            for l in fil.values:
+                if labels.has_key(l):
+                    labels[l] = True
+            if not fil.excludeMissing and labels.has_key('Missing'):
+                labels['Missing'] = True
+            if not fil.excludeMasked and labels.has_key('Allele Masked'):
+                labels['Allele Masked'] = True
+        self.params[axis] = (ranges,labels)
+        self.simplifyNumericSelections(axis)
         if applyImmediately:
             self.updateResult(axis)
     
@@ -775,7 +795,7 @@ class operation:
                 self.selections.activeSelections(n)
 
 class variantData:
-    def __init__(self):
+    def __init__(self, axisLabels):
         self.data = {}  # {rsNumber : variant object}
         self.axes = None
         
@@ -787,8 +807,8 @@ class variantData:
         self.currentXattribute = None
         self.currentYattribute = None
         
-        self.axisLabels = set()
-        self.alleleFrequencyLabels = []
+        self.axisLabels = set(axisLabels)
+        self.statisticLabels = set()
         
         self.isFrozen = False
     
@@ -800,74 +820,94 @@ class variantData:
             print "ERROR: \"Genome Position\" column header is reserved."
             sys.exit(1)
         
-        self.axisLabels.update(variantObject.attributes.iterkeys())
-        
         if self.data.has_key(variantObject.name):
             self.data[variantObject.name].repair(variantObject)
         else:
             self.data[variantObject.name] = variantObject
     
-    def discardAttribute(self, att):
+    def performGroupCalculations(self, groupDict, statisticDict, callback, tickInterval):
+        from setupData import statistic
         if self.isFrozen:
             self.thaw()
-        self.axisLabels.discard(att)
-    
-    def recalculateAlleleFrequencies(self, individuals, groupName, basisGroup):
-        if self.isFrozen:
-            self.thaw()
-        att = "%s AF" % groupName
-        self.axisLabels.add(att)
-        if att not in self.alleleFrequencyLabels:
-            self.alleleFrequencyLabels.append(att)
+        
+        currentLine = 0
+        nextTick = tickInterval
+        
+        self.statisticLabels.update(statisticDict.iterkeys())
+        
+        targetAlleleGroups = {}
+        for s in statisticDict.itervalues():
+            if s.statisticType == statistic.ALLELE_FREQUENCY:
+                if s.parameters.has_key('alleleGroup'):
+                    index = s.parameters['alleleMode']
+                    if index >= 1:
+                        index -= 1  # they'll specify 1 as the most frequent, but we're in 0-based computer land; -1 is still the same though
+                    targetAlleleGroups[s.parameters['alleleGroup']] = s.parameters['alleleMode']
+                else:
+                    targetAlleleGroups['vcf override'] = s.parameters['alleleMode']
+        if len(targetAlleleGroups) == 0:    # nothing to calculate
+            return
         
         for variantObject in self.data.itervalues():
-            if basisGroup == None:
-                # by default, just pick the major allele from the REF/ALT columns
-                majorAllele = 0
-            else:
-                # First see if we can find a major allele with the people in basisGroup
-                alleleCounts = countingDict()
-                for i in basisGroup:
-                    if variantObject.genotypes.has_key(i.name):
-                        allele1 = variantObject.genotypes[i.name].allele1
-                        allele2 = variantObject.genotypes[i.name].allele2
-                        if allele1 != None:
-                            alleleCounts[allele1] += 1
-                        if allele2 != None:
-                            alleleCounts[allele2] += 1
-                if len(alleleCounts) > 1:
-                    majorAllele = max(alleleCounts.iteritems(), key=operator.itemgetter(1))[0]
-                else:
-                    if individuals == basisGroup:
-                        variantObject.attributes[att] = float('Inf')    # There was no data in the allele-defining group; it's missing here, and will be masked everywhere else
-                    else:
-                        variantObject.attributes[att] = float('NaN')    # No major allele found - we've got a masked allele frequency!
-                    continue
+            currentLine += 1
+            if currentLine >= nextTick:
+                nextTick += tickInterval
+                if callback():  # abort?
+                    return "ABORTED"
             
-            # Okay, we've found our reference allele; now let's see how frequent the others are
-            counts = countingDict()
-            allCount = 0
-            for i in individuals:
-                if variantObject.genotypes.has_key(i.name):
-                    allele1 = variantObject.genotypes[i.name].allele1
-                    allele2 = variantObject.genotypes[i.name].allele2
-                    if allele1 != None:
-                        allCount += 1
-                        if allele1 != majorAllele:
-                            counts[allele1] += 1
-                    if allele2 != None:
-                        allCount += 1
-                        if allele2 != majorAllele:
-                            counts[allele2] += 1
-            if allCount == 0:
-                variantObject.attributes[att] = float('Inf')    # We had no data for this variant, so this thing is undefined
-            else:
-                result = []
-                for c in counts.itervalues():
-                    result.append(c/float(allCount))
-                variantObject.attributes[att] = sorted(result)
+            if variantObject.poisoned:
+                continue
+            
+            # First find all the target alleles
+            targetAlleles = {}
+            for group,mode in targetAlleleGroups.iteritems():
+                if group == 'vcf override':
+                    alleles = variantObject.alleles
+                else:
+                    # First see if we can find a major allele with the people in basisGroup
+                    alleleCounts = countingDict()
+                    for i in groupDict[group].samples:
+                        if variantObject.genotypes.has_key(i):
+                            allele1 = variantObject.genotypes[i].allele1
+                            allele2 = variantObject.genotypes[i].allele2
+                            if allele1 != None:
+                                alleleCounts[allele1] += 1
+                            if allele2 != None:
+                                alleleCounts[allele2] += 1
+                    alleles = [x[0] for x in sorted(alleleCounts.iteritems(), key=lambda x: x[1])]
+                if mode >= len(alleles) or mode < -len(alleles):
+                    targetAlleles[group] = None
+                else:
+                    targetAlleles[group] = variantObject.alleles[mode]
+            
+            for statisticID,s in statisticDict.iteritems():
+                targetAllele = targetAlleles[s.parameters.get('alleleGroup','vcf override')]
+                if s.statisticType == statistic.ALLELE_FREQUENCY:
+                    if targetAllele == None:
+                        variantObject.setAttribute(statisticID,float('NaN'))    # the original group didn't have the allele, so we're masked
+                        continue
+                    
+                    allCount = 0
+                    targetCount = 0
+                    
+                    for i in groupDict[s.parameters['group']].samples:
+                        if variantObject.genotypes.has_key(i):
+                            allele1 = variantObject.genotypes[i].allele1
+                            allele2 = variantObject.genotypes[i].allele2
+                            if allele1 != None:
+                                allCount += 1
+                                if allele1 == targetAllele:
+                                    targetCount += 1
+                            if allele2 != None:
+                                allCount += 1
+                                if allele2 == targetAllele:
+                                    targetCount += 1
+                    if allCount == 0:
+                        variantObject.setAttribute(statisticID,float('Inf'))    # We had no data for this variant, so this thing is undefined
+                    else:
+                        variantObject.setAttribute(statisticID,float(targetCount)/allCount)
     
-    def freeze(self, startingXaxis=None, startingYaxis=None, progressWidget=None):
+    def freeze(self, startingXaxis=None, startingYaxis=None, callback=None):
         '''
         Builds query axes; prevents from loading more data. This is the longest process in the whole program - do this as little as possible (aka ONCE!)
         '''
@@ -875,36 +915,28 @@ class variantData:
             return True     # indicates that we weren't interrrupted
         self.isFrozen = True
         
-        if progressWidget != None:
-            progressWidget.reset()
-            progressWidget.setMinimum(0)
-            progressWidget.setMaximum(len(self.axisLabels))
-            progressWidget.show()
-            
-            index = 0
-            progressWidget.setLabelText('Filling in Holes')
-        
         self.axes = {"Genome Position":mixedAxis("Genome Position")}
         
         for att in self.axisLabels:
             self.axes[att] = mixedAxis(att)
+        for att in self.statisticLabels:
+            self.axes[att] = mixedAxis(att)
         
         for v in self.data.itervalues():
+            if v.poisoned:
+                continue
             self.axes["Genome Position"].add(v.name,v.genomePosition)
             for att in self.axisLabels:
                 self.axes[att].add(v.name, v.attributes.get(att,float('Inf')))
-        
-        if progressWidget != None:
-            progressWidget.setLabelText('Building Axes')
+            for att in self.statisticLabels:
+                self.axes[att].add(v.name, v.attributes.get(att,float('Inf')))
         
         for a in self.axes.itervalues():
             a.finish()
-            if progressWidget != None:
-                if progressWidget.wasCanceled():
-                    return False
-                
-                index += 1
-                progressWidget.setValue(index)
+            if callback != None:
+                if callback():
+                    self.thaw()
+                    return 'ABORTED'
         
         if startingXaxis == None or startingYaxis == None:
             x,y = self.getFirstAxes()
@@ -915,7 +947,7 @@ class variantData:
             elif startingYaxis == None:
                 startingYaxis = x
         
-        return self.setScatterAxes(startingXaxis, startingYaxis, progressWidget)
+        return self.setScatterAxes(startingXaxis, startingYaxis)
     
     def getFirstAxes(self):
         temp = self.defaultAxisOrder()
@@ -932,13 +964,13 @@ class variantData:
         if not self.isFrozen:
             self.freeze(None, None, None)
         result = []
-        for a in sorted(self.alleleFrequencyLabels):
+        for a in sorted(self.statisticLabels):
             result.append(a)
         for a,ax in sorted(self.axes.iteritems()):
-            if ax.hasNumeric() and a not in self.alleleFrequencyLabels:
+            if ax.hasNumeric() and a not in self.statisticLabels:
                 result.append(a)
         for a,ax in sorted(self.axes.iteritems()):
-            if not ax.hasNumeric() and a not in self.alleleFrequencyLabels:
+            if not ax.hasNumeric() and a not in self.statisticLabels:
                 result.append(a)
         return result
     
@@ -946,57 +978,30 @@ class variantData:
         '''
         Throws out all query structures; allows us to load more data
         '''
-        print "...Thawing"
         self.axes = None
         self.scatter = None
         self.isFrozen = False
         self.currentXattribute = None
         self.currentYattribute = None
     
-    def setScatterAxes(self, attribute1, attribute2, progressWidget=None):
+    def setScatterAxes(self, attribute1, attribute2):
         '''
         Builds a FourTree for drawing the scatterplot - maybe could be sped up by some kind of sorting...
         '''
         if not self.isFrozen:
-            self.freeze(attribute1,attribute2,progressWidget)
+            self.freeze(attribute1,attribute2)
             return
         
         if self.currentXattribute == attribute1 and self.currentYattribute == attribute2:
             return
         
-        if progressWidget != None:
-            divisions = 100
-            increment = max(1,int(len(self.data)/divisions))
-            
-            progressWidget.reset()
-            progressWidget.setMinimum(0)
-            progressWidget.setMaximum(increment)
-            progressWidget.show()
-            
-            index = 0
-            threshold = increment
-            
-            progressWidget.setLabelText('Building K-d Tree')
-        
-        if not self.axes.has_key(attribute1):
-            print self.axes.keys()
-            print "ERROR: couldn't find axis: %s" % str(attribute1)
-            sys.exit(1)
         axis1 = self.axes[attribute1]
         assert axis1.isfinished
         axis2 = self.axes[attribute2]
         assert axis2.isfinished
         
-        originalXattribute = self.currentXattribute
-        originalYattribute = self.currentYattribute
-        
         self.currentXattribute = attribute1
         self.currentYattribute = attribute2
-        
-        originalScatter = self.scatter
-        originalScatterXs = self.scatterXs
-        originalScatterYs = self.scatterYs
-        originalScatterNones = self.scatterNones
         
         self.scatter = FourTree()
         self.scatterXs = mixedAxis(self.currentXattribute)
@@ -1014,23 +1019,6 @@ class variantData:
                     self.scatterYs.add(rs,axis2.rsValues.get(rs,None))
                 else:
                     self.scatterNones.add(rs)
-            if progressWidget != None:
-                index += 1
-                if index > threshold:
-                    threshold += increment
-                    if progressWidget != None:
-                        if progressWidget.wasCanceled():
-                            self.currentXattribute = originalXattribute
-                            self.currentYattribute = originalYattribute
-                            
-                            self.scatter = originalScatter
-                            self.scatterXs = originalScatterXs
-                            self.scatterYs = originalScatterYs
-                            self.scatterNones = originalScatterNones
-                            return False
-                        progressWidget.setValue(index/divisions)
-            if progressWidget != None:
-                progressWidget.setValue(increment)
         return True
         
     def getData(self, rsNumbers, att):

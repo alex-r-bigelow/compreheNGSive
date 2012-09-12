@@ -1,96 +1,63 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <!-- For a description of how to format this file, see http://www.sci.utah.edu/~abigelow/prefsSpec.php -->
+<!-- If you prefer an external .xml editor to this dialog, Quit and edit prefs.xml -->
 <root>
-	<alleleOfInterest id="CASP8 Cases" mode="mostFrequent"/>
-	<startingXaxis id="CASP8 Cases" attribute="AF"/>
-	<staringYaxis id="CASP8 Controls" attribute="AF"/>
-	<file path="/Users/Home/Desktop/casp8bundle/alex_new.vcf" build="hg19">
-        <attribute id="QUAL">
-        	<hardfilter excludeMissing="true">
-        		<range low="30.0" high="Inf"/>
-        	</hardfilter>
-        </attribute>
-        <attribute id="FILTER">
-	        <hardfilter excludeMissing="true">
-	        	<value text="PASS"/>
-	        </hardfilter>
-	    </attribute>
-        <attribute id="QD"/>
-        <attribute id="FS"/>
-        <attribute id="MQ"/>
-        <attribute id="HaplotypeScore"/>
-		<attribute id="MQRankSum"/>
-		<attribute id="ReadPosRankSum"/>
-    </file>
-    <file path="/Users/Home/Desktop/casp8bundle/weiYu.vcf" build="hg19">
-        <attribute id="QUAL"/>
-        <attribute id="FILTER"/>
-        <attribute id="QD"/>
-        <attribute id="FS"/>
-        <attribute id="MQ"/>
-        <attribute id="HaplotypeScore"/>
-		<attribute id="MQRankSum"/>
-		<attribute id="ReadPosRankSum"/>
-    </file>
-	<file id="annotations" path="/Users/Home/Desktop/casp8bundle/reducedAngiesList.csv" build="hg19">
-        <attribute id="maf1kceugbr"/>
-        <attribute id="location"/>
-        <attribute id="type"/>
-        <attribute id="function"/>
-        <attribute id="polyphen"/>
-        <attribute id="siftscores"/>
-        <attribute id="transcriptiongm12878"/>
-        <attribute id="layeredgm12878h3k4me1stdsig"/>
-        <attribute id="layeredhmech3k4me3stdsig"/>
-        <attribute id="layeredhmech3k27acstdsig"/>
-        <attribute id="txnfactorchip"/>
-        <attribute id="openchromsynthgm12878pk"/>
-        <attribute id="conservation"/>
-        <attribute id="histone_all3pos"/>
-    </file>
-    <group id="CASP8 Cases">
-		<sample file="alex_new.vcf" id="441_1x"/>
-		<sample file="alex_new.vcf" id="441_2x"/>
-		<sample file="alex_new.vcf" id="441_4x"/>
-		<sample file="alex_new.vcf" id="441_5x"/>
-		<sample file="alex_new.vcf" id="441_6x"/>
-		<sample file="alex_new.vcf" id="441_7x"/>
-		<sample file="alex_new.vcf" id="441_8x"/>
-		<sample file="alex_new.vcf" id="441_9x"/>
-		<sample file="alex_new.vcf" id="441_10x"/>
-		<sample file="alex_new.vcf" id="441_12x"/>
-		<sample file="alex_new.vcf" id="441_13x"/>
-		<sample file="alex_new.vcf" id="441_14x"/>
-		<sample file="alex_new.vcf" id="441_15x"/>
-		<sample file="alex_new.vcf" id="441_37x"/>
-		<sample file="alex_new.vcf" id="441_38x"/>
-		<sample file="alex_new.vcf" id="441_42x"/>
-		<sample file="alex_new.vcf" id="441_43x"/>
-		<attribute statistic="allele frequency" id="AF">
-			<softfilter>
-				<percentage direction="top" percent="5"/>
-			</softfilter>
+	<startingXaxis statistic="Case AF" />
+	<startingYaxis statistic="Control AF" />
+	<file path="/Users/Home/Desktop/data/50.vcf" build="hg19">
+		<attribute id="QUAL"></attribute>
+		<attribute id="FILTER">
+			<hardFilter excludeMissing="true">
+				<value text="PASS" />
+			</hardFilter>
 		</attribute>
-    </group>
-    <group id="CASP8 Controls">
-		<sample file="alex_new.vcf" id="441_22x"/>
-		<sample file="alex_new.vcf" id="441_23x"/>
-		<sample file="alex_new.vcf" id="441_24x"/>
-		<sample file="alex_new.vcf" id="441_25x"/>
-		<sample file="alex_new.vcf" id="441_26x"/>
-		<sample file="alex_new.vcf" id="441_27x"/>
-		<sample file="alex_new.vcf" id="441_28x"/>
-		<sample file="alex_new.vcf" id="441_29x"/>
-		<sample file="alex_new.vcf" id="441_30x"/>
-		<sample file="alex_new.vcf" id="441_31x"/>
-		<sample file="alex_new.vcf" id="441_32x"/>
-		<sample file="alex_new.vcf" id="441_33x"/>
-		<sample file="alex_new.vcf" id="441_49x"/>
-		<sample file="alex_new.vcf" id="441_50x"/>
-		<attribute statistic="allele frequency" id="AF">
-			<softfilter excludeMissing="false">
-				<percentage direction="bottom" percent="5"/>
-			</softfilter>
-		</attribute>
-    </group>
+		<attribute id="QD" />
+		<attribute id="FS" />
+		<attribute id="MQ" />
+		<attribute id="HaplotypeScore" />
+		<attribute id="MQRankSum" />
+		<attribute id="ReadPosRankSum" />
+	</file>
+	<group id="CASP8 Cases">
+		<sample file="50.vcf" id="441_1x" />
+		<sample file="50.vcf" id="441_2x" />
+		<sample file="50.vcf" id="441_4x" />
+		<sample file="50.vcf" id="441_5x" />
+		<sample file="50.vcf" id="441_6x" />
+		<sample file="50.vcf" id="441_7x" />
+		<sample file="50.vcf" id="441_8x" />
+		<sample file="50.vcf" id="441_9x" />
+		<sample file="50.vcf" id="441_10x" />
+		<sample file="50.vcf" id="441_12x" />
+		<sample file="50.vcf" id="441_13x" />
+		<sample file="50.vcf" id="441_14x" />
+		<sample file="50.vcf" id="441_15x" />
+		<sample file="50.vcf" id="441_37x" />
+		<sample file="50.vcf" id="441_38x" />
+		<sample file="50.vcf" id="441_42x" />
+		<sample file="50.vcf" id="441_43x" />
+	</group>
+	<group id="CASP8 Controls">
+		<sample file="50.vcf" id="441_22x" />
+		<sample file="50.vcf" id="441_23x" />
+		<sample file="50.vcf" id="441_24x" />
+		<sample file="50.vcf" id="441_25x" />
+		<sample file="50.vcf" id="441_26x" />
+		<sample file="50.vcf" id="441_27x" />
+		<sample file="50.vcf" id="441_28x" />
+		<sample file="50.vcf" id="441_29x" />
+		<sample file="50.vcf" id="441_30x" />
+		<sample file="50.vcf" id="441_31x" />
+		<sample file="50.vcf" id="441_32x" />
+		<sample file="50.vcf" id="441_33x" />
+		<sample file="50.vcf" id="441_49x" />
+		<sample file="50.vcf" id="441_50x" />
+	</group>
+	<statistic type="allele frequency" id="Case AF" group="CASP8 Cases" alleleGroup="CASP8 Cases" alleleMode="mostFrequent">
+		<softFilter>
+			<percentage direction="top" percent="5" />
+		</softFilter>
+	</statistic>
+	<statistic type="allele frequency" id="Control AF" group="CASP8 Controls" alleleGroup="CASP8 Cases" alleleMode="mostFrequent">
+	</statistic>
 </root>

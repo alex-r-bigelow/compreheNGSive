@@ -398,22 +398,22 @@ class allele:
             return self.text == other.text
         elif self.text == None or other.text == None:
             return self.text == None and other.text == None
-        elif re.match(self.text,other.text) != None:
-            if self.attemptRepairsWhenComparing:
-                # self.text has the more general regex; update to the more specific information
-                self.text = other.text
-            return True
-        elif re.match(other.text,self.text) != None:
-            if self.attemptRepairsWhenComparing:
-                # other.text has the more general regex; update to the more specific information
-                other.text = self.text
+        elif self.text == other.text or self.text == ".*" or other.text == ".*":
+            #if self.text == ".*" and self.attemptRepairsWhenComparing:
+            # self.text has the more general regex; update to the more specific information
+            #self.text = other.text
+            #elif other.text == ".*" and other.attemptRepairsWhenComparing:
+            #other.text = self.text
             return True
         return False
+    
+    def __hash__(self):
+        return hash(self.text)
     
     def __ne__(self, other):
         return not self.__eq__(other)
     
-    def __str__(self):
+    def __repr__(self):
         return "" if self.text == None else self.text
 
 class genotype:
@@ -501,6 +501,7 @@ class variant:
     """
     An object representing a variant (potentially with data from multiple sources)
     """
+    NUM_TWINS = 0
     def __init__(self, chromosome, position, matchMode, attemptRepairsWhenComparing, ref=".*", alt=".*", name=None, build=genomeUtils.hg19, attributeFilters=None):
         temp = genomeUtils.standardizeChromosome(chromosome, build)
         if temp == None:
@@ -533,7 +534,9 @@ class variant:
         self.attributeFilters = attributeFilters
         self.poisoned = False
         
-        self.twins = set()
+        self.nextTwin = self
+        self.twinNumber = variant.NUM_TWINS
+        variant.NUM_TWINS += 1
         self.attributes = {}
         self.genotypes = {}
     
@@ -547,29 +550,37 @@ class variant:
         self.genotypes[individual] = g
         
         if self.attemptRepairsWhenComparing:
-            for t in self.twins:
+            t = self.nextTwin
+            while t.twinNumber != self.twinNumber:
                 if not t.genotypes.has_key(individual):
-                    t.addGenotype(individual, g)
+                    t.genotypes[individual] = g
                 else:
                     assert t.genotypes[individual] == g
+                t = t.nextTwin
     
     def setAttribute(self, key, value):
         if self.poisoned:
             return
-        if self.attributeFilters != None:
-            if not self.attributeFilters.has_key(key):
-                return
+        
+        if self.attributeFilters != None and self.attributeFilters.has_key(key):
             if not self.attributeFilters[key].isValid(value):
                 self.poison()
                 return
         self.attributes[key] = value
-        # it's really important to share last... if one of my twins is poisoned by this value, I don't want to try to add a value to None after that
+        
         if self.attemptRepairsWhenComparing:
-            for t in self.twins:
+            t = self.nextTwin
+            while t.twinNumber != self.twinNumber:
+                if t.attributeFilters != None and t.attributeFilters.has_key(key):
+                    if not t.attributeFilters[key].isValid(value):
+                        t.poison()
+                        return
+                
                 if not t.attributes.has_key(key):
-                    t.setAttribute(key, value)
+                    t.attributes[key] = value
                 else:
                     assert t.attributes[key] == value
+                t = t.nextTwin
     
     def poison(self):
         self.poisoned = True
@@ -577,33 +588,11 @@ class variant:
         self.genotypes = None
         
         # Make sure any objects that are for the same variant get filtered as well
-        for t in self.twins:
-            if not t.poisoned:
-                t.poison()
-    
-    def euthanizeTwins(self):
-        """
-        A little cleanup function that can be called after a
-        variant is added to a set or used as a dict key (probably
-        isn't a huge deal unless variant objects from many
-        sources are using all your memory).
-        
-        The idea is if I'm hanging on to a twin that no one else
-        cares about, I should break that connection and let garbage
-        collection eat him up.
-        
-        And you thought the parent-child relationships in trees
-        were messed up.
-        """
-        twinsToKill = set()
-        for t in self.twins:
-            # 1 reference from self.twins, 1 reference as parameter to getrefcount, 1 reference from the in iterator
-            # If someone else cares, he's safe - I only commit these atrocities when no one else is looking
-            if sys.getrefcount(t) <= 3:
-                twinsToKill.add(t)
-        for t in twinsToKill:
-            self.twins.discard(t)
-            t.twins.discard(self)
+        t = self.nextTwin
+        while t.twinNumber != self.twinNumber:
+            t.poisoned = True
+            t.attributes = None
+            t.genotypes = None
     
     def __hash__(self):
         """
@@ -625,7 +614,7 @@ class variant:
         if self.attemptRepairsWhenComparing:
             return self.genomePosition
         else:
-            return hash(self)
+            return super.__hash__(self)
     
     def __eq__(self, other):
         """
@@ -642,16 +631,14 @@ class variant:
         elif self.position != other.position:
             return False
         elif self.matchMode == allele.UNENFORCED:
-            self.repair(other)
-            return True
+            return self.repair(other)
         elif self.matchMode == allele.STRICT:
             if len(self.alleles) != len(other.alleles):
                 return False
             for i,a in enumerate(self.alleles):
                 if other.alleles[i] != a:
                     return False
-            self.repair(other)
-            return True
+            return self.repair(other)
         else:
             numMatches = 0
             for a in self.alleles:
@@ -659,8 +646,7 @@ class variant:
                     numMatches += 1
                     # even though we only care about two matches here, we'll want to check all of them in order to match/repair allele regexes
             if numMatches >= 2:
-                self.repair(other)
-                return True
+                return self.repair(other)
             else:
                 return False
     
@@ -704,6 +690,15 @@ class variant:
         REF = A    ALT = G,AA,GA
         
         """
+        # first verify that he isn't already one of my twins
+        if self.twinNumber == other.twinNumber:
+            return True
+        t = self.nextTwin
+        while t.twinNumber != self.twinNumber:
+            if t.twinNumber == other.twinNumber:
+                return True
+            t = t.nextTwin
+        
         # regardless of whether we want to attempt repairs, we should be poisoned if the other is, and vice-versa
         if self.poisoned:
             if not other.poisoned:
@@ -719,7 +714,7 @@ class variant:
         if other.name != other.basicName:
             newName = other.name
         if newName != None and self.name != other.name:
-            return
+            return False
         
         # share as many possible alleles; note that the ordering of the second variant's allele
         # order will be changed to the first
@@ -731,9 +726,13 @@ class variant:
         if not self.poisoned:
             # update attributes
             newAttributes = self.exchangeAttributes(other)
+            if newAttributes == None:
+                return False
             
             # update genotypes
             newGenotypes = self.exchangeGenotypes(other)
+            if newGenotypes == None:
+                return False
         
         # Okay, we've made it... update everything
         if newName != None:
@@ -751,21 +750,30 @@ class variant:
             other.genotypes.update(newGenotypes)
             
             # Keep track of this guy; he and I now share everything (including attributes, genotypes, and, of course, poison)
-            self.twins.add(other)
-            other.twins.add(self)
+            myOldNextTwin = self.nextTwin
+            self.nextTwin = other
+            # find his last twin
+            t = other
+            while t.nextTwin.twinNumber != other.twinNumber:
+                t = t.nextTwin
+            # tell his last twin to make my old next one his next
+            t.nextTwin = myOldNextTwin
+        return True
     
     def exchangeAttributes(self, other):
         newAttributes = {}
         
         for k,v in other.attributes.iteritems():
             if self.attributes.has_key(k):
-                assert v == self.attributes[k]
+                if not v == self.attributes[k]:
+                    return None
             else:
                 newAttributes[k] = v
         
         for k,v in self.attributes.iteritems():
             if other.attributes.has_key(k):
-                assert v == other.attributes[k]
+                if not v == self.attributes[k]:
+                    return None
             else:
                 newAttributes[k] = v
         return newAttributes
@@ -817,20 +825,31 @@ class valueFilter:
     ranges=(0.0,0.25)
     
     Incoming values to isValid will be compared
-    against the appropriate criteria. isValid also attempts to handle nested values;
+    against the appropriate criteria. To include all categorical and/or quantitative values,
+    set the appropriate parameter to None (which is the default for both values and ranges).
+    
+    isValid also attempts to handle nested values;
     e.g. some variants have multiple alternate alleles, and consequently there
     are occasional multiple
     values in the AF INFO field. This class assumes that the same filter applies
-    to all values equally (otherwise you really should be splitting them up into
+    to all values in the list equally (otherwise you really should be splitting them up into
     separate attributes anyway, right?). In the event a value is in fact a list,
-    if listMode is LIST_INCLUSIVE, it will allow the value if at least one of
+    if listMode is LIST_INCLUSIVE, it will pass the value if at least one of
     its values fits the criteria of the filter. If listMode is LIST_EXCLUSIVE,
-    it will fail a value if even one of the list fails.
+    it will fail a value if even one of the list fails. LIST_MUTILATE has the
+    same behavior as LIST_INCLUSIVE, except that it will modify the list (as lists
+    are mutable) to
+    only contain the values that pass. This is a potentially dangerous option, as you
+    might lose data; only use this mode if you desire this behavior, e.g. if you need
+    the list of values that passed, send in a clone
+    of the original:
+        myValueFilter.isValid(list(myValueList))
     """
     
     LIST_INCLUSIVE = 0
     LIST_EXCLUSIVE = 1
-    def __init__(self, values=None, ranges=None, includeNone=True, includeInf=True, includeNaN=True, includeInvalid=True, listMode=LIST_INCLUSIVE):
+    LIST_MUTILATE = 2
+    def __init__(self, values=None, ranges=None, includeNone=True, includeInf=True, includeNaN=True, listMode=LIST_INCLUSIVE):
         self.values = values
         self.multiValue = isinstance(self.values,list)
         self.ranges = ranges
@@ -839,7 +858,6 @@ class valueFilter:
         self.includeNone = includeNone
         self.includeInf = includeInf
         self.includeNaN = includeNaN
-        self.includeInvalid = includeInvalid
         self.listMode = listMode
     
     def isValid(self, value):
@@ -852,11 +870,19 @@ class valueFilter:
                 if self._isValid(v):
                     return True
             return False
-        else:
+        elif self.listMode == valueFilter.LIST_EXCLUSIVE:
             for v in value:
                 if not self._isValid(v):
                     return False
             return True
+        elif self.listMode == valueFilter.LIST_MUTILATE:
+            indices = []
+            for i,v in enumerate(value):
+                if not self._isValid(v):
+                    indices.append(i)
+            for i in reversed(indices):
+                del value[i]
+            return len(value) > 0
     
     def _isValid(self, value):
         if value == None:
@@ -897,9 +923,11 @@ class variantLoadingParameters:
                  tickFunction=None,
                  tickInterval=10,
                  individualsToInclude=[],
+                 individualAppendString="",
                  lociToInclude=None,
                  mask=None,
                  attributesToInclude=None,
+                 attributeAppendString="",
                  skipGenotypeAttributes=False,
                  returnFileObject=False,
                  alleleMatching=allele.FLEXIBLE,
@@ -933,6 +961,17 @@ class variantLoadingParameters:
             to (and in the order of) individuals whose genotypes will be included. Note that if
             this is empty, no genotype information will be loaded. To include all individuals,
             set this to None.
+        
+        :param individualAppendString:
+            string
+            
+            If you are merging variants from multiple files, there could be collisions in sample names. To prevent this
+            (as well as clarify sources), it's a good idea to append some file identifier to each sample name.
+            
+            Default appends nothing.
+            
+            Note that if you use this feature, you should make sure that all elements of individualsToInclude already have
+            the appropriate suffix.
             
         :param lociToInclude:
             set or None
@@ -952,6 +991,19 @@ class variantLoadingParameters:
             variant file, or "QUAL", "FILTER", or an INFO header from a
             .vcf file). Note that only attributes specified here will
             be extracted from the file. Set to None to extract all attributes.
+        
+        :param attributeAppendString:
+            string
+            
+            If you are merging variants from multiple files, there could be collisions for variant attribute names. To
+            prevent this (as well as clarify sources), it's a good idea to append some file identifier to each attribute
+            (e.g. " (cases.vcf)" and " (controls.vcf)" might generate "QUAL (cases.vcf)", "QUAL (controls.vcf", "AC (cases.vcf)",
+            "AF (controls.vcf)", etc.)
+            
+            Default appends nothing.
+            
+            Note that if you use this feature, you should make sure that any keys in attributesToInclude already have the
+            appropriate suffix.
             
         :param alleleMatching:
             One of allele.STRICT, allele.FLEXIBLE, or allele.UNENFORCED
@@ -978,9 +1030,11 @@ class variantLoadingParameters:
         self.tickFunction = tickFunction
         self.tickInterval = tickInterval
         self.individualsToInclude = individualsToInclude
+        self.individualAppendString = individualAppendString
         self.lociToInclude = lociToInclude
         self.mask = mask
         self.attributesToInclude = attributesToInclude
+        self.attributeAppendString = attributeAppendString
         self.skipGenotypeAttributes = skipGenotypeAttributes
         self.returnFileObject = returnFileObject
         self.alleleMatching = alleleMatching
@@ -1104,7 +1158,8 @@ class variantFile:
                 currentLine += 1
                 if currentLine >= nextTick:
                     nextTick += parameters.tickInterval
-                    parameters.tickFunction()
+                    if parameters.tickFunction():   # abort?
+                        return "ABORTED"
             
             columns = line.split("\t")
             
@@ -1129,13 +1184,13 @@ class variantFile:
             
             if not newVariant.poisoned: # don't bother loading anything else if we know we don't need to
                 # Handle QUAL, FILTER, and INFO
-                if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key("QUAL"):
-                    newVariant.setAttribute("QUAL", columns[5])
-                if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key("FILTER"):
+                if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key("QUAL" + parameters.attributeAppendString):
+                    newVariant.setAttribute("QUAL" + parameters.attributeAppendString, columns[5])
+                if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key("FILTER" + parameters.attributeAppendString):
                     filters = columns[6].split(';')
                     if len(filters) == 1:
                         filters = filters[0]
-                    newVariant.setAttribute("FILTER", filters)
+                    newVariant.setAttribute("FILTER" + parameters.attributeAppendString, filters)
                 
                 # Add the INFO fields
                 infoChunks = columns[7].split(";")
@@ -1146,12 +1201,19 @@ class variantFile:
                         value = temp[1]
                         if "," in value:
                             value = value.split(',')
-                        if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(key):
-                            newVariant.setAttribute(key,value)
+                        if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(key+parameters.attributeAppendString):
+                            newVariant.setAttribute(key+parameters.attributeAppendString,value)
                     else:
-                        if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(chunk):
-                            newVariant.setAttribute(chunk,chunk)
-                
+                        if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(chunk+parameters.attributeAppendString):
+                            newVariant.setAttribute(chunk+parameters.attributeAppendString,chunk)
+            
+            if not newVariant.poisoned:
+                for att,fil in parameters.attributesToInclude.iteritems():
+                    if not fil.includeNone and not newVariant.attributes.has_key(att):
+                        newVariant.poison()
+                        break
+            
+            if not newVariant.poisoned:
                 # Now for genotypes - first let's figure out the columns we care about
                 if (parameters.individualsToInclude == None or len(parameters.individualsToInclude) > 0) and fileAttributes.has_key("INDIVIDUALS"):
                     formatPattern = columns[8].split(":")
@@ -1159,7 +1221,7 @@ class variantFile:
                         if formatPattern[0] != "GT":
                             raise parseException("Bad .vcf file (GT FORMAT field must exist and must be first):\n%s" % line)
                     for i,p in enumerate(fileAttributes["INDIVIDUALS"]):
-                        if parameters.individualsToInclude != None and p not in parameters.individualsToInclude:
+                        if parameters.individualsToInclude != None and p + parameters.individualAppendString not in parameters.individualsToInclude:
                             continue
                         temp = columns[9+i].split(":")
                         if len(temp) > len(formatPattern) and temp[0] != "./." and temp[0] != ".|.":
@@ -1177,7 +1239,7 @@ class variantFile:
                                 # It is possible to list FORMAT columns that only some individuals have data - I assume, however, that this must always be the last column?
                                 if i < len(temp) and temp[i] != ".":
                                     newGenotype.attributes[a] = temp[i]
-                        newVariant.addGenotype(p, newGenotype)
+                        newVariant.addGenotype(p + parameters.individualAppendString, newGenotype)
             
             # We've built the variant object... call the appropriate function if we need to
             if not newVariant.poisoned and parameters.passFunction != None:
@@ -1193,13 +1255,15 @@ class variantFile:
         # details via an independent call to extractVcfFileInfo)
         if parameters.individualsToInclude != None:
             fileAttributes["INDIVIDUALS"] = parameters.individualsToInclude
+        if parameters.attributeAppendString != "":
+            fileAttributes['variant attributes'] = set([x + parameters.attributeAppendString for x in fileAttributes['variant attributes']])
         if parameters.attributesToInclude != None:
             attrsToDelete = fileAttributes['variant attributes'].difference(parameters.attributesToInclude.iterkeys())
             for a in attrsToDelete:
                 fileAttributes['variant attributes'].discard(a)
                 if a == "FILTER":
                     fileAttributes["FILTER"] = {}
-                elif a != "QUAL":
+                elif a != "QUAL" and fileAttributes["INFO"].has_key(a):
                     del fileAttributes["INFO"][a]
         if parameters.skipGenotypeAttributes:
             fileAttributes["FORMAT"] = {}
@@ -1321,16 +1385,20 @@ class variantFile:
         scent = bloodhound.sniff("".join(text))
         
         data = []
+        numChars = 0
         for line in text:
+            numChars += len(line)
             data.append(line.strip().split(scent.delimiter))
-                
+        
+        numChars = max(1,int(numChars / len(text))) # find the average number of bytes per line
+        
         # let's see if we can figure out which columns are the special ones...
         
         chrColumn = None
         posColumn = None
         rsColumn = None
         
-        numHeaders = len(data[0])
+        numHeaders = len(data[0])-1
         
         for i,c in enumerate(reversed(data[0])):
             small = c.lower()
@@ -1344,13 +1412,14 @@ class variantFile:
                 rsColumn = numHeaders-i
             if re.match('rs.*',small) != None:
                 rsColumn = numHeaders-i
-        
+                
         if chrColumn == None:
             raise parseException("I can't figure out which is the \"chromosome\" column.")
         if posColumn == None:
             raise parseException("I can't figure out which is the \"position\" column.")
         
         fileAttributes = recursiveDict()
+        fileAttributes['number of lines'] = os.path.getsize(path)/numChars
         fileAttributes['dialect'] = scent
         fileAttributes['chr column'] = chrColumn
         fileAttributes['pos column'] = posColumn
@@ -1358,10 +1427,12 @@ class variantFile:
             fileAttributes['rs column'] = rsColumn
         
         fileAttributes['variant attributes'] = set()
-        for i,h in data[0]:
+        for i,h in enumerate(data[0]):
             if i != chrColumn and i != posColumn and i != rsColumn:
                 fileAttributes['HEADERS'][i] = h
                 fileAttributes['variant attributes'].add(h)
+        
+        return fileAttributes
     
     @staticmethod
     def parseCsvFile(path, parameters):
@@ -1374,8 +1445,24 @@ class variantFile:
         pos = fileAttributes['pos column']
         rs = fileAttributes.get('rs column',None)
         
+        if parameters.tickFunction != None:
+            currentLine = 0
+            parameters.tickInterval = int((parameters.tickInterval/100.0)*fileAttributes['number of lines'])
+            nextTick = parameters.tickInterval
+        
+        firstLine = True
         infile = open(path,'r')
         for columns in csv.reader(infile,fileAttributes['dialect']):
+            if firstLine:
+                firstLine = False
+                continue
+            if parameters.tickFunction != None:
+                currentLine += 1
+                if currentLine >= nextTick:
+                    nextTick += parameters.tickInterval
+                    if parameters.tickFunction():   # abort?
+                        return "ABORTED"
+            
             if rs != None:
                 rsNumber = columns[rs]
                 if rsNumber == ".":
@@ -1394,7 +1481,8 @@ class variantFile:
             for i,c in enumerate(columns):
                 if i == chrom or i == pos or i == rs:
                     continue
-                newVariant.setAttribute(fileAttributes['HEADERS'][i], c)
+                if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(fileAttributes['HEADERS'][i]+parameters.attributeAppendString):
+                    newVariant.setAttribute(fileAttributes['HEADERS'][i]+parameters.attributeAppendString, c)
             
             if not newVariant.poisoned and parameters.passFunction != None:
                 parameters.passFunction(newVariant,**parameters.callbackArgs)
@@ -1457,8 +1545,7 @@ class feature(Interval):
             newBounds = [(self.start,self.end)]
             for c in collisions:
                 for i,(s,e) in enumerate(newBounds):
-                    if s >= e:  # throw away stuff that's size zero or less 
-                        del newBounds[i]
+                    if s >= e:  # ignore stuff that's size zero or less 
                         continue
                     if s < c.end and c.start < e:   # guarantees overlap
                         if e > c.end:   # we have a bit of me at the top surviving beyond this collision

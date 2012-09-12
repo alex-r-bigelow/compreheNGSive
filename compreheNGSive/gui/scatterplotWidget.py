@@ -250,19 +250,25 @@ class scatterplotWidget(layeredWidget):
         self.selectedLayer.update(rsNumbers)
         self.selectedLayer.setDirty()
         # pull out the sizes of things once before we manipulate everything - this should help minimize re-rendering
+        if not axis == self.currentXaxis and not axis == self.currentYaxis:
+            return  # ignore axes that aren't in the scatterplot
         if axis == self.currentXaxis:
             dataAxis = self.currentXaxis
             visRanges = self.xRanges
             pixelRatio = self.xAxisRatio
             numericLeftPixel = self.scatterBounds[0]
             numericRightPixel = self.scatterBounds[2]
+            if len(self.xRanges) == 0:
+                print self.xRanges
+                print self.yRanges
+                raise Exception('short ranges!')
             rightHandleSize = self.xRanges[0].rightHandle.width()
             rightHandleTop = self.xRanges[0].rightHandle.top()
             leftHandleSize = self.xRanges[0].leftHandle.width()
             leftHandleTop = self.xRanges[0].leftHandle.top()
             barSize = self.xRanges[0].bar.height()
             barTop = self.xRanges[0].bar.top()
-        elif axis == self.currentYaxis:
+        if axis == self.currentYaxis:
             dataAxis = self.currentYaxis
             visRanges = self.yRanges
             pixelRatio = self.yAxisRatio
@@ -274,8 +280,6 @@ class scatterplotWidget(layeredWidget):
             bottomHandleLeft = self.yRanges[0].bottomHandle.left()
             barSize = self.yRanges[0].bar.width()
             barLeft = self.yRanges[0].bar.left()
-        else:
-            return  # ignore axes that aren't in the scatterplot
         
         # remove, duplicate the number of svg selection groups to fit the data
         

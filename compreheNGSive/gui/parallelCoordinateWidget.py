@@ -727,33 +727,25 @@ class parallelCoordinateWidget(layeredWidget):
                 '''
                 # X axis
                 if resultAction.text() == u'Use as X axis':
-                    splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
-                    splash.setWindowModality(Qt.WindowModal)
-                    
                     if self.data.currentYattribute != self.data.currentXattribute:
                         self.axes[self.data.currentXattribute].visAxis.handle.background.setAttribute('fill',self.normalHandleColor)
                         self.axes[self.data.currentXattribute].visAxis.handle.originalBackgroundColor = self.normalHandleColor
                     self.axes[att].visAxis.handle.background.setAttribute('fill',self.activeHandleColor)
                     self.axes[att].visAxis.handle.originalBackgroundColor = self.activeHandleColor
                     
-                    self.data.setScatterAxes(att,self.data.currentYattribute,splash)
+                    self.data.setScatterAxes(att,self.data.currentYattribute)
                     self.app.notifyAxisChange(xAxis=True)
-                    splash.close()
                 
                 # Y axis
                 if resultAction.text() == u'Use as Y axis':
-                    splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
-                    splash.setWindowModality(Qt.WindowModal)
-                    
                     if self.data.currentXattribute != self.data.currentYattribute:
                         self.axes[self.data.currentYattribute].visAxis.handle.background.setAttribute('fill',self.normalHandleColor)
                         self.axes[self.data.currentYattribute].visAxis.handle.originalBackgroundColor = self.normalHandleColor
                     self.axes[att].visAxis.handle.background.setAttribute('fill',self.activeHandleColor)
                     self.axes[att].visAxis.handle.originalBackgroundColor = self.activeHandleColor
                     
-                    self.data.setScatterAxes(self.data.currentXattribute,att,splash)
+                    self.data.setScatterAxes(self.data.currentXattribute,att)
                     self.app.notifyAxisChange(xAxis=False)
-                    splash.close()
         
         #if linesMoved:
         #    self.highlightedLayer.refreshLines(self.app.highlightedRsNumbers)

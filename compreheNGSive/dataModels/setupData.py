@@ -1,376 +1,338 @@
 import os
 from lxml import etree
-from resources.genomeUtils import variantFile, valueFilter, parseException
+from resources.genomeUtils import genomeUtils, variantLoadingParameters, variantFile, featureFile, valueFilter, parseException
 from dataModels.variantData import variantData
 from dataModels.featureData import featureData
 
 class prefs:
-    def __init__(self, alleleGroupID, alleleMode, xFileID, xAttributeID, yFileID, yAttributeID, files={}, groups={}):
-        pass
-        '''
-                alleleMode be any of the following:<br/>
-                <ul>
-                    <li>"n": Uses the n-most frequent allele in this group. Negative indicate the n-least frequent alleles.</li>
-                    <li>"leastFrequent": Shortcut for "-1" (e.g. uses the least frequent allele in this group)</li>
-                    <li>"mostFrequent": Shortcut for "1" (e.g. uses the most frequent allele in this group)</li>
-                </ul>
-                
-                Note that if n >=2 or n <=-3, there will probably be many masked allele frequencies (e.g. if no members
-                of a group have the indicated allele of interest, or if the target group does not have more than 2 alleles for
-                a particular variant, the allele frequency for that variant will be masked).<br/><br/>
-                
-                *** In the future, the following syntax will also be supported; 
-                            please send me an email if this is a high priority to you!
-                            I'd like to get a feel for how many people even care about
-                            which features before I take the time to implement them. ***<br/>
-                <ul>
-                    <li>"VCF n": If this group is actually a .vcf file, uses the nth REF or ALT allele as follows:
-                        <ul>
-                            <li>VCF 0: uses REF</li>
-                            <li>VCF 1: uses the first ALT</li>
-                            <li>VCF 2: uses the second ALT</li>
-                            ...
-                            <li>VCF -1: uses the last ALT</li>
-                            <li>VCF -2: uses the second-to-last ALT (or REF if there is only one ALT)</li>
-                        </ul>
-                    </li>
-                </ul>
-            '''
+    def __init__(self, startingXsource, startingYsource, startingXaxis, startingYaxis, files={}, groups={}, statistics={}):
+        self.startingXsource = startingXsource
+        self.startingYsource = startingYsource
+        self.startingXaxis = startingXaxis
+        self.startingYaxis = startingYaxis
+        self.files=files
+        self.groups=groups
+        self.statistics = statistics
+        
+        self.loadingEstimates={}
+        self.loadingPercentages={}
+        total = 0.0
+        numGenotypedLines = 0
+        self.maxTicks = 200.0 # boosting this number will make the progress widget more responsive while loading files
+        for fileID,f in self.files.iteritems():
+            numLines = max(f.fileAttributes.get('number of lines',1000),1)
+            total += numLines
+            if f.format == '.vcf':
+                numGenotypedLines = max(numGenotypedLines,numLines)
+            self.loadingEstimates[fileID] = numLines
+        for fileID,f in self.files.iteritems():
+            self.loadingPercentages[fileID] = (100.0*total)/(self.maxTicks*self.loadingEstimates[fileID])
+        groupTicks = 50.0 # boosting this number will make the progress widget more responsive while calculating group statistics
+        self.maxTicks += groupTicks
+        self.loadingPercentages[None] = numGenotypedLines/groupTicks    # this one is just number of lines per tick, not percentage of total ticks...
+    
+    def loadDataObjects(self, callback=None):
+        # Try to parse files in order by format (some files are more informative than others,
+        # and we want to start off with the best information) ... this may get shaken up
+        # when we support masking/specific loci
+        gff3Files = []
+        bedFiles = []
+        
+        vcfFiles = []
+        csvFiles = []
+        axisLabels = set()
+        individualsToInclude = self.getAllSamples()
+        
+        for fileID,f in self.files.iteritems():
+            if f.format == '.vcf':
+                vcfFiles.append(fileID)
+                axisLabels.update(f.hardFilters.iterkeys())
+            elif f.format == '.csv':
+                csvFiles.append(fileID)
+                axisLabels.update(f.hardFilters.iterkeys())
+            elif f.format == '.gff3':
+                gff3Files.append(fileID)
+            elif f.format == '.bed':
+                bedFiles.append(fileID)
+        
+        vData = variantData(axisLabels)
+        fData = featureData()
+        
+        for fileID in gff3Files:
+            pass
+        for fileID in bedFiles:
+            pass
+        for fileID in vcfFiles:
+            if callback != None:
+                callback(numTicks=0,message='Loading %s' % fileID)
+            parameters = variantLoadingParameters(build=self.files[fileID].build,
+                                                passFunction=vData.addVariant,
+                                                rejectFunction=None,
+                                                callbackArgs={},
+                                                tickFunction=callback,
+                                                tickInterval=self.loadingPercentages[fileID],
+                                                individualsToInclude=individualsToInclude,
+                                                individualAppendString=" (%s)" % fileID,
+                                                lociToInclude=None, # TODO: support masking and specfic loci
+                                                mask=None,
+                                                attributesToInclude=self.files[fileID].hardFilters,
+                                                attributeAppendString=" (%s)" % fileID,
+                                                skipGenotypeAttributes=True)
+            if variantFile.parseVcfFile(self.files[fileID].path, parameters) == "ABORTED":
+                return (None,None)
+        
+        for fileID in csvFiles:
+            if callback != None:
+                callback(numTicks=0,message='Loading %s' % fileID)
+            parameters = variantLoadingParameters(build=self.files[fileID].build,
+                                                passFunction=vData.addVariant,
+                                                rejectFunction=None,
+                                                callbackArgs={},
+                                                tickFunction=callback,
+                                                tickInterval=self.loadingPercentages[fileID],
+                                                individualsToInclude=[],    # .csv files don't have genotypes
+                                                individualAppendString="",
+                                                lociToInclude=None, # TODO: support masking and specfic loci
+                                                mask=None,
+                                                attributesToInclude=self.files[fileID].hardFilters,
+                                                attributeAppendString=" (%s)" % fileID,
+                                                skipGenotypeAttributes=True)
+            if variantFile.parseCsvFile(self.files[fileID].path, parameters) == "ABORTED":
+                return (None,None)
+        
+        # Now that we've loaded the files, do our group calculations
+        callback(numTicks=0,message='Calculating group statistics')
+        vData.performGroupCalculations(self.groups, self.statistics, callback, self.loadingPercentages[None])
+        
+        return (vData,fData)
+    
+    def getSoftFilters(self):
+        filters = {}    # att:[softfilter,...]
+        for f in self.files.itervalues():
+            for a in f.attributes:
+                filters[a.attributeID] = a.softFilter
+        for s in self.statistics.itervalues():
+            filters[s.statisticID] = s.softFilter
+        return filters
+    
+    def getAllSamples(self):
+        results = []
+        for g in self.groups.itervalues():
+            for s in g.samples:
+                results.append(s)
+        return results
     
     @staticmethod
     def generateFromText(text):
         root = etree.fromstring(text)
         try:
-            # handle files
-            files = {}
-            fileGroupsToMake=[]
-            for f in root.findall('file'):
-                path = f.attrib['path']
-                fileID = f.attrib.get('id',os.path.split(path)[1])
-                assert not files.has_key(fileID)
-                attributes = attribute.generateFromParent(f)
-                if len(attributes) > 0:
-                    fileGroupsToMake.append(fileID)
-                files[fileID] = fileObject(fileID,path,f.attrib['build'],attributes)
+            groupReferences=set()
+            
+            # handle globals
+            xNode = root.find('startingXaxis')
+            startingXsource = xNode.attrib.get('source',None)
+            if startingXsource != None:
+                startingXaxis = "%s (%s)" % (xNode.attrib['attribute'],startingXsource)
+            else:
+                startingXaxis = xNode.attrib['statistic']
+            
+            yNode = root.find('startingYaxis')
+            startingYsource = yNode.attrib.get('source',None)
+            if startingYsource != None:
+                startingYaxis = "%s (%s)" % (yNode.attrib['attribute'],startingYsource)
+            else:
+                startingYaxis = yNode.attrib['statistic']
+            
+            # handle statistics
+            statistics = {}
+            for s in root.findall('statistic'):
+                assert not statistics.has_key(s.attrib['id'])
+                parameters = {}
+                for k,v in s.attrib.iteritems():
+                    if k != 'id' and k != 'type':
+                        parameters[k] = v
+                statObj = statistic(s.attrib['id'],s.attrib['type'],hardFilter.generateFromParent(s),softFilter.generateFromParent(s),parameters)
+                statistics[s.attrib['id']] = statObj
+                groupReferences.update(statObj.getExternalReferences())
+            
             # handle groups
             groups = {}
-            for f in fileGroupsToMake:
-                assert not groups.has_key(f.fileID)
-                groups[f.fileID] = f.makeGroup()
             for g in root.findall('group'):
                 assert not groups.has_key(g.attrib['id'])
-                attributes = attribute.generateFromParent(g)
-                samples = sample.generateFromParent(g)
-                groups[g.attrib['id']] = groupObject(g.attrib['id'],samples,attributes)
+                groupReferences.discard(g.attrib['id'])
+                samples = groupObject.generateSampleStrings(g)
+                groups[g.attrib['id']] = groupObject(g.attrib['id'],samples)
+            
+            # handle files
+            files = {}
+            for f in root.findall('file'):
+                path = f.attrib['path']
+                if not f.attrib.has_key('id'):
+                    f.set('id',os.path.split(path)[1])
+                fileID = f.attrib.get('id',os.path.split(path)[1])
+                assert not files.has_key(fileID)
+                if f.attrib['build'].strip().lower() == 'hg19':
+                    build = genomeUtils.hg19
+                elif f.attrib['build'].strip().lower() == 'hg18':
+                    build = genomeUtils.hg18
+                else:
+                    raise parseException('Unsupported build: %s' % f.attrib['build'])
+                attributes = attribute.generateFromParent(f)
+                files[fileID] = fileObject(fileID,path,build,attributes)
+            
+            # generate any missing groups from files
+            for fileID in groupReferences:
+                assert not groups.has_key(fileID)
+                groups[fileID] = files[fileID].makeGroup()
+            
             # handle required stuff
-            prefsObj = prefs(root.find('alleleOfInterest').attrib['id'],
-                             root.find('alleleOfInterest').attrib['mode'],
-                             root.find('startingXaxis').attrib['id'],
-                             root.find('startingXaxis').attrib['attribute'],
-                             root.find('startingYaxis').attrib['id'],
-                             root.find('startingYaxis').attrib['attribute'],
-                             files,
-                             groups)
+            prefsObj = prefs(startingXsource,startingYsource,startingXaxis,startingYaxis,files,groups,statistics)
             return prefsObj
-        except (AssertionError, AttributeError, KeyError):
+        except (AssertionError, AttributeError, KeyError, ValueError):
             raise parseException('Bad Prefs string')
-        
-class startingAxis:
-    def __init__(self, attributeID, attribute):
-        pass
 
 class fileObject:
     def __init__(self, fileID, path, build, attributes=[]):
-        pass
-
-class groupObject:
-    def __init__(self, groupID, samples=[], attributes=[]):
-        pass
-
-class sample:
-    def __init__(self, fileID, sampleID):
-        pass
+        self.fileID=fileID
+        self.path=path
+        self.format=os.path.splitext(path)[1].lower()
+        if self.format == ".vcf":
+            self.fileAttributes = variantFile.extractVcfFileInfo(path)
+        elif self.format == ".csv":
+            self.fileAttributes = variantFile.extractCsvFileInfo(path)
+        elif self.format == ".bed":
+            raise Exception('bed not supported yet')
+            #self.fileAttributes = featureFile.extractBedFileInfo(path)
+        elif self.format == ".gff3":
+            raise Exception('gff3 not supported yet')
+        else:
+            raise Exception("%s format not supported" % self.format)
+        self.build=build
+        self.attributes=attributes
+        self.hardFilters = {}
+        for a in self.attributes:
+            self.hardFilters[a.attributeID] = a.hardFilter
     
-    @staticmethod
-    def generateFromParent(node):
-        results = []
-        for s in node.findall('sample'):
-            results.append(sample(s.attrib['file'],s.attrib['id']))
-        return results
+    def makeGroup(self):
+        samples = []
+        for i in self.fileAttributes["INDIVIDUALS"]:
+            samples.append("%s (%s)"%(i,self.fileID))
+        return groupObject(self.fileID,samples)
 
 class attribute:
-    def __init__(self, attributeID, statistic=None, forceCategorical=None, hardfilters=[], softfilters=[]):
-        pass
+    def __init__(self, attributeID, forceCategorical=None, hardFilter=None, softFilter=None):
+        self.attributeID=attributeID
+        self.forceCategorical=forceCategorical
+        self.hardFilter=hardFilter
+        self.softFilter=softFilter
     
     @staticmethod
     def generateFromParent(node):
         results = []
         for r in node.findall('attribute'):
-            statistic = r.attrib.get('statistic',None)
-            if statistic != None and node.tag == 'file' and not node.attrib['path'].endswith('.vcf'):
-                raise parseException('Pref string used a statistic attribute on a non-.vcf file')
+            attributeID = "%s (%s)" % (r.attrib['id'],node.attrib['id'])
             forceCategorical = True if r.attrib.get('forceCategorical','false') == 'true' else False
-            softfilters=softFilter.generateFromParent(r)
-            hardfilters=hardFilter.generateFromParent(r)
-            results.append(attribute(r.attrib['id'],statistic,forceCategorical,hardfilters,softfilters))
+            softfilter=softFilter.generateFromParent(r)
+            hardfilter=hardFilter.generateFromParent(r)
+            results.append(attribute(attributeID,forceCategorical,hardfilter,softfilter))
         return results
 
+class groupObject:
+    def __init__(self, groupID, samples=[]):
+        self.groupID=groupID
+        self.samples=samples
+    
+    @staticmethod
+    def generateSampleStrings(node):
+        results = []
+        for s in node.findall('sample'):
+            sampleID = "%s (%s)" % (s.attrib['id'],s.attrib['file'])
+            results.append(sampleID)
+        return results
+
+class statistic:
+    ALLELE_FREQUENCY = 0
+    def __init__(self, statisticID, statisticType,hardfilter=None,softfilter=None,parameters={}):
+        self.statisticID = statisticID
+        if statisticType.strip().lower() == 'allele frequency':
+            self.statisticType = statistic.ALLELE_FREQUENCY
+        else:
+            raise Exception('Unsupported statistic: %s' % statisticType)
+        self.hardFilter = hardfilter
+        self.softFilter = softfilter
+        self.parameters = parameters
+        
+        # statistic-specific stuff
+        if self.statisticType == statistic.ALLELE_FREQUENCY:
+            alleleMode = self.parameters['alleleMode'].strip().lower()
+            if alleleMode.startswith('vcf'):
+                self.parameters['alleleMode'] = int(alleleMode[3:])
+                self.parameters['vcf override'] = True
+            else:
+                assert self.parameters.has_key('alleleGroup')
+                if alleleMode == 'leastfrequent':
+                    self.parameters['alleleMode'] = -1
+                elif alleleMode == 'mostfrequent':
+                    self.parameters['alleleMode'] = 1
+                else:
+                    self.parameters['alleleMode'] = int(alleleMode)
+                self.parameters['vcf override'] = False
+    
+    def getExternalReferences(self):
+        if self.statisticType == 'allele frequency':
+            result = set([self.parameters['group']])
+            if self.parameters.has_key('alleleGroup'):
+                assert self.parameters['alleleGroup'] != 'vcf override'
+                result.add(self.parameters['alleleGroup'])
+            return result
+        else:
+            return []
+
 class softFilter:
-    def __init__(self, excludeMissing=True, excludeMasked=True):
-        pass
+    def __init__(self, excludeMissing=True, excludeMasked=True, values=[], percentages=[]):
+        self.excludeMissing=excludeMissing
+        self.excludeMasked=excludeMasked
+        self.values=values
+        self.percentages=percentages
     
     @staticmethod
     def generateFromParent(node):
-        results = []
-        for f in node.findall('softFilter'):
-            
+        f = node.find('softFilter')
+        if f == None:
+            return softFilter(excludeMissing=False,excludeMasked=False,values=None,percentages=None)
+        else:
+            excludeMissing = False if f.attrib.get('excludeMissing','true') == 'false' else True
+            excludeMasked = False if f.attrib.get('excludeMasked','true') == 'false' else True
+            values=[]
+            for v in f.findall('value'):
+                values.append(v.attrib['text'])
+            percentages=[]
+            for p in f.findall('percentage'):
+                value = float(p.attrib['percent'])
+                assert value > 0 and value < 100
+                if p.attrib['direction'] == 'bottom':
+                    value = -value
+                percentages.append(0.01*value)
+            return softFilter(excludeMissing,excludeMasked,values,percentages)
 
 class hardFilter(valueFilter):
-    def __init__(self, excludeMissing=True, excludeMasked=True, percent=100.0, direction="top", values=[]):
-        
-        valueFilter.__init__(self, values, ranges, includeNone, includeInf, includeNaN, includeInvalid, listMode)
-        self.soft = soft
-        self.excludeMissing = excludeMissing
-        self.excludeMasked = excludeMasked
-        self.percent = percent
-        self.direction = direction
-        self.values = values
-
-
-'''
-class fileObj:
-    def __init__(self, path, name):
-        self.path = path
-        self.name = name
-        self.format = os.path.splitext(path)[1]
-        
-        self.checked = True
-        self.expanded = False
-        self.attributes = {}            # {attribute str:checked bool}
-        for a in self.extractHeaders():
-            self.attributes[a] = True
-        if len(self.attributes) == 0:
-            self.expanded = None
-        
-        self.individuals = set(self.extractIndividuals())
-        if len(self.individuals) == 0:
-            self.hasGenotypes = False
+    @staticmethod
+    def generateFromParent(node):
+        f = node.find('hardFilter')
+        if f == None:
+            return hardFilter(values=None, ranges=None, includeNone=True, includeInf=True, includeNaN=True, listMode=valueFilter.LIST_MUTILATE)
         else:
-            self.hasGenotypes = True
-    
-    def extractHeaders(self):
-        inFile = self.path
-        if self.format == '.vcf':
-            results = variantFile.extractVcfFileInfo(inFile)
-        elif self.format == '.gvf':
-            raise NotImplementedError('gvf not implemented yet')
-            results = []
-        elif self.format == '.csv':
-            raise NotImplementedError('csv not implemented yet')
-            results = []
-        elif self.format == '.tsv':
-            raise NotImplementedError('tsv not implemented yet')
-            results = []
-        elif self.format == '.bed':
-            raise NotImplementedError('bed not implemented yet')
-            results = []
-        elif self.format == '.gff3':
-            raise NotImplementedError('gff3 not implemented yet')
-            results = []
-        inFile.close()
-        return results
-        
-    def load(self, vData, fData):
-        raise NotImplementedError('todo...')
-        '''
-        inFile = open(self.path,'r')
-        if self.format == '.vcf':
-            variantFile.parseVcfFile(inFile,functionToCall=self.addVariant,callbackArgs={'vData':vData},individualsToExclude=[],individualsToInclude=[],mask=None,returnFileObject=False,skipFiltered=False,skipVariantAttributes=False,skipGenotypes=False,skipGenotypeAttributes=True,includeAdditionalHeaderInfo=False,forceAlleleMatching=True)
-        elif self.format == '.gvf':
-            raise NotImplementedError('gvf not implemented yet')
-        elif self.format == '.csv':
-            csvVariantFile.parseCsvVariantFile(inFile,"Chromosome","Position",refHeader="rsNumber",functionToCall=self.addVariant,callbackArgs={'vData':vData},returnFileObject=False)
-        elif self.format == '.tsv':
-            csvVariantFile.parseCsvVariantFile(inFile,"Chromosome","Position",refHeader="rsNumber",functionToCall=self.addVariant,callbackArgs={'vData':vData},returnFileObject=False,delimiter='\t')
-        elif self.format == '.bed':
-            raise NotImplementedError('bed not implemented yet')
-        elif self.format == '.gff3':
-            raise NotImplementedError('gff3 not implemented yet')
-        inFile.close()
-        '''
-    
-    def addVariant(self, variantObject, vData):
-        for att,include in self.attributes.iteritems():
-            if variantObject.attributes.has_key(att):
-                if include:
-                    variantObject.attributes[att + " (" + self.name + ")"] = variantObject.attributes[att]
-                del variantObject.attributes[att]
-        vData.addVariant(variantObject)
-    
-    def isChecked(self):
-        if len(self.attributes) == 0:
-            return self.checked
-        hasFalse = None
-        hasTrue = None
-        for i in self.attributes.itervalues():
-            if i:
-                if hasTrue == None:
-                    hasTrue = True
-                elif hasFalse == True:
-                    return None # None indicates that some are checked but others aren't
-            else:
-                if hasFalse == None:
-                    hasFalse = True
-                elif hasTrue == True:
-                    return None
-        # If we've gotten this far, there are only two possibilities - they're all true, or all false
-        if hasFalse:
-            return False
-        else:
-            return True
-    
-    def check(self, on=True):
-        self.checked = on
-        for a in self.attributes.iterkeys():
-            self.attributes[a] = on
+            excludeMissing = False if f.attrib.get('excludeMissing','true') == 'false' else True
+            excludeMasked = False if f.attrib.get('excludeMasked','true') == 'false' else True
+            values=[]
+            for v in f.findall('value'):
+                values.append(v.attrib['text'])
+            if len(values) == 0:
+                values = None   # include everything
+            ranges=[]
+            for r in f.findall('range'):
+                ranges.append((float(r.attrib['low']),float(r.attrib['high'])))
+            if len(ranges) == 0:
+                ranges = None   # include everything
+            return hardFilter(values=values, ranges=ranges, includeNone=not excludeMissing, includeInf=not excludeMissing, includeNaN=not excludeMasked, listMode=valueFilter.LIST_MUTILATE)
 
-class prefilterObj:
-    def __init__(self, direction, percent, excludeMissing):
-        self.direction = direction
-        self.percent = percent
-        self.excludeMissing = excludeMissing
-
-class svOptionsModel:
-    def __init__(self, fromFile=None):
-        self.individuals = {}   # {file name:{individual name : individual}}
-        self.groups = {}        # {group name : group}
-        self.groupOrder = []    # group name
-        self.files = {}         # {file name : fileObj}
-        self.fileOrder = []     # file name
-        
-        self.startingXattribute = None
-        self.startingYattribute = None
-        self.prefilters = {}    # attribute name : 'top5', 'bottom5'
-        self.alleleMode = '.vcf'
-        
-        if fromFile != None:
-            self.buildFromFile(fromFile)
-    
-    def buildFromFile(self, path):
-        queryObj = PyQuery(filename=path)
-        for fobj in queryObj('file'):
-            newName = self.addFile(fobj.attrib['path'], fobj.attrib.get('id',None))
-            self.files[newName].check(on=False)
-            for c in fobj.iterchildren():
-                if c.tag == 'attribute':
-                    self.files[newName].attributes[c.text] = True
-            
-        for gobj in queryObj('group'):
-            if self.hasGroup(gobj.attrib['id']):
-                self.groups[gobj.attrib['id']].check(True)  # include the existing group
-            else:
-                self.addGroup(gobj.attrib['id'])
-                for c in gobj.iterchildren():
-                    if c.tag == 'sample':
-                        self.individuals[c.attrib['file']][c.text].addToGroup(self.groups[gobj.attrib['id']])
-        
-        prefs = queryObj('prefs')[0]
-        self.startingXattribute = prefs.attrib.get('xaxis',None)
-        if self.startingXattribute in self.groups.iterkeys():
-            self.startingXattribute = "%s AF" % self.startingXattribute
-        self.startingYattribute = prefs.attrib.get('yaxis',None)
-        if self.startingYattribute in self.groups.iterkeys():
-            self.startingYattribute = "%s AF" % self.startingYattribute
-        self.alleleMode = prefs.attrib.get('alleleMode','.vcf')
-                
-        for pObj in prefs.iterchildren():
-            if pObj.tag == 'prefilter':
-                att = pObj.attrib['axis']
-                if att in self.groups.iterkeys():
-                    att = "%s AF" % att
-                self.prefilters[att] = prefilterObj(pObj.attrib['direction'],float(pObj.attrib['percent'])/100.0,pObj.attrib['excludeMissing'].strip().lower() == "true")
-    
-    def buildDataObjects(self, progressWidget):
-        progressWidget.reset()
-        progressWidget.setMinimum(0)
-        progressWidget.setMaximum(len(self.files) + len(self.groups))
-        progressWidget.show()
-        index = 0
-        
-        vData = variantData()
-        fData = featureData()
-        
-        progressWidget.setLabelText('Loading Files')
-        for fName,fObj in self.files.iteritems():
-            fObj.load(vData,fData)
-            for att,checked in fObj.attributes.iteritems():
-                if not checked:
-                    vData.discardAttribute(att)
-            
-            if progressWidget.wasCanceled():
-                return None
-            index += 1
-            progressWidget.setValue(index)
-        
-        progressWidget.setLabelText('Recalculating Allele Frequencies')
-        if self.alleleMode == ".vcf":
-            basisGroup = None
-        else:
-            basisGroup = self.groups[self.alleleMode].getCheckedIndividuals()
-        for gName,gObj in self.groups.iteritems():
-            if gObj.isChecked() == True:
-                individuals = gObj.getCheckedIndividuals()
-                vData.recalculateAlleleFrequencies(individuals, gName, basisGroup)
-            
-            if progressWidget.wasCanceled():
-                return None
-            index += 1
-            progressWidget.setValue(index)
-                
-        return (vData,fData)
-    
-    def addFile(self, path, name=None):
-        if name == None:
-            fileNameChunk = os.path.split(path)[1]
-            nameAppend = ""
-            i = 1
-            while self.files.has_key(fileNameChunk + nameAppend):
-                i += 1
-                nameAppend = " (%i)" % i
-            name = fileNameChunk + nameAppend
-        newFile = fileObj(path, name)
-        self.files[newFile.name] = newFile
-        self.fileOrder.insert(0,newFile.name)
-        
-        if newFile.hasGenotypes:
-            newGroup = group(newFile.name, userDefined=False, checked=False)
-            if self.groups.has_key(newGroup.name):
-                print "ERROR: Duplicate group"
-                sys.exit(1)
-            
-            # Create all individuals in the file, and add them as native members
-            self.individuals[newFile.name] = {}
-            for i in newFile.individuals:
-                newIndividual = individual(i)
-                newIndividual.addToGroup(newGroup, native=True)
-                self.individuals[newFile.name][newIndividual.name] = newIndividual
-            
-            # Finally add it to our groups
-            self.groups[newGroup.name] = newGroup
-            self.groupOrder.insert(0,newGroup.name)
-            
-            # don't include the file-based groups by default
-            newGroup.check(on=False)
-        return newFile.name
-    
-    def hasGroup(self, text):
-        return text in self.groupOrder
-    
-    def addGroup(self, text):
-        self.groups[text] = group(text, userDefined=True, checked=True)
-        self.groupOrder.insert(0,text)
-        
-    def removeGroup(self, text):
-        self.groupOrder.remove(text)
-        del self.groups[text]
-'''

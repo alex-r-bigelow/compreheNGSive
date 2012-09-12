@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>788</width>
-    <height>679</height>
+    <width>1214</width>
+    <height>916</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,7 +62,6 @@
            <height>500</height>
           </size>
          </property>
-         <zorder>splitter</zorder>
         </widget>
        </item>
        <item>
@@ -91,8 +90,21 @@
          <property name="opaqueResize">
           <bool>true</bool>
          </property>
-         <widget class="QListWidget" name="groupList"/>
-         <widget class="QListWidget" name="highlightList"/>
+         <widget class="QListWidget" name="groupList">
+          <item>
+           <property name="text">
+            <string>Selection List not implemented yet</string>
+           </property>
+          </item>
+         </widget>
+         <widget class="QListWidget" name="highlightList">
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>false</bool>
+          </property>
+         </widget>
         </widget>
        </item>
        <item>
@@ -125,7 +137,7 @@
           <number>1</number>
          </property>
          <property name="text">
-          <string>Tool tip</string>
+          <string>Tool tip not implemented yet</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -165,6 +177,12 @@
          <height>16777215</height>
         </size>
        </property>
+       <property name="baseSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="verticalScrollBarPolicy">
         <enum>Qt::ScrollBarAlwaysOff</enum>
        </property>
@@ -179,8 +197,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>76</width>
-          <height>595</height>
+          <width>218</width>
+          <height>832</height>
          </rect>
         </property>
        </widget>
@@ -200,8 +218,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>76</width>
-          <height>595</height>
+          <width>218</width>
+          <height>832</height>
          </rect>
         </property>
        </widget>
@@ -221,8 +239,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>76</width>
-          <height>595</height>
+          <width>218</width>
+          <height>832</height>
          </rect>
         </property>
        </widget>
@@ -236,7 +254,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>788</width>
+     <width>1214</width>
      <height>22</height>
     </rect>
    </property>

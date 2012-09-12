@@ -10,7 +10,7 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="120"
-   height="480"
+   height="800"
    id="root"
    version="1.1"
    inkscape:version="0.48.2 r9819"
@@ -25,10 +25,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.88"
-     inkscape:cx="-167.66453"
-     inkscape:cy="436.00272"
+     inkscape:cx="-252.77091"
+     inkscape:cy="584.93889"
      inkscape:document-units="px"
-     inkscape:current-layer="root"
+     inkscape:current-layer="g3803"
      showgrid="false"
      inkscape:window-width="1833"
      inkscape:window-height="1156"
@@ -54,7 +54,8 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(0,320)">
     <g
        id="g3803"
        spacer="__spacer"
@@ -67,17 +68,17 @@
          style="color:#000000;fill:#ffffff;fill-opacity:0;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
          id="rect3004"
          width="120"
-         height="480"
+         height="800"
          x="0"
-         y="0"
+         y="-320"
          __parentProperty="__spacer" />
       <rect
          style="color:#000000;fill:#666666;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
          id="rect3841"
          width="1"
-         height="480"
+         height="800"
          x="102.5"
-         y="-7.1054274e-15"
+         y="-320"
          __parentProperty="__axisLine" />
       <g
          id="g4470"
@@ -159,7 +160,7 @@
              __parentProperty="__numericDownBarLabel">999.999</text>
         </g>
         <g
-           transform="translate(0,-410)"
+           transform="translate(0,-730)"
            id="g4419"
            background="__numericUpBarBackground"
            __parentProperty="__numericUpBar"
@@ -170,7 +171,7 @@
              height="14"
              width="99"
              id="rect4421"
-             style="color:#000000;fill:#ffffff;fill-opacity:0.39215687;fill-rule:nonzero;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:0.39215686999999999;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+             style="color:#000000;fill:#ffffff;fill-opacity:0.39215686;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
              __parentProperty="__numericUpBarBackground" />
           <rect
              style="color:#000000;fill:#666666;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:1;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
@@ -242,9 +243,9 @@
              bar="__selectionRangeBar"
              transform="translate(0,-40)">
             <rect
-               y="45"
+               y="-275"
                x="65.596558"
-               height="360"
+               height="680"
                width="10"
                id="rect3796"
                style="color:#000000;fill:#1b9e77;fill-opacity:0.19607843;fill-rule:nonzero;stroke:none;stroke-width:20;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
@@ -282,7 +283,7 @@
                  __parentProperty="__selectionRangeBottomLabel">999.999</text>
             </g>
             <g
-               transform="translate(0,-185)"
+               transform="translate(0,-505)"
                id="g4454"
                label="__selectionRangeTopLabel"
                background="__selectionRangeTopBackground"
@@ -339,8 +340,7 @@
              id="g3790"
              background="__scrollUpBackground"
              __parentProperty="__scrollUpBar"
-             __eventCode="if 'LeftButton' in event.lastButtons:\n
-    self.controller.scrollCat(event.x,-1)">
+             __eventCode="if 'LeftButton' in event.lastButtons:\n     self.controller.scrollCat(event.x,-1)">
             <rect
                style="color:#000000;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:#ffffff;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
                id="rect3768"
@@ -359,8 +359,7 @@
              id="g3786"
              background="__scrollDownBackground"
              __parentProperty="__scrollDownBar"
-             __eventCode="if 'LeftButton' in event.lastButtons:\n
-    self.controller.scrollCat(event.x,1)">
+             __eventCode="if 'LeftButton' in event.lastButtons:\n     self.controller.scrollCat(event.x,1)">
             <rect
                y="440.5"
                x="98"
@@ -387,14 +386,7 @@
              __parentProperty="__textItem"
              id="g4348"
              background="__textItemBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
              __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
              transform="translate(0,13.750045)">
             <path
@@ -416,14 +408,7 @@ if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
              __parentProperty="__alleleMasked"
              id="g4352"
              background="__alleleMaskedBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
              __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
              label="__alleleMaskedLabel"
              transform="translate(0,7.5000242)">
@@ -457,17 +442,8 @@ if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
              __parentProperty="__missing"
              id="g4356"
              background="__missingBackground"
-             __eventCode="self.background.setAttribute('fill','#D95F02')\n
-self.controller.mouseLabel(event.x, self)\n
-if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n
-    on = self.controller.toggleLabel(event.x, self)\n
-    if on:\n
-        self.originalColor = '#1B9E77'\n
-    else:\n
-        self.originalColor = '#FFFFFF'"
-             __resetCode="if hasattr(self,'originalColor'):\n
-    self.background.setAttribute('fill',self.originalColor)\n
-self.controller.unMouseLabel()"
+             __eventCode="self.background.setAttribute('fill','#D95F02')\n self.controller.mouseLabel(event.x, self)\n if 'LeftButton' in event.buttons and 'LeftButton' not in event.lastButtons:\n     on = self.controller.toggleLabel(event.x, self)\n     if on:\n         self.originalColor = '#1B9E77'\n     else:\n         self.originalColor = '#FFFFFF'"
+             __resetCode="if hasattr(self,'originalColor'):\n     self.background.setAttribute('fill',self.originalColor)\n self.controller.unMouseLabel()"
              label="__missingLabel"
              transform="translate(0,2)">
             <path
@@ -555,12 +531,12 @@ self.controller.unMouseLabel()"
   <path
      inkscape:connector-curvature="0"
      id="path3863"
-     d="M 103,-42.180821 103,-20.37231"
-     style="color:#000000;fill:none;stroke:#d95f02;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.78431374;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+     d="M 103,-42.18082 103,-20.37231"
+     style="color:#000000;fill:none;stroke:#d95f02;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.78431373;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
      __globalProperty="highlightedLinePrototype" />
   <path
      style="color:#000000;fill:none;stroke:#1b9e77;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:0.29411765;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
-     d="M 111,-42.180821 111,-20.37231"
+     d="M 111,-42.18082 111,-20.37231"
      id="path3861"
      inkscape:connector-curvature="0"
      __globalProperty="selectedLinePrototype" />
@@ -570,6 +546,6 @@ self.controller.unMouseLabel()"
      width="31"
      height="9"
      x="15.425535"
-     y="-24.638298"
+     y="-24.638313"
      __globalProperty="rangeCursor" />
 </svg>
