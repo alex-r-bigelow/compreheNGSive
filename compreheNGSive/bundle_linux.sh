@@ -14,6 +14,7 @@ cd $SCRIPT_DIR
 rm -rf dist
 rm -rf build
 rm -rf compreheNGSive
+rm Data.fs*
 echo 'Running build script...'
 python setup.py build
 
@@ -21,8 +22,8 @@ echo 'Moving files around...'
 # move the auto-generated programs and packages around
 mv dist compreheNGSive
 cd build/*
-cp * ../../compreheNGSive/
-cd ../..
+cp * ../compreheNGSive/
+cd ..
 # copy the svg and ui elements manually
 mkdir compreheNGSive/gui
 cp -r gui/svg compreheNGSive/gui/
@@ -36,5 +37,4 @@ cp README.txt compreheNGSive/
 
 echo 'Bundling...'
 tar -czf compreheNGSive$VERSION.tar.gz compreheNGSive
-rm -rf compreheNGSive
 mv compreheNGSive$VERSION.tar.gz $STARTING_DIR
