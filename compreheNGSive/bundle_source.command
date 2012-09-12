@@ -13,9 +13,8 @@ echo 'Cleaning...'
 cd $SCRIPT_DIR
 rm -rf dist
 rm -rf build
-rm -rf compreheNGSive
+rm Data.fs*
 
 echo 'Cloning...'
 cd ..
 tar -czvf $STARTING_DIR/compreheNGSive$VERSION.tar.gz compreheNGSive
-rm -rf compreheNGSive

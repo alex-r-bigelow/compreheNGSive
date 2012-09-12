@@ -59,12 +59,12 @@ class setupApp:
         self.runningApp = None
     
     def loadPrefs(self):
-        infile = open('bigPrefs.xml','r')
+        infile = open('prefs.xml','r')
         self.window.textEdit.setPlainText(infile.read())
         infile.close()
     
     def savePrefs(self):
-        outfile=open('bigPrefs.xml','w')
+        outfile=open('prefs.xml','w')
         outfile.write(self.window.textEdit.toPlainText())
         outfile.close()
     
@@ -84,7 +84,7 @@ class setupApp:
         self.canceled = self.splash.wasCanceled()
         return self.canceled
     
-    def runSV(self, params='bigPrefs.xml'):
+    def runSV(self, params='prefs.xml'):
         self.savePrefs()
         self.window.hide()
         
