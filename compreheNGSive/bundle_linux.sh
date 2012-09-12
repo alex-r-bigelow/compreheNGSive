@@ -21,13 +21,10 @@ python setup.py build
 echo 'Moving files around...'
 # move the auto-generated programs and packages around
 mv dist compreheNGSive
-cd build/*
-cp * ../compreheNGSive/
-cd ..
 # copy the svg and ui elements manually
-mkdir compreheNGSive/gui
-cp -r gui/svg compreheNGSive/gui/
-cp -r gui/ui compreheNGSive/gui/
+cp -r gui compreheNGSive/gui
+cp -r dataModels compreheNGSive/dataModels
+cp -r resources compreheNGSive/resources
 rm -rf build
 # copy documentation and config files
 cp prefs.xml compreheNGSive/
