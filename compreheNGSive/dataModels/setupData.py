@@ -18,7 +18,7 @@ class prefs:
         self.loadingPercentages={}
         total = 0.0
         numGenotypedLines = 0
-        self.maxTicks = 200.0 # boosting this number will make the progress widget more responsive while loading files
+        self.maxTicks = 2000.0 # boosting this number will make the progress widget more responsive while loading files
         for fileID,f in self.files.iteritems():
             numLines = max(f.fileAttributes.get('number of lines',1000),1)
             total += numLines
@@ -125,71 +125,71 @@ class prefs:
     @staticmethod
     def generateFromText(text):
         root = etree.fromstring(text)
-        try:
-            groupReferences=set()
-            
-            # handle globals
-            xNode = root.find('startingXaxis')
-            startingXsource = xNode.attrib.get('source',None)
-            if startingXsource != None:
-                startingXaxis = "%s (%s)" % (xNode.attrib['attribute'],startingXsource)
+        #try:
+        groupReferences=set()
+        
+        # handle globals
+        xNode = root.find('startingXaxis')
+        startingXsource = xNode.attrib.get('source',None)
+        if startingXsource != None:
+            startingXaxis = "%s (%s)" % (xNode.attrib['attribute'],startingXsource)
+        else:
+            startingXaxis = xNode.attrib['statistic']
+        
+        yNode = root.find('startingYaxis')
+        startingYsource = yNode.attrib.get('source',None)
+        if startingYsource != None:
+            startingYaxis = "%s (%s)" % (yNode.attrib['attribute'],startingYsource)
+        else:
+            startingYaxis = yNode.attrib['statistic']
+        
+        # handle statistics
+        statistics = {}
+        for s in root.findall('statistic'):
+            assert not statistics.has_key(s.attrib['id'])
+            parameters = {}
+            for k,v in s.attrib.iteritems():
+                if k != 'id' and k != 'type':
+                    parameters[k] = v
+            statObj = statistic(s.attrib['id'],s.attrib['type'],hardFilter.generateFromParent(s),softFilter.generateFromParent(s),parameters)
+            statistics[s.attrib['id']] = statObj
+            groupReferences.update(statObj.getExternalReferences())
+        
+        # handle groups
+        groups = {}
+        for g in root.findall('group'):
+            assert not groups.has_key(g.attrib['id'])
+            groupReferences.discard(g.attrib['id'])
+            samples = groupObject.generateSampleStrings(g)
+            groups[g.attrib['id']] = groupObject(g.attrib['id'],samples)
+        
+        # handle files
+        files = {}
+        for f in root.findall('file'):
+            path = f.attrib['path']
+            if not f.attrib.has_key('id'):
+                f.set('id',os.path.split(path)[1])
+            fileID = f.attrib.get('id',os.path.split(path)[1])
+            assert not files.has_key(fileID)
+            if f.attrib['build'].strip().lower() == 'hg19':
+                build = genomeUtils.hg19
+            elif f.attrib['build'].strip().lower() == 'hg18':
+                build = genomeUtils.hg18
             else:
-                startingXaxis = xNode.attrib['statistic']
-            
-            yNode = root.find('startingYaxis')
-            startingYsource = yNode.attrib.get('source',None)
-            if startingYsource != None:
-                startingYaxis = "%s (%s)" % (yNode.attrib['attribute'],startingYsource)
-            else:
-                startingYaxis = yNode.attrib['statistic']
-            
-            # handle statistics
-            statistics = {}
-            for s in root.findall('statistic'):
-                assert not statistics.has_key(s.attrib['id'])
-                parameters = {}
-                for k,v in s.attrib.iteritems():
-                    if k != 'id' and k != 'type':
-                        parameters[k] = v
-                statObj = statistic(s.attrib['id'],s.attrib['type'],hardFilter.generateFromParent(s),softFilter.generateFromParent(s),parameters)
-                statistics[s.attrib['id']] = statObj
-                groupReferences.update(statObj.getExternalReferences())
-            
-            # handle groups
-            groups = {}
-            for g in root.findall('group'):
-                assert not groups.has_key(g.attrib['id'])
-                groupReferences.discard(g.attrib['id'])
-                samples = groupObject.generateSampleStrings(g)
-                groups[g.attrib['id']] = groupObject(g.attrib['id'],samples)
-            
-            # handle files
-            files = {}
-            for f in root.findall('file'):
-                path = f.attrib['path']
-                if not f.attrib.has_key('id'):
-                    f.set('id',os.path.split(path)[1])
-                fileID = f.attrib.get('id',os.path.split(path)[1])
-                assert not files.has_key(fileID)
-                if f.attrib['build'].strip().lower() == 'hg19':
-                    build = genomeUtils.hg19
-                elif f.attrib['build'].strip().lower() == 'hg18':
-                    build = genomeUtils.hg18
-                else:
-                    raise parseException('Unsupported build: %s' % f.attrib['build'])
-                attributes = attribute.generateFromParent(f)
-                files[fileID] = fileObject(fileID,path,build,attributes)
-            
-            # generate any missing groups from files
-            for fileID in groupReferences:
-                assert not groups.has_key(fileID)
-                groups[fileID] = files[fileID].makeGroup()
-            
-            # handle required stuff
-            prefsObj = prefs(startingXsource,startingYsource,startingXaxis,startingYaxis,files,groups,statistics)
-            return prefsObj
-        except (AssertionError, AttributeError, KeyError, ValueError):
-            raise parseException('Bad Prefs string')
+                raise parseException('Unsupported build: %s' % f.attrib['build'])
+            attributes = attribute.generateFromParent(f)
+            files[fileID] = fileObject(fileID,path,build,attributes)
+        
+        # generate any missing groups from files
+        for fileID in groupReferences:
+            assert not groups.has_key(fileID)
+            groups[fileID] = files[fileID].makeGroup()
+        
+        # handle required stuff
+        prefsObj = prefs(startingXsource,startingYsource,startingXaxis,startingYaxis,files,groups,statistics)
+        return prefsObj
+        #except (AssertionError, AttributeError, KeyError, ValueError):
+        #    raise parseException('Bad Prefs string')
 
 class fileObject:
     def __init__(self, fileID, path, build, attributes=[]):
@@ -246,6 +246,8 @@ class groupObject:
     def generateSampleStrings(node):
         results = []
         for s in node.findall('sample'):
+            assert s.attrib.has_key('id')
+            assert s.attrib.has_key('file')
             sampleID = "%s (%s)" % (s.attrib['id'],s.attrib['file'])
             results.append(sampleID)
         return results

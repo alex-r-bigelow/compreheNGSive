@@ -1,6 +1,9 @@
 from resources.structures import countingDict, TwoTree, FourTree
 from copy import deepcopy
-import math, re, sys
+import math, re, sys, os
+from ZODB.FileStorage import FileStorage
+from ZODB.DB import DB
+import transaction
 
 selectionLabelRegex = re.compile('\(\d+\)')
 
@@ -795,8 +798,18 @@ class operation:
                 self.selections.activeSelections(n)
 
 class variantData:
+    COMMIT_FREQ=100
+    COMMIT=0
     def __init__(self, axisLabels):
-        self.data = {}  # {rsNumber : variant object}
+        for fileToClear in ['Data.fs','Data.fs.lock','Data.fs.tmp']:
+            if os.path.exists(fileToClear):
+                os.remove(fileToClear)
+        storage = FileStorage('Data.fs')
+        db = DB(storage)
+        connection = db.open()
+        self.data = connection.root()
+        
+        #self.data = {}  # {rsNumber : variant object}
         self.axes = None
         
         self.scatter = None # current scatterplot of intersection of all numerical data
@@ -824,6 +837,11 @@ class variantData:
             self.data[variantObject.name].repair(variantObject)
         else:
             self.data[variantObject.name] = variantObject
+        
+        variantData.COMMIT += 1
+        if variantData.COMMIT >= variantData.COMMIT_FREQ:
+            variantData.COMMIT = 0
+            transaction.commit()
     
     def performGroupCalculations(self, groupDict, statisticDict, callback, tickInterval):
         from setupData import statistic
@@ -906,6 +924,7 @@ class variantData:
                         variantObject.setAttribute(statisticID,float('Inf'))    # We had no data for this variant, so this thing is undefined
                     else:
                         variantObject.setAttribute(statisticID,float(targetCount)/allCount)
+    transaction.commit()
     
     def freeze(self, startingXaxis=None, startingYaxis=None, callback=None):
         '''
