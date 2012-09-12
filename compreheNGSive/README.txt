@@ -1,27 +1,24 @@
 compreheNGSive is an app for analyzing the end results of the next-generation sequencing pipeline (a better description coming soon...).
 
-RELEASE NOTES
+Release Notes
 -------------
+The program now relies on a prefs.xml file in the same directory as the app. For help on what all these parameters mean, click here.
 
-v0.1:
-There are two ways of running the program; if you just want to load an existing .vcf file and/or related .csv files, you can just double-click the app, and load the files using the dialog. Note that none of the options in the dialog other than selecting files work yet.
-The other way is from the command line; edit compreheNGSive.xml to your liking (hopefully it's pretty straightforward from the existing example, but feel free to ask about it if you have questions!), and type:
+The setup screen allows you to edit this file before running (a better GUI is coming, but the parameters are changing too fast to settle just yet!), but you are welcome to edit it externally. The old way of running command-line style is no longer supported.
 
-open -a compreheNGSive.app compreheNGSive.xml
-(Mac OS X)
-
-compreheNGSive.exe compreheNGSive.xml
-(Windows)
-
-./compreheNGSive compreheNGSive.xml
-
-Features not yet implemented:
+Planned Features
+----------------
+(coming, but not here yet)
 
     Genome browser
-    Rs # List
-    Interactive opening screen (we're still mulling nuances of picking minor alleles - for now, the program assumes that the major allele is in the REF column of the .vcf file, and the minor allele is the first ALT allele)
+    Rs # List for selected features
+    Better in-parallel coordinates highlighting
+    Export selections as .csv or .vcf files
+    Export history (for data provenance, help in writing papers, etc)
+    Refined setup screen (because the parameters are changing so fast, you're stuck with that .xml screen - sorry!)
+    Expandable multi-value parallel coordinate axes
 
-LICENSE
+License
 -------
 Copyright 2012 Alex Bigelow
 
@@ -29,4 +26,4 @@ This program is free software: you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
 
-Questions, comments, ideas, bug reports, and criticisms are more than welcome! Send an email to alex.bigelow@utah.edu.
+Questions, comments, ideas, bug reports, and criticisms are more than welcome! Send an email to alex dot bigelow at utah dot edu.

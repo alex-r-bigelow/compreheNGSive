@@ -7,7 +7,8 @@ If you're REALLY insistent on doing things the hard way, make sure the following
 
 Python 2.7 (it's possible that an earlier version will work, but I haven't tested it)
 setuptools
-pyquery
+pyquery (This is the source of a really nasty bug in windows - hopefully when I convert to just lxml, that problem will go away)
+ZODB
 PySide (>= version 1.1.1   WARNING: as of August 2012, the version that comes via Linux package managers is 1.1.0 !!! You will probably need to build this from source on Linux.)
 
 If you're on Windows:
