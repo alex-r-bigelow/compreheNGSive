@@ -1,9 +1,8 @@
 from resources.structures import countingDict, TwoTree, FourTree
 from copy import deepcopy
 import math, re, sys, os
-from ZODB.FileStorage import FileStorage
-from ZODB.DB import DB
-import transaction
+from durus.file_storage import FileStorage
+from durus.connection import Connection
 
 selectionLabelRegex = re.compile('\(\d+\)')
 
@@ -804,10 +803,8 @@ class variantData:
         for fileToClear in ['Data.fs','Data.fs.lock','Data.fs.tmp']:
             if os.path.exists(fileToClear):
                 os.remove(fileToClear)
-        storage = FileStorage('Data.fs')
-        db = DB(storage)
-        connection = db.open()
-        self.data = connection.root()
+        self.connection = Connection(FileStorage("Data.fs"))
+        self.data = self.connection.get_root()
         
         #self.data = {}  # {rsNumber : variant object}
         self.axes = None
@@ -841,7 +838,7 @@ class variantData:
         variantData.COMMIT += 1
         if variantData.COMMIT >= variantData.COMMIT_FREQ:
             variantData.COMMIT = 0
-            transaction.commit()
+            self.connection.commit()
     
     def performGroupCalculations(self, groupDict, statisticDict, callback, tickInterval):
         from setupData import statistic
@@ -924,7 +921,7 @@ class variantData:
                         variantObject.setAttribute(statisticID,float('Inf'))    # We had no data for this variant, so this thing is undefined
                     else:
                         variantObject.setAttribute(statisticID,float(targetCount)/allCount)
-    transaction.commit()
+        self.connection.commit()
     
     def freeze(self, startingXaxis=None, startingYaxis=None, callback=None):
         '''

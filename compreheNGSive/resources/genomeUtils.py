@@ -1,7 +1,7 @@
 import sys, os, math, re, csv
 from structures import recursiveDict
 from bx.intervals.intersection import IntervalTree, Interval
-import persistent
+from durus.persistent import Persistent
 
 ####################
 # Helper constants #
@@ -498,7 +498,7 @@ class genotype:
         second = "." if self.allele2 == None else str(self.allele2)
         return first + slash + second
 
-class variant(persistent.Persistent):
+class variant(Persistent):
     """
     An object representing a variant (potentially with data from multiple sources)
     """

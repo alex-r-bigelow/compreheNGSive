@@ -31,7 +31,7 @@ mv *.ui gui/ui
 # copy documentation and config files
 cd $STARTING_DIR
 cd $SCRIPT_DIR
-cp prefs.xml compreheNGSive/
+cp prefs.xml compreheNGSive/compreheNGSive.app/Contents/Resources
 cp COPYING.txt compreheNGSive/
 cp COPYING.LESSER.txt compreheNGSive/
 cp README.txt compreheNGSive/
