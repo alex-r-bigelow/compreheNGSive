@@ -1,116 +1,215 @@
-from resources.structures import countingDict, TwoTree, FourTree
+from ..resources.structures import countingDict
 from copy import deepcopy
-import math, re, sys, os
+import math, sys, os
 from durus.file_storage import FileStorage
 from durus.connection import Connection
+from durus.persistent import Persistent
 
-selectionLabelRegex = re.compile('\(\d+\)')
-
-class mixedAxis:
-    def __init__(self, name):
-        self.name = name
+class variantRangeIndex(Persistent):
+    def __init__(self, data, key, forceCategorical = False):
+        Persistent.__init__(self)
         
-        self.tree = None
-        self.rsValues = {}
-        self.rsValuePairs = []
+        self.numerics = []
+        self.nonNumericValues = {float('Inf'):set(),float('NaN'):set()}
         
-        self.rsLabels = {}
-        self.labels = {'Missing':set(),'Allele Masked':set()}
+        self.key = key
+        self.forceCategorical = forceCategorical
         
-        self.isfinished = False
+        self.minimum = None
+        self.maximum = None
         
-        self.minimum = 0
-        self.maximum = 0
-    
-    def add(self, id, value):
-        self.isfinished = False
-        
-        if isinstance(value,list):
-            # TODO: how do I handle this best?
-            if len(value) == 0:
-                value = None
+        for v in sorted(data.itervalues(), key=lambda x:x.getAttribute(self.key)):
+            value = v.getAttribute()
+            if value == None:
+                self.nonNumericValues[float('Inf')].add(v)
+            elif self.forceCategorical:
+                if not self.nonNumericValues.has_key(value):
+                    self.nonNumericValues[value] = set()
+                self.nonNumericValues[value].add(v)
             else:
-                value = value[0]
-            '''
-            temp = ""
-            for i in value:
-                temp += str(i) + ","
-            value = temp[:-1]'''
-        
-        if value == None or value == "":
-            self.labels['Missing'].add(id)
-        else:
-            try:
-                value = float(value)
-                if math.isinf(value):
-                    self.labels['Missing'].add(id)
-                    self.rsLabels[id] = 'Missing'
-                elif math.isnan(value):
-                    self.labels['Allele Masked'].add(id)
-                    self.rsLabels[id] = 'Allele Masked'
-                else:
-                    self.rsValuePairs.append((id,value))
-                    self.rsValues[id] = value
-            except ValueError:
-                if value == 'Numeric' or value == 'Missing' or value == 'Allele Masked':
-                    value += ' (file attribute)'
-                self.rsLabels[id] = value
-                if not self.labels.has_key(value):
-                    self.labels[value] = set()
-                self.labels[value].add(id)
+                try:
+                    value = float(value)
+                    if math.isinf(value):
+                        self.nonNumericValues[value].add(v)
+                    elif math.isnan(value):
+                        self.nonNumericValues[value].add(v)
+                    else:
+                        if self.minimum == None or value < self.minimum:
+                            self.minimum = value
+                        if self.maximum == None or value > self.maximum:
+                            self.maximum = value
+                        self.numerics.append(v)
+                except ValueError:
+                    if not self.nonNumericValues.has_key(value):
+                        self.nonNumericValues[value] = set()
+                    self.nonNumericValues[value].add(v)
+        self.findNaturalMinAndMax()
     
-    def finish(self):
-        if len(self.rsValuePairs) > 0:
-            self.rsValuePairs.sort(key=lambda i: i[1])
-            self.tree = TwoTree(self.rsValuePairs)
-            self.findNaturalMinAndMax()
-        else:
-            self.tree = None
+    def selectRangeVariants(self, low, high):
+        lowIndex = 0
+        highIndex = len(self)
         
-        self.isfinished = True
-    
-    def query(self, ranges=[], labels={}):    # ranges should be [(low,high)], and labels should be {label:bool}
-        assert self.isfinished
+        if high < low:
+            temp = high
+            high = low
+            low = temp
+        
+        while highIndex-lowIndex > 1:
+            midIndex = (highIndex+lowIndex)/2
+            if self.numerics[midIndex].getAttribute(self.key) <= low:
+                lowIndex = midIndex
+            else:
+                highIndex = midIndex
+        
         results = set()
-        if self.tree != None:
-            for low,high in ranges:
-                results.update(self.tree.select(low,high,includeMasked=False,includeUndefined=False,includeMissing=False))  # I actually implement the missing/masked stuff outside the tree(s)
-        for l,v in self.labels.iteritems():
-            if labels.get(l,False):
-                results.update(v)
+        if self[lowIndex] >= low:
+            results.add(self.numerics[lowIndex])
+        while self[highIndex] <= high:
+            results.add(self.numerics[highIndex])
+            highIndex += 1
         return results
     
-    def getValues(self, rsNumbers):
-        if not isinstance(rsNumbers, list):
-            print "WARNING: returned rs numbers will be unordered!"
-        results = []
-        for rs in rsNumbers:
-            if self.rsLabels.has_key(rs):
-                results.append(self.rsLabels[rs])
+    def selectRangeNames(self, low, high):
+        lowIndex = 0
+        highIndex = len(self)
+        
+        if high < low:
+            temp = high
+            high = low
+            low = temp
+        
+        while highIndex-lowIndex > 1:
+            midIndex = (highIndex+lowIndex)/2
+            if self.numerics[midIndex].getAttribute(self.key) <= low:
+                lowIndex = midIndex
             else:
-                results.append(self.rsValues.get(rs,None))
+                highIndex = midIndex
+        
+        results = set()
+        if self[lowIndex] >= low:
+            results.add(self.numerics[lowIndex].name)
+        while self[highIndex] <= high:
+            results.add(self.numerics[highIndex].name)
+            highIndex += 1
         return results
     
-    def getValue(self, rsNumber):
-        if self.rsLabels.has_key(rsNumber):
-            return self.rsLabels[rsNumber]
+    def countIntersection(self, low, high, other, otherLow, otherHigh):
+        '''
+        First searches the bounding indices on valid ranges for each
+        variantRangeIndex; then counts the number of intersecting elements
+        by iterating the shortest sublist, and searching the longer
+        sublist; to actually return elements, just replace incrementing
+        count with adding to a set
+        '''
+        # find the start and end bounding indices for the subset of self
+        if high < low:
+            temp = high
+            high = low
+            low = temp
+        
+        lowIndex = 0
+        highIndex = len(self)
+        while highIndex-lowIndex > 1:
+            midIndex = (highIndex+lowIndex)/2
+            if self.numerics[midIndex].getAttribute(self.key) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
+                lowIndex = midIndex
+            else:
+                highIndex = midIndex
+        startIndex = lowIndex if self.numerics[lowIndex].getAttribute(self.key) >= low else lowIndex + 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
+        # can reuse lowIndex for a little speed gain, since we know high is bigger
+        highIndex = len(self)
+        while highIndex-lowIndex > 1:
+            midIndex = (highIndex+lowIndex)/2
+            if self.numerics[midIndex].getAttribute(self.key) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
+                highIndex = midIndex
+            else:
+                lowIndex = midIndex
+        endIndex = highIndex if self.numerics[highIndex].getAttribute(self.key) <= high else highIndex - 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
+        
+        # find the start and end bounding indices for the subset of other
+        if high < low:
+            temp = high
+            high = low
+            low = temp
+        
+        lowIndex = 0
+        highIndex = len(other)
+        while highIndex-lowIndex > 1:
+            midIndex = (highIndex+lowIndex)/2
+            if other.numerics[midIndex].getAttribute(other.key) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
+                lowIndex = midIndex
+            else:
+                highIndex = midIndex
+        otherStartIndex = lowIndex if other.numerics[lowIndex].getAttribute(other.key) >= low else lowIndex + 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
+        # can reuse lowIndex for a little speed gain, since we know high is bigger
+        highIndex = len(other)
+        while highIndex-lowIndex > 1:
+            midIndex = (highIndex+lowIndex)/2
+            if other.numerics[midIndex].getAttribute(other.key) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
+                highIndex = midIndex
+            else:
+                lowIndex = midIndex
+        otherEndIndex = highIndex if other.numerics[highIndex].getAttribute(other.key) <= high else highIndex - 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
+        
+        # Now we want to use the longer list as a binary search tree, and iterate the shorter one, counting matches
+        count = 0
+        if endIndex-startIndex > otherEndIndex-otherStartIndex:
+            # Search me, iterate him
+            i = otherStartIndex
+            while i <= otherEndIndex:
+                value = other.numerics[i].getAttribute(self.key)    # get the value that I'll be looking for
+                lowIndex = startIndex
+                highIndex = endIndex
+                while highIndex-lowIndex > 1:
+                    midIndex = (highIndex+lowIndex)/2
+                    if self.numerics[midIndex].getAttribute(self.key) <= value:
+                        lowIndex = midIndex
+                    else:
+                        highIndex = midIndex
+                # lowIndex now has the earliest possible place a match could be
+                while self.numerics[lowIndex].getAttribute(self.key) <= value:
+                    if self.numerics[lowIndex] == other.numerics[i]:
+                        count += 1
+                        break
+                    lowIndex += 1
         else:
-            return self.rsValues.get(rsNumber,None)
+            # Search him, iterate me
+            i = startIndex
+            while i <= endIndex:
+                value = self.numerics[i].getAttribute(other.key)    # get the value that he'll be looking for
+                lowIndex = startIndex
+                highIndex = endIndex
+                while highIndex-lowIndex > 1:
+                    midIndex = (highIndex+lowIndex)/2
+                    if other.numerics[midIndex].getAttribute(other.key) <= value:
+                        lowIndex = midIndex
+                    else:
+                        highIndex = midIndex
+                # lowIndex now has the earliest possible place a match could be
+                while other.numerics[lowIndex].getAttribute(other.key) <= value:
+                    if other.numerics[lowIndex] == self.numerics[i]:
+                        count += 1
+                        break
+                    lowIndex += 1
+        return count
     
     def findNaturalMinAndMax(self):
-        if not self.hasNumeric():
-            self.minimum = 0
-            self.maximum = 0
+        if len(self.numerics) == 0:
             return
         else:
-            self.minimum = self.tree.root.low
-            self.maximum = self.tree.root.high
             if self.minimum == self.maximum:
                 self.minimum = 0
                 if self.maximum == 0:
+                    self.minimum = -1
+                    self.maximum = 1
                     return
-                    #self.maximum = 1    # though it would make sense, for some reason changing this to a 1 causes CGAffineTransformInvert: singular matrix...
-            span = abs(self.maximum - self.minimum)
+            elif self.minimum > self.maximum:
+                temp = self.maximum
+                self.maximum = self.minimum
+                self.minimum = temp
+            
+            span = self.maximum - self.minimum
+            
             if self.maximum > 0:
                 nearestTenMax = 10**math.ceil(math.log10(self.maximum))
             elif self.maximum == 0:
@@ -123,39 +222,37 @@ class mixedAxis:
             elif self.minimum == 0:
                 nearestTenMin = 0
             else:
-                try:
-                    nearestTenMin = -10**math.ceil(math.log10(-self.minimum))
-                except:
-                    print "ERROR: Can't take log of %f" % self.minimum
-                    sys.exit(1)
+                nearestTenMin = -10**math.ceil(math.log10(-self.minimum))
             
             # prefer nearestTenMax if the gap between it and self.maximum is less than 25% the span of the data
-            if nearestTenMax - self.maximum < 0.25*span:
+            if abs(nearestTenMax - self.maximum) < 0.25*span:
                 self.maximum = nearestTenMax
-            #else:
-            #    self.maximum += 0.05*span
+            
             # prefer zero if the gap between it and self.minimum is less than 50% the span of the data, then 25% for nearestTenMin
-            if self.minimum > 0.0 and self.minimum < 0.5*span:
-                self.minimum = 0.0
-            elif self.minimum - nearestTenMin < 0.25*span:
+            if self.minimum > 0 and self.minimum < 0.5*span:
+                self.minimum = 0
+            elif abs(self.minimum - nearestTenMin) < 0.25*span:
                 self.minimum = nearestTenMin
-            #else:
-            #    self.minimum -= 0.05*span
     
-    def getMin(self):
-        return self.minimum
-    
-    def getMax(self):
-        return self.maximum
+    def query(self, ranges=[], labels={}):
+        results = set()
+        if len(self.numerics) > 0:
+            for low,high in ranges:
+                results.update(self.selectRangeNames(low, high))
+        for l,i in labels.iteritems():
+            if i:
+                for v in self.nonNumericValues.get(l,set()):
+                    results.add(v.name)
+        return results
     
     def hasNumeric(self):
-        return not (self.tree == None or self.tree.root == None)
+        return len(self.numerics) > 0
     
     def hasMasked(self):
-        return len(self.labels['Allele Masked']) != 0
+        return len(self.nonNumericValues.get(float('NaN'),set())) > 0
     
     def hasMissing(self):
-        return len(self.labels['Missing']) != 0
+        return len(self.nonNumericValues.get(float('Inf'),set())) > 0
 
 class selection:
     namelessIndex = 1
@@ -335,7 +432,9 @@ class selection:
             self.updateResult(axis)
     
     def applySelectAll(self, axis, applyImmediately=True):
-        ranges = [(axis.getMin(),axis.getMax())]
+        ranges = []
+        if axis.hasNumeric():
+            ranges.append((axis.minimum,axis.maximum))
         labels = {}
         for k in axis.labels.iterkeys():
             labels[k] = True
@@ -344,7 +443,9 @@ class selection:
             self.updateResult(axis)
     
     def applySelectNone(self, axis, applyImmediately=True):
-        ranges = [(axis.getMax(),axis.getMax())]
+        ranges = []
+        if axis.hasNumeric():
+            ranges.append((axis.maximum,axis.maximum))
         labels = {}
         for k in axis.labels.iterkeys():
             labels[k] = False
@@ -356,8 +457,8 @@ class selection:
         if not axis.hasNumeric():
             ranges = []
         else:
-            fivePercent = (axis.getMax()-axis.getMin()) * 0.05
-            ranges = [(axis.getMax()-fivePercent,axis.getMax())]
+            fivePercent = (axis.maximum-axis.minimum) * 0.05
+            ranges = [(axis.maximum-fivePercent,axis.maximum)]
         self.params[axis] = (ranges,self.params[axis][1])
         if applyImmediately:
             self.updateResult(axis)
@@ -366,13 +467,13 @@ class selection:
         ranges = []
         if axis.hasNumeric():
             if fil.percentages == None or len(fil.percentages) == 0:
-                ranges.append((axis.getMin(),axis.getMax()))
+                ranges.append((axis.minimum,axis.maximum))
             else:
                 for p in fil.percentages:
                     if p < 0:
-                        ranges.append((axis.getMin(),-(axis.getMax()-axis.getMin())*p+axis.getMin()))
+                        ranges.append((axis.minimum,-(axis.maximum-axis.minimum)*p+axis.minimum))
                     else:
-                        ranges.append((axis.getMax()-(axis.getMax()-axis.getMin())*p,axis.getMax()))
+                        ranges.append((axis.maximum-(axis.maximum-axis.minimum)*p,axis.maximum))
         labels = {}
         # First limit to labels that exist, but deselect them all
         if fil.values == None:
@@ -474,8 +575,8 @@ class selection:
             newLabels = {}
             for label in labels.iterkeys():
                 newLabels[label] = True
-            newParams[ax] = ([(ax.getMin(),ax.getMax())],newLabels)
-        new = selection(self.data, name=None, result=set(), params=([(self.getMin(),self.getMax())],{}))
+            newParams[ax] = ([(ax.minimum,ax.maximum)],newLabels)
+        new = selection(self.data, name=None, result=set(), params=([(self.minimum,self.maximum)],{}))
         return new.getDifference(self)
     
     def previewUnion(self, others):
@@ -800,23 +901,15 @@ class variantData:
     COMMIT_FREQ=100
     COMMIT=0
     def __init__(self, axisLabels):
-        for fileToClear in ['Data.fs','Data.fs.lock','Data.fs.tmp']:
+        for fileToClear in ['Data.db','Data.db.lock','Data.db.tmp','Axes.db','Axes.db.lock','Axes.db.tmp']:
             if os.path.exists(fileToClear):
                 os.remove(fileToClear)
-        self.connection = Connection(FileStorage("Data.fs"))
+        
+        self.dataConnection = Connection(FileStorage("Data.db"))
         self.data = self.connection.get_root()
         
-        self.indexConnection = Connection(FileStorage("Data.fs"))
-        #self.data = {}  # {rsNumber : variant object}
+        self.axisConnection = None
         self.axes = None
-        
-        self.scatter = None # current scatterplot of intersection of all numerical data
-        self.scatterXs = None   # current 1d scatterplot for all non-numerical values on the x axis
-        self.scatterYs = None   # current 1d scatterplot for all non-numerical values on the y axis
-        self.scatterNones = None    # current set of all non-numerical values in both directions
-        
-        self.currentXattribute = None
-        self.currentYattribute = None
         
         self.axisLabels = set(axisLabels)
         self.statisticLabels = set()
@@ -839,7 +932,7 @@ class variantData:
         variantData.COMMIT += 1
         if variantData.COMMIT >= variantData.COMMIT_FREQ:
             variantData.COMMIT = 0
-            self.connection.commit()
+            self.dataConnection.commit()
     
     def performGroupCalculations(self, groupDict, statisticDict, callback, tickInterval):
         from setupData import statistic
@@ -868,7 +961,7 @@ class variantData:
             currentLine += 1
             if currentLine >= nextTick:
                 nextTick += tickInterval
-                self.connection.commit()
+                self.dataConnection.commit()
                 if callback():  # abort?
                     return "ABORTED"
             
@@ -923,26 +1016,41 @@ class variantData:
                         variantObject.setAttribute(statisticID,float('Inf'))    # We had no data for this variant, so this thing is undefined
                     else:
                         variantObject.setAttribute(statisticID,float(targetCount)/allCount)
+        self.dataConnection.commit()
     
     def freeze(self, startingXaxis=None, startingYaxis=None, callback=None):
         '''
-        Builds query axes; prevents from loading more data. This is the longest process in the whole program - do this as little as possible (aka ONCE!)
+        Builds query structures; prevents from loading more data. This is the longest process in the whole program - do this as little as possible (aka ONCE!)
         '''
         if self.isFrozen:
-            return True     # indicates that we weren't interrrupted
+            return True
         self.isFrozen = True
         
-        self.axes = {"Genome Position":mixedAxis("Genome Position")}
+        staleDataKeys = []
+        for k,v in self.data.iteritems():
+            if k != v.name:
+                staleDataKeys.append((k,v))
         
+        for k,v in staleDataKeys:
+            self.data[v.name]=v
+        self.axisConnection.commit()
+        
+        for k,v in staleDataKeys:
+            del self.data[k]
+        self.axisConnection.pack()
+        
+        self.axisConnection = Connection('Axes.db')
+        self.axes = self.axisConnection.get_root()
+        
+        self.axes['Genome Position'] = durusList()
         for att in self.axisLabels:
-            self.axes[att] = mixedAxis(att)
+            self.axes[att] = durusList()
         for att in self.statisticLabels:
-            self.axes[att] = mixedAxis(att)
+            self.axes[att] = durusList()
         
-        for v in self.data.itervalues():
-            if v.poisoned:
-                continue
-            self.axes["Genome Position"].add(v.name,v.genomePosition)
+        self.axisConnection.commit()
+        
+            self.axes["Genome Position"].append(v.name,v.genomePosition)
             for att in self.axisLabels:
                 self.axes[att].add(v.name, v.attributes.get(att,float('Inf')))
             for att in self.statisticLabels:
@@ -995,11 +1103,11 @@ class variantData:
         '''
         Throws out all query structures; allows us to load more data
         '''
+        self.axisConnection = None
         self.axes = None
-        self.scatter = None
-        self.isFrozen = False
-        self.currentXattribute = None
-        self.currentYattribute = None
+        for fileToClear in ['Axes.db','Axes.db.lock','Axes.db.tmp']:
+            if os.path.exists(fileToClear):
+                os.remove(fileToClear)
     
     def setScatterAxes(self, attribute1, attribute2):
         '''

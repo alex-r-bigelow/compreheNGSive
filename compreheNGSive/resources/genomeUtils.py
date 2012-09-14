@@ -440,13 +440,13 @@ class genotype:
         else:
             temp = text.split("/")
             self.isPhased = False
-            
-        if temp[0] == ".":
+        
+        if len(temp) == 0 or temp[0] == ".":
             self.allele1 = None
         else:
             self.allele1 = alleles[int(temp[0])]
         
-        if temp[1] == ".":
+        if len(temp) <= 1 or temp[1] == ".":
             self.allele2 = None
         else:
             self.allele2 = alleles[int(temp[1])]
@@ -582,6 +582,9 @@ class variant(Persistent):
                 else:
                     assert t.attributes[key] == value
                 t = t.nextTwin
+    
+    def getAttribute(self, key):
+        return self.attributes.get(key,None)
     
     def poison(self):
         self.poisoned = True
