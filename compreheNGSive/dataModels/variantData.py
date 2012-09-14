@@ -806,6 +806,7 @@ class variantData:
         self.connection = Connection(FileStorage("Data.fs"))
         self.data = self.connection.get_root()
         
+        self.indexConnection = Connection(FileStorage("Data.fs"))
         #self.data = {}  # {rsNumber : variant object}
         self.axes = None
         
@@ -867,6 +868,7 @@ class variantData:
             currentLine += 1
             if currentLine >= nextTick:
                 nextTick += tickInterval
+                self.connection.commit()
                 if callback():  # abort?
                     return "ABORTED"
             
@@ -921,7 +923,6 @@ class variantData:
                         variantObject.setAttribute(statisticID,float('Inf'))    # We had no data for this variant, so this thing is undefined
                     else:
                         variantObject.setAttribute(statisticID,float(targetCount)/allCount)
-        self.connection.commit()
     
     def freeze(self, startingXaxis=None, startingYaxis=None, callback=None):
         '''

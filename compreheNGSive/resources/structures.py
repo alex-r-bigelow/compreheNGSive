@@ -1,5 +1,5 @@
 import math, sys
-#sys.setrecursionlimit(10000)
+sys.setrecursionlimit(10000)
 RECURSION_ESTIMATE = sys.getrecursionlimit() - 500  # a generous estimate about the stack frames a program will already be using before calling our structures...
                                                     # this will sort of guard against exceeding the maximum recursion depth. If this is still broken, it's likely
                                                     # only slightly broken by an already-complex program that they might need to boost the recursion limit on its own
