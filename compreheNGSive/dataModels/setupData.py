@@ -41,21 +41,24 @@ class prefs:
         vcfFiles = []
         csvFiles = []
         axisLabels = set()
+        forcedCategoricals = set()
         individualsToInclude = self.getAllSamples()
         
         for fileID,f in self.files.iteritems():
             if f.format == '.vcf':
                 vcfFiles.append(fileID)
                 axisLabels.update(f.hardFilters.iterkeys())
+                forcedCategoricals.update(f.forcedCategoricals)
             elif f.format == '.csv':
                 csvFiles.append(fileID)
                 axisLabels.update(f.hardFilters.iterkeys())
+                forcedCategoricals.update(f.forcedCategoricals)
             elif f.format == '.gff3':
                 gff3Files.append(fileID)
             elif f.format == '.bed':
                 bedFiles.append(fileID)
         
-        vData = variantData(axisLabels)
+        vData = variantData(axisLabels,forcedCategoricals)
         fData = featureData()
         
         for fileID in gff3Files:
@@ -210,8 +213,11 @@ class fileObject:
         self.build=build
         self.attributes=attributes
         self.hardFilters = {}
+        self.forcedCategoricals = set()
         for a in self.attributes:
             self.hardFilters[a.attributeID] = a.hardFilter
+            if a.forceCategorical:
+                self.forcedCategoricals.add(a.attributeID)
     
     def makeGroup(self):
         samples = []

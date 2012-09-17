@@ -1,16 +1,22 @@
-from ..resources.structures import countingDict
+from resources.structures import countingDict
+from resources.genomeUtils import variant
 from copy import deepcopy
 import math, sys, os
 from durus.file_storage import FileStorage
 from durus.connection import Connection
 from durus.persistent import Persistent
 
+class cancelButtonException(Exception):
+    pass
+
 class variantRangeIndex(Persistent):
-    def __init__(self, data, key, forceCategorical = False):
+    TICK_INTERVAL = 10000
+    
+    def __init__(self, data, key, forceCategorical = False, callback = None):
         Persistent.__init__(self)
         
         self.numerics = []
-        self.nonNumericValues = {float('Inf'):set(),float('NaN'):set()}
+        self.nonNumerics = {'Missing':set(),'Allele Masked':set()}
         
         self.key = key
         self.forceCategorical = forceCategorical
@@ -18,21 +24,34 @@ class variantRangeIndex(Persistent):
         self.minimum = None
         self.maximum = None
         
-        for v in sorted(data.itervalues(), key=lambda x:x.getAttribute(self.key)):
-            value = v.getAttribute()
+        lineCount = 0
+        nextTick = variantRangeIndex.TICK_INTERVAL
+        
+        
+        for v in sorted(data.itervalues(), key=lambda x:self.getAttribute(x)):
+            lineCount += 1
+            if callback != None and lineCount >= nextTick:
+                nextTick += 1
+                if callback():
+                    raise cancelButtonException('cancel pressed')
+            
+            if not isinstance(v,variant):
+                continue
+            
+            value = self.getAttribute(v)
             if value == None:
-                self.nonNumericValues[float('Inf')].add(v)
+                self.nonNumerics['Missing'].add(v)
             elif self.forceCategorical:
-                if not self.nonNumericValues.has_key(value):
-                    self.nonNumericValues[value] = set()
-                self.nonNumericValues[value].add(v)
+                if not self.nonNumerics.has_key(value):
+                    self.nonNumerics[value] = set()
+                self.nonNumerics[value].add(v)
             else:
                 try:
                     value = float(value)
                     if math.isinf(value):
-                        self.nonNumericValues[value].add(v)
+                        self.nonNumerics['Missing'].add(v)
                     elif math.isnan(value):
-                        self.nonNumericValues[value].add(v)
+                        self.nonNumerics['Allele Masked'].add(v)
                     else:
                         if self.minimum == None or value < self.minimum:
                             self.minimum = value
@@ -40,10 +59,18 @@ class variantRangeIndex(Persistent):
                             self.maximum = value
                         self.numerics.append(v)
                 except ValueError:
-                    if not self.nonNumericValues.has_key(value):
-                        self.nonNumericValues[value] = set()
-                    self.nonNumericValues[value].add(v)
+                    if not self.nonNumerics.has_key(value):
+                        self.nonNumerics[value] = set()
+                    self.nonNumerics[value].add(v)
         self.findNaturalMinAndMax()
+    
+    def getAttribute(self, v):
+        if not isinstance(v,variant):
+            return None
+        elif self.key == None:
+            return v.genomePosition
+        else:
+            return v.getAttribute(self.key)
     
     def selectRangeVariants(self, low, high):
         lowIndex = 0
@@ -56,7 +83,7 @@ class variantRangeIndex(Persistent):
         
         while highIndex-lowIndex > 1:
             midIndex = (highIndex+lowIndex)/2
-            if self.numerics[midIndex].getAttribute(self.key) <= low:
+            if self.getAttribute(self.numerics[midIndex]) <= low:
                 lowIndex = midIndex
             else:
                 highIndex = midIndex
@@ -71,7 +98,7 @@ class variantRangeIndex(Persistent):
     
     def selectRangeNames(self, low, high):
         lowIndex = 0
-        highIndex = len(self)
+        highIndex = len(self.numerics)
         
         if high < low:
             temp = high
@@ -80,15 +107,15 @@ class variantRangeIndex(Persistent):
         
         while highIndex-lowIndex > 1:
             midIndex = (highIndex+lowIndex)/2
-            if self.numerics[midIndex].getAttribute(self.key) <= low:
+            if self.getAttribute(self.numerics[midIndex]) <= low:
                 lowIndex = midIndex
             else:
                 highIndex = midIndex
         
         results = set()
-        if self[lowIndex] >= low:
+        if self.numerics[lowIndex] >= low:
             results.add(self.numerics[lowIndex].name)
-        while self[highIndex] <= high:
+        while self.numerics[highIndex] <= high:
             results.add(self.numerics[highIndex].name)
             highIndex += 1
         return results
@@ -111,7 +138,7 @@ class variantRangeIndex(Persistent):
         highIndex = len(self)
         while highIndex-lowIndex > 1:
             midIndex = (highIndex+lowIndex)/2
-            if self.numerics[midIndex].getAttribute(self.key) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
+            if self.getAttribute(self.numerics[midIndex]) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
                 lowIndex = midIndex
             else:
                 highIndex = midIndex
@@ -120,7 +147,7 @@ class variantRangeIndex(Persistent):
         highIndex = len(self)
         while highIndex-lowIndex > 1:
             midIndex = (highIndex+lowIndex)/2
-            if self.numerics[midIndex].getAttribute(self.key) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
+            if self.getAttribute(self.numerics[midIndex]) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
                 highIndex = midIndex
             else:
                 lowIndex = midIndex
@@ -136,7 +163,7 @@ class variantRangeIndex(Persistent):
         highIndex = len(other)
         while highIndex-lowIndex > 1:
             midIndex = (highIndex+lowIndex)/2
-            if other.numerics[midIndex].getAttribute(other.key) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
+            if other.getAttribute(other.numerics[midIndex]) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
                 lowIndex = midIndex
             else:
                 highIndex = midIndex
@@ -145,7 +172,7 @@ class variantRangeIndex(Persistent):
         highIndex = len(other)
         while highIndex-lowIndex > 1:
             midIndex = (highIndex+lowIndex)/2
-            if other.numerics[midIndex].getAttribute(other.key) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
+            if other.getAttribute(other.numerics[midIndex]) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
                 highIndex = midIndex
             else:
                 lowIndex = midIndex
@@ -157,12 +184,12 @@ class variantRangeIndex(Persistent):
             # Search me, iterate him
             i = otherStartIndex
             while i <= otherEndIndex:
-                value = other.numerics[i].getAttribute(self.key)    # get the value that I'll be looking for
+                value = self.getAttribute(other.numerics[i])    # get the value that I'll be looking for
                 lowIndex = startIndex
                 highIndex = endIndex
                 while highIndex-lowIndex > 1:
                     midIndex = (highIndex+lowIndex)/2
-                    if self.numerics[midIndex].getAttribute(self.key) <= value:
+                    if self.getAttribute(self.numerics[midIndex]) <= value:
                         lowIndex = midIndex
                     else:
                         highIndex = midIndex
@@ -176,12 +203,12 @@ class variantRangeIndex(Persistent):
             # Search him, iterate me
             i = startIndex
             while i <= endIndex:
-                value = self.numerics[i].getAttribute(other.key)    # get the value that he'll be looking for
+                value = other.getAttribute(self.numerics[i])    # get the value that he'll be looking for
                 lowIndex = startIndex
                 highIndex = endIndex
                 while highIndex-lowIndex > 1:
                     midIndex = (highIndex+lowIndex)/2
-                    if other.numerics[midIndex].getAttribute(other.key) <= value:
+                    if other.getAttribute(other.numerics[midIndex]) <= value:
                         lowIndex = midIndex
                     else:
                         highIndex = midIndex
@@ -241,7 +268,7 @@ class variantRangeIndex(Persistent):
                 results.update(self.selectRangeNames(low, high))
         for l,i in labels.iteritems():
             if i:
-                for v in self.nonNumericValues.get(l,set()):
+                for v in self.nonNumerics.get(l,set()):
                     results.add(v.name)
         return results
     
@@ -249,10 +276,10 @@ class variantRangeIndex(Persistent):
         return len(self.numerics) > 0
     
     def hasMasked(self):
-        return len(self.nonNumericValues.get(float('NaN'),set())) > 0
+        return len(self.nonNumerics.get('Allele Masked',set())) > 0
     
     def hasMissing(self):
-        return len(self.nonNumericValues.get(float('Inf'),set())) > 0
+        return len(self.nonNumerics.get('Missing',set())) > 0
 
 class selection:
     namelessIndex = 1
@@ -436,7 +463,7 @@ class selection:
         if axis.hasNumeric():
             ranges.append((axis.minimum,axis.maximum))
         labels = {}
-        for k in axis.labels.iterkeys():
+        for k in axis.nonNumerics.iterkeys():
             labels[k] = True
         self.params[axis] = (ranges,labels)
         if applyImmediately:
@@ -447,7 +474,7 @@ class selection:
         if axis.hasNumeric():
             ranges.append((axis.maximum,axis.maximum))
         labels = {}
-        for k in axis.labels.iterkeys():
+        for k in axis.nonNumerics.iterkeys():
             labels[k] = False
         self.params[axis] = (ranges,labels)
         if applyImmediately:
@@ -898,20 +925,21 @@ class operation:
                 self.selections.activeSelections(n)
 
 class variantData:
-    COMMIT_FREQ=100
+    COMMIT_FREQ=1000
     COMMIT=0
-    def __init__(self, axisLabels):
-        for fileToClear in ['Data.db','Data.db.lock','Data.db.tmp','Axes.db','Axes.db.lock','Axes.db.tmp']:
+    def __init__(self, axisLabels, forcedCategoricals):
+        for fileToClear in ['Data.db','Data.db.lock','Data.db.tmp']:
             if os.path.exists(fileToClear):
                 os.remove(fileToClear)
         
         self.dataConnection = Connection(FileStorage("Data.db"))
-        self.data = self.connection.get_root()
+        self.data = self.dataConnection.get_root()
         
-        self.axisConnection = None
-        self.axes = None
+        self.data[None] = None
+        self.axes = self.data[None]
         
-        self.axisLabels = set(axisLabels)
+        self.axisLabels = axisLabels
+        self.forcedCategoricals = forcedCategoricals
         self.statisticLabels = set()
         
         self.isFrozen = False
@@ -920,9 +948,8 @@ class variantData:
         if self.isFrozen:
             self.thaw()
         
-        if variantObject.attributes.has_key("Genome Position"):
-            print "ERROR: \"Genome Position\" column header is reserved."
-            sys.exit(1)
+        if variantObject.attributes.has_key(None):
+            raise Exception("Using NoneType as an attribute key is reserved.")
         
         if self.data.has_key(variantObject.name):
             self.data[variantObject.name].repair(variantObject)
@@ -965,7 +992,7 @@ class variantData:
                 if callback():  # abort?
                     return "ABORTED"
             
-            if variantObject.poisoned:
+            if variantObject == None or variantObject.poisoned:
                 continue
             
             # First find all the target alleles
@@ -1013,12 +1040,15 @@ class variantData:
                                 if allele2 == targetAllele:
                                     targetCount += 1
                     if allCount == 0:
-                        variantObject.setAttribute(statisticID,float('Inf'))    # We had no data for this variant, so this thing is undefined
+                        variantObject.setAttribute(statisticID,None)    # We had no data for this variant, so this thing is undefined
                     else:
                         variantObject.setAttribute(statisticID,float(targetCount)/allCount)
         self.dataConnection.commit()
     
-    def freeze(self, startingXaxis=None, startingYaxis=None, callback=None):
+    def estimateTicks(self):
+        return (len(self.axisLabels) + len(self.statisticLabels))*len(self.data)/variantRangeIndex.TICK_INTERVAL
+    
+    def freeze(self, callback=None):
         '''
         Builds query structures; prevents from loading more data. This is the longest process in the whole program - do this as little as possible (aka ONCE!)
         '''
@@ -1026,53 +1056,39 @@ class variantData:
             return True
         self.isFrozen = True
         
+        callback(numTicks=0,message='Cleaning...')
         staleDataKeys = []
         for k,v in self.data.iteritems():
-            if k != v.name:
+            if k != None and k != v.name:
                 staleDataKeys.append((k,v))
         
         for k,v in staleDataKeys:
             self.data[v.name]=v
-        self.axisConnection.commit()
+        self.dataConnection.commit()
         
         for k,v in staleDataKeys:
             del self.data[k]
-        self.axisConnection.pack()
+        self.dataConnection.pack()
         
-        self.axisConnection = Connection('Axes.db')
-        self.axes = self.axisConnection.get_root()
+        self.axes = {}
+        self.data[None] = self.axes # I use None as a special key to hold my index structures
         
-        self.axes['Genome Position'] = durusList()
-        for att in self.axisLabels:
-            self.axes[att] = durusList()
-        for att in self.statisticLabels:
-            self.axes[att] = durusList()
-        
-        self.axisConnection.commit()
-        
-            self.axes["Genome Position"].append(v.name,v.genomePosition)
+        try:
+            callback(numTicks=0,message='Indexing Genome Position')
+            self.axes[None] = variantRangeIndex(self.data,key=None,forceCategorical=False,callback=callback)    # I use None as the key for genome position
+            self.dataConnection.commit()
             for att in self.axisLabels:
-                self.axes[att].add(v.name, v.attributes.get(att,float('Inf')))
+                callback(numTicks=0,message='Indexing %s' % att)
+                self.axes[att] = variantRangeIndex(self.data,key=att,forceCategorical=att in self.forcedCategoricals,callback=callback)
+                self.dataConnection.commit()
             for att in self.statisticLabels:
-                self.axes[att].add(v.name, v.attributes.get(att,float('Inf')))
+                callback(numTicks=0,message='Indexing %s' % att)
+                self.axes[att] = variantRangeIndex(self.data,key=att,forceCategorical=att in self.forcedCategoricals,callback=callback)
+                self.dataConnection.commit()
+        except cancelButtonException:
+            self.thaw()
         
-        for a in self.axes.itervalues():
-            a.finish()
-            if callback != None:
-                if callback():
-                    self.thaw()
-                    return 'ABORTED'
-        
-        if startingXaxis == None or startingYaxis == None:
-            x,y = self.getFirstAxes()
-            if startingXaxis == None:
-                startingXaxis = x
-                if startingYaxis == None:
-                    startingYaxis = y
-            elif startingYaxis == None:
-                startingYaxis = x
-        
-        return self.setScatterAxes(startingXaxis, startingYaxis)
+        return self.isFrozen
     
     def getFirstAxes(self):
         temp = self.defaultAxisOrder()
@@ -1103,60 +1119,35 @@ class variantData:
         '''
         Throws out all query structures; allows us to load more data
         '''
-        self.axisConnection = None
-        self.axes = None
-        for fileToClear in ['Axes.db','Axes.db.lock','Axes.db.tmp']:
-            if os.path.exists(fileToClear):
-                os.remove(fileToClear)
-    
-    def setScatterAxes(self, attribute1, attribute2):
-        '''
-        Builds a FourTree for drawing the scatterplot - maybe could be sped up by some kind of sorting...
-        '''
-        if not self.isFrozen:
-            self.freeze(attribute1,attribute2)
-            return
-        
-        if self.currentXattribute == attribute1 and self.currentYattribute == attribute2:
-            return
-        
-        axis1 = self.axes[attribute1]
-        assert axis1.isfinished
-        axis2 = self.axes[attribute2]
-        assert axis2.isfinished
-        
-        self.currentXattribute = attribute1
-        self.currentYattribute = attribute2
-        
-        self.scatter = FourTree()
-        self.scatterXs = mixedAxis(self.currentXattribute)
-        self.scatterYs = mixedAxis(self.currentYattribute)
-        self.scatterNones = set()
-        
-        for rs in self.data.iterkeys():
-            if axis1.rsValues.has_key(rs):
-                if axis2.rsValues.has_key(rs):
-                    self.scatter.add(rs,axis1.rsValues[rs],axis2.rsValues[rs])
-                else:
-                    self.scatterXs.add(rs,axis1.rsValues.get(rs,None))
-            else:
-                if axis2.rsValues.has_key(rs):
-                    self.scatterYs.add(rs,axis2.rsValues.get(rs,None))
-                else:
-                    self.scatterNones.add(rs)
-        return True
+        del self.data[None]
+        self.dataConnection.pack()
+        self.data[None] = None
+        self.axes = self.data[None]
+        self.dataConnection.commit()
         
     def getData(self, rsNumbers, att):
-        return self.axes[att].getValues(rsNumbers)
+        if not isinstance(rsNumbers, list):
+            sys.stderr.write("WARNING: Results will be unordered!")
+        results = []
+        for rs in rsNumbers:
+            if not self.data.has_key(rs):
+                results.append(None)
+            else:
+                results.append(self.data[rs].getAttribute(att))
+        return results
     
     def getDatum(self, rsNumber, att):
-        return self.axes[att].getValue(rsNumber)
+        if not self.data.has_key(rsNumber):
+            return None
+        else:
+            return self.data[rsNumber].getAttribute(att)
     
     def get2dData(self, rsNumbers, att1, att2):
-        rsNumbers = list(rsNumbers) # ensure the order is the same
-        return zip(self.axes[att1].getValues(rsNumbers),self.axes[att2].getValues(rsNumbers))
+        if not isinstance(rsNumbers,list):
+            rsNumbers = list(rsNumbers) # ensure the order is the same
+        return zip(self.getData(rsNumbers,att1),self.getData(rsNumbers,att2))
     
     def get2dDatum(self, rsNumber, att1, att2):
-        return (self.axes[att1].getValue(rsNumber),self.axes[att2].getValue(rsNumber))
+        return (self.getDatum(rsNumber, att1),self.getDatum(rsNumber, att2))
 
         

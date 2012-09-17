@@ -59,12 +59,12 @@ class setupApp:
         self.runningApp = None
     
     def loadPrefs(self):
-        infile = open('prefs.xml','r')
+        infile = open('smallPrefs.xml','r')
         self.window.textEdit.setPlainText(infile.read())
         infile.close()
     
     def savePrefs(self):
-        outfile=open('prefs.xml','w')
+        outfile=open('smallPrefs.xml','w')
         outfile.write(self.window.textEdit.toPlainText())
         outfile.close()
     
@@ -84,7 +84,7 @@ class setupApp:
         self.canceled = self.splash.wasCanceled()
         return self.canceled
     
-    def runSV(self, params='prefs.xml'):
+    def runSV(self, params='smallPrefs.xml'):
         self.savePrefs()
         self.window.hide()
         
@@ -99,10 +99,11 @@ class setupApp:
             self.window.show()
             return
         
-        self.showProgressWidget(len(vData.axisLabels)+len(vData.statisticLabels), "Building Query Structures...")
+        self.showProgressWidget(vData.estimateTicks(), "Building Query Structures...")
         
-        vData.freeze(startingXaxis=appPrefs.startingXaxis,startingYaxis=appPrefs.startingYaxis,callback=self.tickProgressWidget)
-        if self.canceled:
+        success = vData.freeze(callback=self.tickProgressWidget)
+        print success
+        if not success:
             self.splash.hide()
             self.window.show()
             return

@@ -49,8 +49,8 @@ class axisHandler:
         # numeric
         self.dataToPixelRatio = 1.0
         self.pixelToDataRatio = 1.0
-        self.numericDataLow = self.dataAxis.getMin()
-        self.numericDataHigh = self.dataAxis.getMax()
+        self.numericDataLow = self.dataAxis.minimum
+        self.numericDataHigh = self.dataAxis.maximum
         self.numericPixelLow = self.visAxis.numeric.scrollDownBar.top()
         self.numericPixelHigh = self.visAxis.numeric.scrollUpBar.bottom()
         self.numericRanges = []
@@ -63,8 +63,8 @@ class axisHandler:
                 self.numericDataHigh += 1
             self.pixelToDataRatio = float(self.numericDataHigh-self.numericDataLow)/float(self.numericPixelHigh-self.numericPixelLow)
             self.dataToPixelRatio = 1.0/self.pixelToDataRatio
-            self.visAxis.numeric.scrollUpBar.label.setText(fitInSevenChars(self.dataAxis.getMax()))
-            self.visAxis.numeric.scrollDownBar.label.setText(fitInSevenChars(self.dataAxis.getMin()))
+            self.visAxis.numeric.scrollUpBar.label.setText(fitInSevenChars(self.dataAxis.maximum))
+            self.visAxis.numeric.scrollDownBar.label.setText(fitInSevenChars(self.dataAxis.maximum))
             self.numericRanges.append(self.visAxis.numeric.selectionGroup.selectionRange)
         
         self.draggedHandle = None
@@ -86,7 +86,7 @@ class axisHandler:
         
         # sort the items by set membership size, except put Allele Masked, Missing last. Also populate the visPool with the right number of elements
         temp = []
-        for label,members in self.dataAxis.labels.iteritems():
+        for label,members in self.dataAxis.nonNumerics.iteritems():
             if label == 'Allele Masked' or label == 'Missing':
                 continue
             temp.append((len(members),label))
@@ -95,14 +95,14 @@ class axisHandler:
         temp = sorted(temp)
         self.visAxis.categorical.itemGroup.textItem.delete()
         
-        numMasked = len(self.dataAxis.labels.get('Allele Masked',set()))
+        numMasked = len(self.dataAxis.nonNumerics.get('Allele Masked',set()))
         if numMasked > 0:
             temp.append((numMasked,'Allele Masked'))
             self.visPool['Allele Masked'] = self.visAxis.categorical.itemGroup.alleleMasked
         else:
             self.visAxis.categorical.itemGroup.alleleMasked.delete()
         
-        numMissing = len(self.dataAxis.labels.get('Missing',set()))
+        numMissing = len(self.dataAxis.nonNumerics.get('Missing',set()))
         # TODO: figure out why values are coming up as missing in spite of our precautions when I SHOULD be comfortable knowing that a column has no missing values
         if numMissing > 0:
             temp.append((numMissing,'Missing'))

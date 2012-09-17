@@ -400,11 +400,11 @@ class allele:
         elif self.text == None or other.text == None:
             return self.text == None and other.text == None
         elif self.text == other.text or self.text == ".*" or other.text == ".*":
-            #if self.text == ".*" and self.attemptRepairsWhenComparing:
-            # self.text has the more general regex; update to the more specific information
-            #self.text = other.text
-            #elif other.text == ".*" and other.attemptRepairsWhenComparing:
-            #other.text = self.text
+            if self.text == ".*" and self.attemptRepairsWhenComparing:
+                # self.text has the more general regex; update to the more specific information
+                self.text = other.text
+            elif other.text == ".*" and other.attemptRepairsWhenComparing:
+                other.text = self.text
             return True
         return False
     
@@ -540,7 +540,7 @@ class variant(Persistent):
         variant.NUM_TWINS += 1
         self.attributes = {}
         self.genotypes = {}
-    
+            
     def addGenotype(self, individual, g):
         if self.poisoned:
             return
@@ -584,7 +584,7 @@ class variant(Persistent):
                 t = t.nextTwin
     
     def getAttribute(self, key):
-        return self.attributes.get(key,None)
+        return self.attributes.get(key,float('Inf'))
     
     def poison(self):
         self.poisoned = True
