@@ -392,21 +392,7 @@ class allele:
     def __eq__(self, other):
         if other == None:
             return False
-        assert self.matchMode == other.matchMode
-        if self.matchMode == self.UNENFORCED:
-            return True
-        elif self.matchMode == self.STRICT:
-            return self.text == other.text
-        elif self.text == None or other.text == None:
-            return self.text == None and other.text == None
-        elif self.text == other.text or self.text == ".*" or other.text == ".*":
-            if self.text == ".*" and self.attemptRepairsWhenComparing:
-                # self.text has the more general regex; update to the more specific information
-                self.text = other.text
-            elif other.text == ".*" and other.attemptRepairsWhenComparing:
-                other.text = self.text
-            return True
-        return False
+        return self.text == other.text
     
     def __hash__(self):
         return hash(self.text)
@@ -516,7 +502,9 @@ class variant(Persistent):
         if ref == ".":
             ref = None
         
-        self.alleles = [allele(ref, matchMode, attemptRepairsWhenComparing)]
+        self.alleles = []
+        if ref != ".*":
+            self.alleles.append(allele(ref, matchMode, attemptRepairsWhenComparing))
         if isinstance(alt,list):
             for a in alt:
                 if a == ".":
@@ -525,7 +513,8 @@ class variant(Persistent):
         else:
             if alt == ".":
                 alt = None
-            self.alleles.append(allele(alt, matchMode, attemptRepairsWhenComparing))
+            elif alt != ".*":
+                self.alleles.append(allele(alt, matchMode, attemptRepairsWhenComparing))
         
         self.basicName = "%s_%i" % (self.chromosome,self.position)
         if name == None or name == ".":
@@ -723,6 +712,7 @@ class variant(Persistent):
         # share as many possible alleles; note that the ordering of the second variant's allele
         # order will be changed to the first
         newAlleles = list(self.alleles)
+        numMatches = 0
         for a in other.alleles:
             if a not in newAlleles:
                 newAlleles.append(a)

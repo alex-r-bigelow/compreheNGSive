@@ -51,7 +51,7 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
                 firstLine = False
                 continue
             columns = line.split()
-            lociToKeep.add(variant(chromosome=columns[0], position=columns[1], matchMode=allele.FLEXIBLE, attemptRepairsWhenComparing=True, ref=".*", alt=".*", name=columns[2], build=genomeUtils.hg19, attributeFilters=None))
+            lociToKeep.add(variant(chromosome=columns[0], position=columns[1], matchMode=allele.UNENFORCED, attemptRepairsWhenComparing=True, ref=".*", alt=".*", name=columns[2], build=genomeUtils.hg19, attributeFilters=None))
         infile.close()
     else:
         lociToKeep = None
@@ -65,6 +65,7 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
                                                      tickFunction=tick,
                                                      tickInterval=5,
                                                      individualsToInclude=individualList,
+                                                     alleleMatching = allele.UNENFORCED,
                                                      lociToInclude=lociToKeep,
                                                      attributesToInclude={},
                                                      skipGenotypeAttributes=True)
@@ -92,8 +93,12 @@ def runApp(loci="",l="",vcf="",v="",individuals="",i="",out="",o="",remove="",r=
         lociToKeep = sorted(resultFile.variants, key=lambda v: v.name)
     
     for v in lociToKeep:
-        if remove != None and len(v.genotypes) == 0:
-            removeFile.write("%s\t%i\t%s\tNo Genotypes\n" % (v.chromosome,v.position,v.name))
+        if len(v.genotypes) == 0:
+            if remove != None:
+                removeFile.write("%s\t%i\t%s\tNo Genotypes\n" % (v.chromosome,v.position,v.name))
+        elif len(v.alleles) < 2:
+            if remove != None:
+                removeFile.write("%s\t%i\t%s\tNot enough alleles" % (v.chromosome,v.position,v.name))
         else:
             outfile.write("%s\t%i\t%s\t%s\t%s" % (v.chromosome,v.position,v.name,v.alleles[0],v.alleles[1]))
             for i in individualList:
