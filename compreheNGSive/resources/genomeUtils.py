@@ -1233,7 +1233,7 @@ class variantFile:
                         if parameters.attributesToInclude == None or parameters.attributesToInclude.has_key(chunk+parameters.attributeAppendString):
                             newVariant.setAttribute(chunk+parameters.attributeAppendString,chunk)
             
-            if not newVariant.poisoned:
+            if not newVariant.poisoned and parameters.attributesToInclude != None:
                 for att,fil in parameters.attributesToInclude.iteritems():
                     if not fil.includeNone and not newVariant.attributes.has_key(att):
                         newVariant.poison()
@@ -1742,7 +1742,7 @@ class featureFile:
         fileAttributes = featureFile.extractBedFileInfo(path)
         
         if parameters.returnFileObject:
-            newFileObject = featureFile()
+            newFileObject = featureFile(fileAttributes)
             newFileObject.fileAttributes = fileAttributes
         
         bedColumns = ['thickStart','thickEnd','itemRgb','blockCount','blockSizes','blockStarts']
