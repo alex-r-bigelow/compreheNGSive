@@ -428,12 +428,12 @@ class genotype:
             self.isPhased = False
         
         if len(temp) == 0 or temp[0] == ".":
-            self.allele1 = None
+            self.allele1 = allele(None,matchMode,False)
         else:
             self.allele1 = alleles[int(temp[0])]
         
         if len(temp) <= 1 or temp[1] == ".":
-            self.allele2 = None
+            self.allele2 = allele(None,matchMode,False)
         else:
             self.allele2 = alleles[int(temp[1])]
         
@@ -441,7 +441,7 @@ class genotype:
         self.matchMode = matchMode
     
     def isMissingData(self):
-        return self.allele1 == None or self.allele2 == None
+        return self.allele1.text == None or self.allele2.text == None
     
     def numSharedAlleles(self, other):
         if self.allele1 == other.allele1:
@@ -479,9 +479,9 @@ class genotype:
         return not self.__eq__(other)
     
     def __repr__(self):
-        first = "." if self.allele1 == None else str(self.allele1)
+        first = str(self.allele1)
         slash = "|" if self.isPhased else "/"
-        second = "." if self.allele2 == None else str(self.allele2)
+        second = str(self.allele2)
         return first + slash + second
 
 class variant(Persistent):
@@ -954,6 +954,7 @@ class variantLoadingParameters:
                  individualAppendString="",
                  lociToInclude=None,
                  mask=None,
+                 invertMask=False,
                  attributesToInclude=None,
                  attributeAppendString="",
                  skipGenotypeAttributes=False,
@@ -1061,6 +1062,7 @@ class variantLoadingParameters:
         self.individualAppendString = individualAppendString
         self.lociToInclude = lociToInclude
         self.mask = mask
+        self.invertMask = invertMask
         self.attributesToInclude = attributesToInclude
         self.attributeAppendString = attributeAppendString
         self.skipGenotypeAttributes = skipGenotypeAttributes
@@ -1205,8 +1207,12 @@ class variantFile:
             
             if parameters.lociToInclude != None and newVariant not in parameters.lociToInclude:
                 newVariant.poison()
-            if parameters.mask != None and parameters.mask.contains(newVariant.chromosome,newVariant.position):
-                newVariant.poison()
+            
+            if parameters.mask != None:
+                if parameters.invertMask and not parameters.mask.contains(newVariant.chromosome,newVariant.position):
+                    newVariant.poison()
+                elif not parameters.invertMask and parameters.mask.contains(newVariant.chromosome,newVariant.position):
+                    newVariant.poison()
             
             if not newVariant.poisoned: # don't bother loading anything else if we know we don't need to
                 # Handle QUAL, FILTER, and INFO
@@ -1270,11 +1276,11 @@ class variantFile:
             # We've built the variant object... call the appropriate function if we need to
             if not newVariant.poisoned and parameters.passFunction != None:
                 parameters.passFunction(newVariant,**parameters.callbackArgs)
-                # If we're storing this thing in a file, do that now
-                if parameters.returnFileObject and not newVariant.poisoned:
-                    fileObject.addVariant(newVariant)
             elif newVariant.poisoned and parameters.rejectFunction != None:
                 parameters.rejectFunction(newVariant,**parameters.callbackArgs)
+            # If we're storing this thing in a file, do that now
+            if parameters.returnFileObject and not newVariant.poisoned:
+                fileObject.addVariant(newVariant)
         inFile.close()
         
         # finally set the file attributes to match our parameters (you can get the original
@@ -1358,7 +1364,7 @@ class variantFile:
         if v.basicName == v.name:
             rsNumber = "."
         # basics
-        outString += "%s\t%i\t%s\t%s\t%s"%(v.chromosome,v.start,rsNumber,str(v.ref),",".join([str(a) for a in v.alt]))
+        outString += "%s\t%i\t%s\t%s\t%s"%(v.chromosome,v.position,rsNumber,str(v.alleles[0]),",".join([str(a) for a in v.alleles[1:]]))
         
         # variant attributes
         info = ""
@@ -1367,7 +1373,10 @@ class variantFile:
                 continue
             info += "%s=%s;" % (k,val)
         info = info[:-1]    # strip last semicolon
-        outString += "\t%s\t%s\t%s"%(v.attributes["QUAL"],";".join(v.attributes["FILTER"]),info)
+        filters = v.attributes["FILTER"]
+        if not isinstance(filters,list):
+            filters = [filters]
+        outString += "\t%s\t%s\t%s"%(v.attributes["QUAL"],";".join(filters),info)
         
         # We'll stick on the genotypes after we've seen all the possible format fields
         if fileAttributes.has_key("INDIVIDUALS"):
@@ -1381,12 +1390,7 @@ class variantFile:
             
             for i in fileAttributes["INDIVIDUALS"]:
                 outString += "\t"
-                outString += str(v.alleles.index(v.genotypes[i].allele1))
-                if v.genotypes[i].isPhased:
-                    outString += "|"
-                else:
-                    outString += "/"
-                outString += str(v.alleles.index(v.genotypes[i].allele2))
+                outString += str(v.genotypes[i])
                 for k in formatList:
                     outString += ":%s" % (v.genotypes[i].attributes.get(k,""))
         return outString
@@ -1512,11 +1516,11 @@ class variantFile:
             
             if not newVariant.poisoned and parameters.passFunction != None:
                 parameters.passFunction(newVariant,**parameters.callbackArgs)
-                # If we're storing this thing in a file, do that now
-                if parameters.returnFileObject and not newVariant.poisoned:
-                    fileObject.addVariant(newVariant)
             elif newVariant.poisoned and parameters.rejectFunction != None:
                 parameters.rejectFunction(newVariant,**parameters.callbackArgs)
+            # If we're storing this thing in a file, do that now
+            if parameters.returnFileObject and not newVariant.poisoned:
+                fileObject.addVariant(newVariant)
         infile.close()
         
         # TODO: standardize fileAttributes, write export to .csv functions
@@ -1644,7 +1648,8 @@ class featureSet():
             self.chromosomes[f.chrom].insert_interval(c)
     
     def contains(self, chromosome, position):
-        return self.chromosomes[chromosome].find(position,position+1)
+        temp = self.chromosomes[chromosome].find(position,position+1)
+        return len(temp) > 0
 
 class featureLoadingParameters:
     """
@@ -1791,6 +1796,7 @@ class featureFile:
                     del attributes[att]
             
             tempFeature = feature(chromosome=columns[0], start=columns[1], end=columns[2], name=name, build=parameters.build, strand=strand, attributes=attributes)
+            
             if parameters.mask != None:
                 newFeatures = tempFeature.applyMask(parameters.mask)
             else:
@@ -1802,104 +1808,12 @@ class featureFile:
             elif not poisoned and parameters.passFunction != None:
                 for f in newFeatures:
                     parameters.passFunction(f)
-                    if parameters.returnFileObject:
-                        newFileObject.regions.addFeature(f)
+            if not poisoned and parameters.returnFileObject:
+                for f in newFeatures:
+                    newFileObject.regions.addFeature(f)
         fileObject.close()
         
         if parameters.returnFileObject:
             return newFileObject
         else:
             return
-
-'''
-class bedFile:
-    def writeBedFile(self, fileObject, sortMethod=None):
-        if sortMethod == "UNIX":
-            featureList = sorted(self.regions, cmp=feature.unixCompare)
-        elif sortMethod == "NUMXYM":
-            featureList = sorted(self.regions, cmp=feature.numXYMCompare)
-        else:
-            featureList = self.regions
-        
-        for f in featureList:
-            fileObject.write(bedFile.composeBedLine(f) + "\n")
-    
-    @staticmethod
-    def composeBedLine(f):
-        return "%s\t%i\t%i\t%s" % (f.chromosome,f.start-1,f.stop,f.name)  # the -1 converts back to BED coordinates
-
-class gff3File:
-    def __init__(self):
-        self.headerList = []
-        self.regions = []
-    
-    @staticmethod
-    def parseGff3File(fileObject,functionToCall=None,callbackArgs={},columnsToExclude=[],mask=None,returnFileObject=True):
-        if returnFileObject:
-            newFileObject = gff3File()
-        else:
-            headerList = []
-        
-        for line in fileObject:
-            if len(line) <= 1:
-                continue
-            
-            if line.startswith("#"):
-                if returnFileObject:
-                    newFileObject.headerList.append(line.strip())
-                else:
-                    headerList.append(line.strip())
-                continue
-            
-            columns = line.split()
-            chromosome = columns[0]
-            start = int(columns[3])
-            stop = int(columns[4])
-            
-            newFeature=feature(chromosome,start,stop)
-            if mask != None and not mask.overlap(newFeature):
-                continue
-            
-            newFeature.attributes["SOURCE"] = columns[1]
-            newFeature.attributes["TYPE"] = columns[2]
-            newFeature.attributes["SCORE"] = columns[5]
-            newFeature.attributes["STRAND"] = columns[6]
-            newFeature.attributes["PHASE"] = columns[7]
-            
-            for pair in columns[8].split(";"):
-                temp = pair.split("=")
-                newFeature.attributes[temp[0]] = temp[1]
-            
-            if functionToCall != None:
-                functionToCall(newFeature,**callbackArgs)
-            if returnFileObject:
-                newFileObject.regions.append(newFeature)
-        
-        if returnFileObject:
-            return newFileObject
-        else:
-            return headerList
-    
-    @staticmethod
-    def composeGff3Line(f):
-        attributeSection = ""
-        for k,v in f.attributes.iteritems():
-            if k not in ["SOURCE","TYPE","SCORE","STRAND","PHASE"]:
-                attributeSection += "%s=%s;" % (k,v)
-        attributeSection = attributeSection[:-1]
-        return "%s\t%s\t%s\t%i\t%i\t%s\t%s\t%s\t%s" % (f.chromosome,f.attributes["SOURCE"],f.attributes["TYPE"],f.start,f.stop,f.attributes["SCORE"],f.attributes["STRAND"],f.attributes["PHASE"],attributeSection)
-    
-    def writeGff3File(self, fileObject, sortMethod=None):
-        for h in self.headerList:
-            fileObject.write(h + "\n")
-        
-        if sortMethod == "UNIX":
-            featureList = sorted(self.regions, cmp=feature.unixCompare)
-        elif sortMethod == "NUMXYM":
-            featureList = sorted(self.regions, cmp=feature.numXYMCompare)
-        else:
-            featureList = self.regions
-        
-        for f in featureList:
-            fileObject.write(gff3File.composeGff3Line(f) + "\n")
-'''

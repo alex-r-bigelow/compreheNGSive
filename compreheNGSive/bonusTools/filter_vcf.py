@@ -47,6 +47,7 @@ def runApp(mask="",m="",vcf="",v="",out="",o=""):
                                      individualAppendString="",
                                      lociToInclude=None,
                                      mask=features.regions,
+                                     invertMask=True,
                                      attributesToInclude=None,
                                      attributeAppendString="",
                                      skipGenotypeAttributes=False,
@@ -56,6 +57,19 @@ def runApp(mask="",m="",vcf="",v="",out="",o=""):
     print "parsing variants",
     newFile = variantFile.parseVcfFile(vcf, params)
     print ""
+    # TODO: throw this bit out
+    print "swapping attributes"
+    for v in newFile.variants:
+        newName = v.attributes.get('RSID',v.name)
+        if isinstance(newName,list):
+            print newName
+            newName = newName[1]
+        #if newName.startswith('dbsnp'):
+        #    newName = newName.split(':')[1]
+        if newName == '.':
+            newName = v.basicName
+        v.name = newName
+    
     print "writing file..."
     newFile.writeVcfFile(out, sortMethod="NUMXYM", includeScriptLine=True)
     print ""
