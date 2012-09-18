@@ -489,6 +489,10 @@ class variant(Persistent):
     An object representing a variant (potentially with data from multiple sources)
     """
     NUM_TWINS = 0
+    
+    MISSING = object()  # special variant attributes I'll use internally (these discrete objects will only match themselves)
+    ALLELE_MASKED = object()
+    
     def __init__(self, chromosome, position, matchMode, attemptRepairsWhenComparing, ref=".*", alt=".*", name=None, build=genomeUtils.hg19, attributeFilters=None):
         temp = genomeUtils.standardizeChromosome(chromosome, build)
         if temp == None:
@@ -552,6 +556,27 @@ class variant(Persistent):
         if self.poisoned:
             return
         
+        if isinstance(value,list):
+            for i,v in enumerate(value):
+                if v != variant.MISSING and v != variant.ALLELE_MASKED:
+                    try:
+                        value[i] = float(v)
+                        if math.isinf(value[i]):    # this standardizes inf and nan to specifically "Inf" and "NaN" strings
+                            value[i] = 'Inf'
+                        elif math.isnan(value[i]):
+                            value[i] = 'NaN'
+                    except ValueError:
+                        pass
+        elif value != variant.MISSING and value != variant.ALLELE_MASKED:
+            try:
+                value = float(value)
+                if math.isinf(value):
+                    value = 'Inf'
+                elif math.isnan(value):
+                    value = 'NaN'
+            except ValueError:
+                pass
+        
         if self.attributeFilters != None and self.attributeFilters.has_key(key):
             if not self.attributeFilters[key].isValid(value):
                 self.poison()
@@ -573,7 +598,7 @@ class variant(Persistent):
                 t = t.nextTwin
     
     def getAttribute(self, key):
-        return self.attributes.get(key,float('Inf'))
+        return self.attributes.get(key,None)
     
     def poison(self):
         self.poisoned = True
@@ -843,15 +868,18 @@ class valueFilter:
     LIST_INCLUSIVE = 0
     LIST_EXCLUSIVE = 1
     LIST_MUTILATE = 2
-    def __init__(self, values=None, ranges=None, includeNone=True, includeInf=True, includeNaN=True, listMode=LIST_INCLUSIVE):
+    def __init__(self, values=None, ranges=None, includeNone=True, includeBlank=True, includeInf=True, includeNaN=True, includeMissing=True, includeAlleleMasked=True, listMode=LIST_INCLUSIVE):
         self.values = values
         self.multiValue = isinstance(self.values,list)
         self.ranges = ranges
         self.multiRange = isinstance(self.ranges,list)
         self.includeAllValid = values == None and ranges == None
         self.includeNone = includeNone
+        self.includeBlank = includeBlank
         self.includeInf = includeInf
         self.includeNaN = includeNaN
+        self.includeMissing = includeMissing
+        self.includeAlleleMasked = includeAlleleMasked
         self.listMode = listMode
     
     def isValid(self, value):
@@ -881,6 +909,12 @@ class valueFilter:
     def _isValid(self, value):
         if value == None:
             return self.includeNone
+        elif value == "":
+            return self.includeBlank
+        elif value == variant.MISSING:
+            return self.includeMissing
+        elif value == variant.ALLELE_MASKED:
+            return self.includeAlleleMasked
         try:
             value = float(value)
             if math.isnan(value):

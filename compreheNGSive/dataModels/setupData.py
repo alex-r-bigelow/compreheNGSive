@@ -1,4 +1,4 @@
-import os
+import os, math
 from lxml import etree
 from resources.genomeUtils import genomeUtils, variantLoadingParameters, variantFile, featureFile, valueFilter, parseException
 from dataModels.variantData import variantData
@@ -58,7 +58,7 @@ class prefs:
             elif f.format == '.bed':
                 bedFiles.append(fileID)
         
-        vData = variantData(axisLabels,forcedCategoricals)
+        vData = variantData(axisLabels,set(self.statistics.iterkeys()),forcedCategoricals,self.startingXaxis,self.startingYaxis)
         fData = featureData()
         
         for fileID in gff3Files:
@@ -116,6 +116,12 @@ class prefs:
                 filters[a.attributeID] = a.softFilter
         for s in self.statistics.itervalues():
             filters[s.statisticID] = s.softFilter
+        # Default: grab top 5% of the startingXaxis and startingYaxis
+        while len(filters) < 2:
+            if not filters.has_key(self.startingXaxis):
+                filters[self.startingXaxis] = softFilter(excludeMissing=True,excludeMasked=True,values=[],percentages=[(0.95,1.0)])
+            elif not filters.has_key(self.startingYaxis):
+                filters[self.startingYaxis] = softFilter(excludeMissing=True,excludeMasked=True,values=[],percentages=[(0.95,1.0)])
         return filters
     
     def getAllSamples(self):
@@ -328,19 +334,58 @@ class hardFilter(valueFilter):
     def generateFromParent(node):
         f = node.find('hardFilter')
         if f == None:
-            return hardFilter(values=None, ranges=None, includeNone=True, includeInf=True, includeNaN=True, listMode=valueFilter.LIST_MUTILATE)
+            return hardFilter(values=None,
+                              ranges=None,
+                              includeNone=True,
+                              includeBlank=True,
+                              includeInf=True,
+                              includeNaN=True,
+                              includeMissing=True,
+                              includeAlleleMasked=True,
+                              listMode=valueFilter.LIST_MUTILATE)
         else:
             excludeMissing = False if f.attrib.get('excludeMissing','true') == 'false' else True
             excludeMasked = False if f.attrib.get('excludeMasked','true') == 'false' else True
+            
+            loadInf = False
+            loadNaN = False
             values=[]
             for v in f.findall('value'):
+                try:
+                    fv = float(v)
+                    if math.isinf(fv):
+                        loadInf = True
+                        continue
+                    if math.isnan(fv):
+                        loadNaN = True
+                        continue
+                except ValueError:
+                    pass
                 values.append(v.attrib['text'])
             if len(values) == 0:
                 values = None   # include everything
+            
             ranges=[]
             for r in f.findall('range'):
-                ranges.append((float(r.attrib['low']),float(r.attrib['high'])))
+                low = float(r.attrib['low'])
+                high = float(r.attrib['high'])
+                if low > high:
+                    temp = high
+                    high = low
+                    low = temp
+                if math.isinf(high):
+                    loadInf = True
+                ranges.append((low,high))
             if len(ranges) == 0:
                 ranges = None   # include everything
-            return hardFilter(values=values, ranges=ranges, includeNone=not excludeMissing, includeInf=not excludeMissing, includeNaN=not excludeMasked, listMode=valueFilter.LIST_MUTILATE)
+            
+            return hardFilter(values=values,
+                              ranges=ranges,
+                              includeNone=not excludeMissing,
+                              includeBlank=not excludeMissing,
+                              includeInf=loadInf,
+                              includeNaN=loadNaN,
+                              includeMissing=not excludeMissing,
+                              includeAlleleMasked=not excludeMasked,
+                              listMode=valueFilter.LIST_MUTILATE)
 

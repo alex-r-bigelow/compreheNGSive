@@ -25,6 +25,8 @@ from PySide.QtGui import QFileDialog, QProgressDialog, QApplication
 from PySide.QtUiTools import *
 import sys
 
+PREFS_FILE = 'prefs.xml'
+
 '''
 Color scheme used in this app from colorbrewer2.org:
 
@@ -59,12 +61,12 @@ class setupApp:
         self.runningApp = None
     
     def loadPrefs(self):
-        infile = open('smallPrefs.xml','r')
+        infile = open(PREFS_FILE,'r')
         self.window.textEdit.setPlainText(infile.read())
         infile.close()
     
     def savePrefs(self):
-        outfile=open('smallPrefs.xml','w')
+        outfile=open(PREFS_FILE,'w')
         outfile.write(self.window.textEdit.toPlainText())
         outfile.close()
     
@@ -84,7 +86,7 @@ class setupApp:
         self.canceled = self.splash.wasCanceled()
         return self.canceled
     
-    def runSV(self, params='smallPrefs.xml'):
+    def runSV(self, params=PREFS_FILE):
         self.savePrefs()
         self.window.hide()
         
@@ -102,7 +104,6 @@ class setupApp:
         self.showProgressWidget(vData.estimateTicks(), "Building Query Structures...")
         
         success = vData.freeze(callback=self.tickProgressWidget)
-        print success
         if not success:
             self.splash.hide()
             self.window.show()
@@ -135,7 +136,7 @@ class singleVariantApp:
         self.pc = parallelCoordinateWidget(data=vData,app=self,parent=self.window.pcScrollArea)
         self.window.pcScrollArea.setWidget(self.pc)
         
-        self.scatter = scatterplotWidget(data=vData,app=self,parent=self.window.scatterWidget)
+        #self.scatter = scatterplotWidget(data=vData,app=self,parent=self.window.scatterWidget)
         
         #for i in self.activeRsNumbers:
         #    self.window.groupList.addItem(i)
@@ -184,7 +185,7 @@ class singleVariantApp:
     
     def notifySelection(self, axis=None):
         self.pc.notifySelection(self.activeRsNumbers,self.activeParams,axis)
-        self.scatter.notifySelection(self.activeRsNumbers,self.activeParams,axis)
+        #self.scatter.notifySelection(self.activeRsNumbers,self.activeParams,axis)
     
     def notifyHighlight(self, rsNumbers):
         self.highlightedRsNumbers = set(rsNumbers)
@@ -192,10 +193,11 @@ class singleVariantApp:
         for i in self.highlightedRsNumbers:
             self.window.highlightList.addItem(i)
         self.pc.notifyHighlight(self.highlightedRsNumbers)
-        self.scatter.notifyHighlight(self.highlightedRsNumbers)
+        #self.scatter.notifyHighlight(self.highlightedRsNumbers)
     
     def notifyAxisChange(self, xAxis=True):
-        self.scatter.notifyAxisChange(xAxis)
+        #self.scatter.notifyAxisChange(xAxis)
+        pass
 
 def runProgram():
     if len(sys.argv) == 2:

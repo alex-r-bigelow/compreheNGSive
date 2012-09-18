@@ -4,7 +4,7 @@
 <root>
 	<startingXaxis statistic="CASES3" />
 	<startingYaxis statistic="CONTROLS_IND_EXTREME" />
-	<file id="chr3-seq.vcf" path="/Users/Home/Desktop/data/chr3-seq.vcf" build="hg19">
+	<file id="chr3-seq.vcf" path="/Users/Home/Desktop/data/chr3pieces/chr3.seq.4.vcf" build="hg19">
 		<attribute id="QUAL"/>
 		<attribute id="FILTER"/>
 		<!-- attribute id="RSID"/ -->

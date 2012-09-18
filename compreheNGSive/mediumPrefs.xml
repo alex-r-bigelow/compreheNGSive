@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!-- For a description of how to format this file, see http://www.sci.utah.edu/~abigelow/prefsSpec.php -->
+<!-- If you prefer an external .xml editor to this dialog, Quit and edit prefs.xml -->
+<root>
+	<startingXaxis statistic="Case AF" />
+	<startingYaxis statistic="Control AF" />
+	<file id="50.vcf" path="/Users/Home/Desktop/data/all.vcf" build="hg19">
+		<attribute id="QUAL"/>
+		<attribute id="FILTER"/>
+		<!-- attribute id="RSID"/ -->
+	</file>
+	<group id="Cases">
+		<sample file="50.vcf" id="441_1x"/>
+		<sample file="50.vcf" id="441_2x"/>
+		<sample file="50.vcf" id="441_3x"/>
+		<sample file="50.vcf" id="441_4x"/>
+		<sample file="50.vcf" id="441_5x"/>
+	</group>
+	<group id="Controls">
+		<sample file="50.vcf" id="441_6x"/>
+		<sample file="50.vcf" id="441_7x"/>
+		<sample file="50.vcf" id="441_8x"/>
+		<sample file="50.vcf" id="441_9x"/>
+		<sample file="50.vcf" id="441_10x"/>
+	</group>
+	<statistic type="allele frequency" id="Case AF" group="Cases" alleleGroup="Controls" alleleMode="leastFrequent">
+		<softFilter>
+			<percentage direction="top" percent="5" />
+		</softFilter>
+	</statistic>
+	<statistic type="allele frequency" id="Control AF" group="Controls" alleleGroup="Controls" alleleMode="leastFrequent">
+	</statistic>
+</root>

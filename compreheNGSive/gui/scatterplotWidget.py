@@ -53,12 +53,12 @@ class rasterLayer(layer):
         self.image.fill(Qt.white)
         
         yPix = self.controller.scatterBounds[1]
-        yDat = self.controller.currentYaxis.getMax()    # reversed coordinates
+        yDat = self.controller.currentYaxis.maximum    # reversed coordinates
         while yPix <= self.controller.scatterBounds[3]:
             xPix = self.controller.scatterBounds[0]
-            xDat = self.controller.currentXaxis.getMin()
+            xDat = self.controller.currentXaxis.minimum
             while xPix <= self.controller.scatterBounds[2]:
-                weight = self.scatter.countPopulation(xDat-self.xRadius, lowY=yDat-self.yRadius, highX=xDat+self.xRadius, highY=yDat+self.yRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
+                weight = self.scatter[self.controller.currentXaxis.name].countIntersection(xDat-self.xRadius, xDat+self.xRadius, self.scatter[self.controller.currentYaxis.name], yDat-self.yRadius, yDat+self.yRadius, 5)
                 painter.setPen(self.dotColors[min(weight,len(self.dotColors)-1)])
                 painter.drawPoint(xPix,yPix)
                 xPix += 1
@@ -69,7 +69,7 @@ class rasterLayer(layer):
         # Draw the missing values in x
         if self.controller.currentYaxis.hasNumeric():
             yPix = self.controller.scatterBounds[1]
-            yDat = self.controller.currentYaxis.getMax()
+            yDat = self.controller.currentYaxis.maximum
             while yPix <= self.controller.scatterBounds[3]:
                 rsNumsInRange = self.controller.currentYaxis.tree.select(low=yDat-self.yRadius, high=yDat+self.yRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
                 rsNumsInRange.difference_update(self.controller.currentXaxis.rsValues.iterkeys())
@@ -81,7 +81,7 @@ class rasterLayer(layer):
         # Draw the missing values in y
         if self.controller.currentXaxis.hasNumeric():
             xPix = self.controller.scatterBounds[0]
-            xDat = self.controller.currentXaxis.getMin()
+            xDat = self.controller.currentXaxis.minimum
             while xPix <= self.controller.scatterBounds[2]:
                 rsNumsInRange = self.controller.currentXaxis.tree.select(low=xDat-self.xRadius, high=xDat+self.xRadius, includeMasked=False, includeUndefined=False, includeMissing=False)
                 rsNumsInRange.difference_update(self.controller.currentYaxis.rsValues.iterkeys())
@@ -142,10 +142,10 @@ class selectionLayer(layer):
             painter.fillRect(x,y,self.dotWidth,self.dotHeight,self.dotColor)
     
     def getRsNumbers(self, x, y):
-        lowX=self.controller.screenToDataSpace(x-self.controller.cursorXradius, self.controller.scatterBounds[0], self.controller.currentXaxis.getMin(), self.controller.xAxisRatio)
-        lowY=self.controller.screenToDataSpace(y-self.controller.cursorYradius, self.controller.scatterBounds[3], self.controller.currentYaxis.getMin(), self.controller.yAxisRatio)
-        highX=self.controller.screenToDataSpace(x+self.controller.cursorXradius, self.controller.scatterBounds[0], self.controller.currentXaxis.getMin(), self.controller.xAxisRatio)
-        highY=self.controller.screenToDataSpace(y+self.controller.cursorYradius, self.controller.scatterBounds[3], self.controller.currentYaxis.getMin(), self.controller.yAxisRatio)
+        lowX=self.controller.screenToDataSpace(x-self.controller.cursorXradius, self.controller.scatterBounds[0], self.controller.currentXaxis.minimum, self.controller.xAxisRatio)
+        lowY=self.controller.screenToDataSpace(y-self.controller.cursorYradius, self.controller.scatterBounds[3], self.controller.currentYaxis.minimum, self.controller.yAxisRatio)
+        highX=self.controller.screenToDataSpace(x+self.controller.cursorXradius, self.controller.scatterBounds[0], self.controller.currentXaxis.minimum, self.controller.xAxisRatio)
+        highY=self.controller.screenToDataSpace(y+self.controller.cursorYradius, self.controller.scatterBounds[3], self.controller.currentYaxis.minimum, self.controller.yAxisRatio)
         
         rsNumbers = self.controller.data.scatter.select(lowX=lowX,lowY=lowY,highX=highX,highY=highY,
                                              includeMaskedX=False, includeMaskedY=False, includeUndefinedX=False, includeUndefinedY=False, includeMissingX=False, includeMissingY=False)
@@ -194,8 +194,8 @@ class scatterplotWidget(layeredWidget):
         self.xRanges = [self.svgLayer.svg.xRange]
         self.yRanges = [self.svgLayer.svg.yRange]
         
-        self.currentXaxis = self.data.axes[self.data.currentXattribute]
-        self.currentYaxis = self.data.axes[self.data.currentYattribute]
+        self.currentXaxis = self.data.data[self.data.currentXattribute]
+        self.currentYaxis = self.data.data[self.data.currentYattribute]
         
         self.notifyAxisChange(True,False)
         self.notifyAxisChange(False)
@@ -208,41 +208,41 @@ class scatterplotWidget(layeredWidget):
     
     def notifyAxisChange(self, xAxis=True,applyImmediately=True):
         if xAxis:
-            self.currentXaxis = self.data.axes[self.data.currentXattribute]
+            self.currentXaxis = self.data.data[self.data.currentXattribute]
             ax = self.svgLayer.svg.xAxis
             ax.label.setText(self.data.currentXattribute)
-            ax.lowLabel.setText(fitInSevenChars(self.currentXaxis.getMin()))
-            ax.highLabel.setText(fitInSevenChars(self.currentXaxis.getMax()))
-            self.xAxisRatio = float(self.currentXaxis.getMax() - self.currentXaxis.getMin()) / float(self.scatterBounds[2] - self.scatterBounds[0])
+            ax.lowLabel.setText(fitInSevenChars(self.currentXaxis.minimum))
+            ax.highLabel.setText(fitInSevenChars(self.currentXaxis.maximum))
+            self.xAxisRatio = float(self.currentXaxis.maximum - self.currentXaxis.minimum) / float(self.scatterBounds[2] - self.scatterBounds[0])
             if self.xAxisRatio == 0:
                 self.xAxisRatio = 1.0 / float(self.scatterBounds[2]-self.scatterBounds[0])
-            if self.currentXaxis.getMin() <= 0 and self.currentXaxis.getMax() >= 0:
+            if self.currentXaxis.minimum <= 0 and self.currentXaxis.maximum >= 0:
                 self.svgLayer.svg.xZeroBar.show()
-                self.svgLayer.svg.xZeroBar.moveTo(self.dataToScreenSpace(0.0, self.scatterBounds[0], self.currentXaxis.getMin(), self.xAxisRatio)-self.svgLayer.svg.xZeroBar.width()/2,self.svgLayer.svg.xZeroBar.top())
+                self.svgLayer.svg.xZeroBar.moveTo(self.dataToScreenSpace(0.0, self.scatterBounds[0], self.currentXaxis.minimum, self.xAxisRatio)-self.svgLayer.svg.xZeroBar.width()/2,self.svgLayer.svg.xZeroBar.top())
             else:
                 self.svgLayer.svg.xZeroBar.hide()
             self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentXaxis)
             if applyImmediately:
-                self.allDataLayer.setup(self.data.scatter)
+                self.allDataLayer.setup(self.data.data)
                 self.selectedLayer.updateAxes()
                 self.highlightedLayer.updateAxes()
         else:
-            self.currentYaxis = self.data.axes[self.data.currentYattribute]
+            self.currentYaxis = self.data.data[self.data.currentYattribute]
             ax = self.svgLayer.svg.yAxis
             ax.label.setText(self.data.currentYattribute)
-            ax.lowLabel.setText(fitInSevenChars(self.currentYaxis.getMin()))
-            ax.highLabel.setText(fitInSevenChars(self.currentYaxis.getMax()))
-            self.yAxisRatio = float(self.currentYaxis.getMax() - self.currentYaxis.getMin()) / float(self.scatterBounds[1] - self.scatterBounds[3])
+            ax.lowLabel.setText(fitInSevenChars(self.currentYaxis.minimum))
+            ax.highLabel.setText(fitInSevenChars(self.currentYaxis.maximum))
+            self.yAxisRatio = float(self.currentYaxis.maximum - self.currentYaxis.minimum) / float(self.scatterBounds[1] - self.scatterBounds[3])
             if self.yAxisRatio == 0:
                 self.yAxisRatio = 1.0 / float(self.scatterBounds[1]-self.scatterBounds[3])
-            if self.currentYaxis.getMin() <= 0 and self.currentYaxis.getMax() >= 0:
+            if self.currentYaxis.minimum <= 0 and self.currentYaxis.maximum >= 0:
                 self.svgLayer.svg.yZeroBar.show()
-                self.svgLayer.svg.yZeroBar.moveTo(self.svgLayer.svg.yZeroBar.left(),self.dataToScreenSpace(0.0, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)-self.svgLayer.svg.yZeroBar.height()/2)
+                self.svgLayer.svg.yZeroBar.moveTo(self.svgLayer.svg.yZeroBar.left(),self.dataToScreenSpace(0.0, self.scatterBounds[3], self.currentYaxis.minimum, self.yAxisRatio)-self.svgLayer.svg.yZeroBar.height()/2)
             else:
                 self.svgLayer.svg.yZeroBar.hide()
             self.notifySelection(self.app.activeRsNumbers,self.app.activeParams,self.currentYaxis)
             if applyImmediately:
-                self.allDataLayer.setup(self.data.scatter)
+                self.allDataLayer.setup(self.data.data)
                 self.selectedLayer.updateAxes()
                 self.highlightedLayer.updateAxes()
     
@@ -301,8 +301,8 @@ class scatterplotWidget(layeredWidget):
                 v = visRanges[i]
                 
                 # are parts (or all) of the selection hidden?
-                rightPixel = numericRightPixel - float(dataAxis.getMax()-h)/pixelRatio
-                leftPixel = numericLeftPixel + float(l-dataAxis.getMin())/pixelRatio
+                rightPixel = numericRightPixel - float(dataAxis.maximum-h)/pixelRatio
+                leftPixel = numericLeftPixel + float(l-dataAxis.minimum)/pixelRatio
                 
                 if rightPixel + rightHandleSize < numericLeftPixel or rightPixel > numericRightPixel:
                     v.rightHandle.hide()
@@ -336,8 +336,8 @@ class scatterplotWidget(layeredWidget):
                 v = visRanges[i]
                 
                 # are parts (or all) of the selection hidden?
-                topPixel = self.dataToScreenSpace(h, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)
-                bottomPixel = self.dataToScreenSpace(l, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)
+                topPixel = self.dataToScreenSpace(h, self.scatterBounds[3], self.currentYaxis.minimum, self.yAxisRatio)
+                bottomPixel = self.dataToScreenSpace(l, self.scatterBounds[3], self.currentYaxis.minimum, self.yAxisRatio)
                 
                 if topPixel - topHandleSize > numericBottomPixel or topPixel < numericTopPixel:
                     v.topHandle.hide()
@@ -432,21 +432,21 @@ class scatterplotWidget(layeredWidget):
         delta = projected - original
         self.draggedDistance = projected - self.draggedStart
         if self.draggedAxisIsX:
-            self.draggedHandle.label.setText(fitInSevenChars(self.screenToDataSpace(projected, self.scatterBounds[0], self.currentXaxis.getMin(), self.xAxisRatio)))
+            self.draggedHandle.label.setText(fitInSevenChars(self.screenToDataSpace(projected, self.scatterBounds[0], self.currentXaxis.minimum, self.xAxisRatio)))
         else:
-            self.draggedHandle.label.setText(fitInSevenChars(self.screenToDataSpace(projected, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)))
+            self.draggedHandle.label.setText(fitInSevenChars(self.screenToDataSpace(projected, self.scatterBounds[3], self.currentYaxis.minimum, self.yAxisRatio)))
         return delta
     
     def finishDrag(self):
         if self.draggedHandle == None:
             return
         if self.draggedAxisIsX:
-            start = self.screenToDataSpace(self.draggedStart, self.scatterBounds[0], self.currentXaxis.getMin(), self.xAxisRatio)
-            end = self.screenToDataSpace(self.draggedStart + self.draggedDistance, self.scatterBounds[0], self.currentXaxis.getMin(), self.xAxisRatio)
+            start = self.screenToDataSpace(self.draggedStart, self.scatterBounds[0], self.currentXaxis.minimum, self.xAxisRatio)
+            end = self.screenToDataSpace(self.draggedStart + self.draggedDistance, self.scatterBounds[0], self.currentXaxis.minimum, self.xAxisRatio)
             self.app.newOperation(operation.NUMERIC_CHANGE,axis=self.currentXaxis,start=self.draggedStart,end=end,isHigh=not self.draggedBoundIsLow)
         else:
-            start = self.screenToDataSpace(self.draggedStart, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)
-            end = self.screenToDataSpace(self.draggedStart + self.draggedDistance, self.scatterBounds[3], self.currentYaxis.getMin(), self.yAxisRatio)
+            start = self.screenToDataSpace(self.draggedStart, self.scatterBounds[3], self.currentYaxis.minimum, self.yAxisRatio)
+            end = self.screenToDataSpace(self.draggedStart + self.draggedDistance, self.scatterBounds[3], self.currentYaxis.minimum, self.yAxisRatio)
             self.app.newOperation(operation.NUMERIC_CHANGE,axis=self.currentYaxis,start=start,end=end,isHigh=not self.draggedBoundIsLow)
         # this will eventually result in a call to self.notifySelection, so I don't really care about redrawing everything
         self.draggedAxisIsX = None

@@ -1,5 +1,6 @@
 from layeredWidget import mutableSvgLayer, layeredWidget, layer
 from resources.generalUtils import fitInSevenChars
+from resources.genomeUtils import variant
 from dataModels.variantData import operation
 from PySide.QtCore import Qt, QSize
 from PySide.QtGui import QColor, QPen, QCursor, QMenu, QActionGroup, QAction, QProgressDialog, QPainter
@@ -86,6 +87,7 @@ class axisHandler:
         
         # sort the items by set membership size, except put Allele Masked, Missing last. Also populate the visPool with the right number of elements
         temp = []
+        
         for label,members in self.dataAxis.nonNumerics.iteritems():
             if label == 'Allele Masked' or label == 'Missing':
                 continue
@@ -250,30 +252,39 @@ class axisHandler:
         # TODO
         pass
     
-    def dataToScreen(self, value):
-        if not isinstance(value,str):
-            if value == None or math.isinf(value):
-                if not self.cats.has_key('Missing'):
-                    print value
-                    print self.cats
-                    return 0
-                value = 'Missing'
-            elif math.isnan(value):
-                value = 'Allele Masked'
+    def dataToScreen(self, values):
+        results = []
+        if not isinstance(values,list):
+            values = [values]
+        for value in values:
+            try:
+                if value == variant.MISSING or value == None:
+                    value = 'Missing'
+                elif value == variant.ALLELE_MASKED:
+                    value = 'Allele Masked'
+                elif math.isinf(float(value)):
+                    value = 'Missing'
+                elif math.isinf(float(value)):
+                    value = 'Allele Masked'
+            except:
+                pass
+            
+            if isinstance(value,str):
+                # TODO: this is where the missing-when-not-expected error is occurring... looks like it's happening with allele mode frequency column
+                #if not self.cats.has_key(value):
+                #    print self.cats
+                #    print value
+                #    return 0
+                index = self.cats.get(value,0)
+                if index < 0:
+                    results.append(self.labelTop)
+                elif index > self.latticeLength:
+                    results.append(self.labelBottom)
+                else:
+                    results.append(self.labelTop + (index+0.5)*self.cellSize)
             else:
-                return self.numericPixelLow + (value-self.numericDataLow)*self.dataToPixelRatio
-        # TODO: this is where the missing-when-not-expected error is occurring... looks like it's happening with allele mode frequency column
-        #if not self.cats.has_key(value):
-        #    print self.cats
-        #    print value
-        #    return 0
-        index = self.cats[value]
-        if index < 0:
-            return self.labelTop
-        elif index > self.latticeLength:
-            return self.labelBottom
-        else:
-            return self.labelTop + (index+0.5)*self.cellSize
+                results.append(self.numericPixelLow + (value-self.numericDataLow)*self.dataToPixelRatio)
+        return results
     
     def screenToData(self, value):
         return self.numericDataLow + (value-self.numericPixelLow)*self.pixelToDataRatio
@@ -291,8 +302,8 @@ class axisHandler:
                 v = self.numericRanges[i]
                 
                 # are parts (or all) of the selection hidden?
-                topPixel = self.dataToScreen(high)
-                bottomPixel = self.dataToScreen(low)
+                topPixel = self.dataToScreen(high)[0]
+                bottomPixel = self.dataToScreen(low)[0]
                 
                 if topPixel < self.numericPixelHigh or topPixel - v.topHandle.height() > self.numericPixelLow:
                     v.topHandle.hide()
@@ -431,17 +442,19 @@ class selectionLayer(layer):
         painter.setPen(self.pen)
         painter.setRenderHint(QPainter.Antialiasing)
         lastA = self.controller.axisOrder[0]
-        lastValues = self.controller.axes[lastA].dataAxis.getValues(rsList)
+        lastValues = self.controller.data.getData(rsList,lastA)
         lastX = self.controller.axes[lastA].visAxis.axisLine.left()
         for a in self.controller.axisOrder[1:]:
             if not self.controller.axes[a].visible:
                 continue
-            values = self.controller.axes[a].dataAxis.getValues(rsList)
+            values = self.controller.data.getData(rsList,a)
             x = self.controller.axes[a].visAxis.axisLine.left()
             for y0,y1 in zip(lastValues,values):
                 y0 = self.controller.axes[lastA].dataToScreen(y0)
                 y1 = self.controller.axes[a].dataToScreen(y1)
-                painter.drawLine(lastX,y0,x,y1)
+                for y00 in y0:
+                    for y11 in y1:
+                        painter.drawLine(lastX,y00,x,y11)
             lastA = a
             lastValues = values
             lastX = x
@@ -468,7 +481,7 @@ class parallelCoordinateWidget(layeredWidget):
         
         for a in self.axisOrder:
             current = prototype.clone()
-            dataObj = self.data.axes[a]
+            dataObj = self.data.data[a]
             self.axes[a] = axisHandler(a,dataObj,current,True,self)
             self.axes[a].updateParams(self.app.activeParams[dataObj])
         
