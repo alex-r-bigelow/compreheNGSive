@@ -398,7 +398,7 @@ class axisHandler:
     
     def queryPixelRange(self, low, high):
         if self.dataAxis.hasNumeric():
-            return self.dataAxis.tree.select(low=self.screenToData(low), high=self.screenToData(high), includeMasked=False, includeUndefined=False, includeMissing=False)
+            return self.dataAxis.query(ranges=[(self.screenToData(low), self.screenToData(high))],labels={})
         else:
             return set()
     
@@ -624,16 +624,14 @@ class parallelCoordinateWidget(layeredWidget):
         self.highlightedLayer.refreshLines(rsNumbers)
     
     def mouseLabel(self, x, element):
-        return
         axis = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         label = element.getAttribute('___label')
         
         self.lastMouseLabel = label
         self.lastMouseAxis = axis
-        self.app.notifyHighlight(axis.dataAxis.labels[label])
+        self.app.notifyHighlight(axis.dataAxis.query(ranges=[],labels={label:True}))
     
     def unMouseLabel(self):
-        return
         if self.lastMouseAxis == None and self.lastMouseLabel == None:
             return
         self.lastMouseLabel = None
@@ -641,13 +639,11 @@ class parallelCoordinateWidget(layeredWidget):
         self.app.notifyHighlight(set())
         
     def mouseIn(self, x, y):
-        return
         self.setCursor(self.mouseOverCursor)
         self.lastMouseNumeric = self.axes[self.axisOrder[self.findAxisIndex(x)]]
         self.app.notifyHighlight(self.lastMouseNumeric.queryPixelRange(y-self.mouseOverRadius,y+self.mouseOverRadius))
     
     def mouseOut(self):
-        return
         if self.lastMouseNumeric == None:
             return
         self.lastMouseNumeric = None

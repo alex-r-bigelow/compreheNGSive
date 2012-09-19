@@ -4,10 +4,14 @@
 <root>
 	<startingXaxis statistic="CASES3" />
 	<startingYaxis statistic="CONTROLS_IND_EXTREME" />
-	<file id="chr3-seq.vcf" path="/Users/Home/Desktop/data/chr3pieces/chr3.seq.4.vcf" build="hg19">
-		<attribute id="QUAL"/>
+	<!--file id="Annotations" path="/Users/Home/Desktop/data/chr3-ann-out.csv" build="hg19">
+		<attribute id="SIFT_score"/>
+		<attribute id="LRT_score"/>
+		<attribute id="MutationTaster_pred"/>
+		<attribute id="phyloP"/>
+	</file-->
+	<file id="chr3-seq.vcf" path="/Users/Home/Desktop/gaw.vcf" build="hg19">
 		<attribute id="FILTER"/>
-		<!-- attribute id="RSID"/ -->
 	</file>
 	<group id="CASES3">
 		<sample file="chr3-seq.vcf" id="T2DG0300147"/>
@@ -565,9 +569,6 @@
 		<sample file="chr3-seq.vcf" id="T2DG2701079"/>
 	</group>
 	<statistic type="allele frequency" id="CASES3" group="CASES3" alleleGroup="CONTROLS_IND_EXTREME" alleleMode="leastFrequent">
-		<softFilter>
-			<percentage direction="top" percent="5" />
-		</softFilter>
 	</statistic>
 	<statistic type="allele frequency" id="CASES6" group="CASES6" alleleGroup="CONTROLS_IND_EXTREME" alleleMode="leastFrequent">
 	</statistic>
@@ -576,9 +577,6 @@
 	<statistic type="allele frequency" id="CASES21" group="CASES21" alleleGroup="CONTROLS_IND_EXTREME" alleleMode="leastFrequent">
 	</statistic>
 	<statistic type="allele frequency" id="CONTROLS_IND_EXTREME" group="CONTROLS_IND_EXTREME" alleleGroup="CONTROLS_IND_EXTREME" alleleMode="leastFrequent">
-		<softFilter>
-			<percentage direction="top" percent="5" />
-		</softFilter>
 	</statistic>
 	<statistic type="allele frequency" id="CONTROL_Normal_nonind" group="CONTROL_Normal_nonind" alleleGroup="CONTROLS_IND_EXTREME" alleleMode="leastFrequent">
 	</statistic>

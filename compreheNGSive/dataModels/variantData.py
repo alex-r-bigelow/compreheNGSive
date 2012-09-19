@@ -29,11 +29,8 @@ class variantRangeIndex(Persistent):
         
         lineCount = 0
         nextTick = variantRangeIndex.TICK_INTERVAL
-        print len(data['variant keys'])
         keyList = list(data['variant keys'])
-        print 'done copying'
         keyList.sort(key=lambda x:self.getAttribute(data[x]))
-        print 'done sorting'
         for k in keyList:
             v = data[k]
             lineCount += 1160
@@ -1025,11 +1022,12 @@ class variantData:
                         if variantObject.genotypes.has_key(i):
                             allele1 = variantObject.genotypes[i].allele1
                             allele2 = variantObject.genotypes[i].allele2
-                            if allele1 != None:
+                            if allele1.text != None:
                                 alleleCounts[allele1] += 1
-                            if allele2 != None:
+                            if allele2.text != None:
                                 alleleCounts[allele2] += 1
                     alleles = [x[0] for x in sorted(alleleCounts.iteritems(), key=lambda x: x[1])]
+                
                 if mode >= len(alleles) or mode < -len(alleles):
                     targetAlleles[group] = None
                 else:

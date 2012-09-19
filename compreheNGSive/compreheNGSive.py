@@ -25,7 +25,7 @@ from PySide.QtGui import QFileDialog, QProgressDialog, QApplication
 from PySide.QtUiTools import *
 import sys
 
-PREFS_FILE = 'prefs.xml'
+PREFS_FILE = 'bigPrefs.xml'
 
 '''
 Color scheme used in this app from colorbrewer2.org:
@@ -167,9 +167,10 @@ class singleVariantApp:
     def notifyOperation(self, op):
         if op.opType not in operation.DOESNT_DIRTY:
             self.activeRsNumbers = self.selections.getActiveRsNumbers()
-            #self.window.groupList.clear()
-            #for i in self.activeRsNumbers:
-            #    self.window.groupList.addItem(i)
+            self.window.groupList.clear()
+            if len(self.activeRsNumbers) < 100:
+                for i in self.activeRsNumbers:
+                    self.window.groupList.addItem(i)
             self.activeParams = self.selections.getActiveParameters()
             if hasattr(op,'axis'):
                 self.notifySelection(op.axis)
