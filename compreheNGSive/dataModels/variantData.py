@@ -1,4 +1,4 @@
-from resources.structures import countingDict
+from resources.structures import rangeDict
 from resources.genomeUtils import variant
 from durus.file_storage import FileStorage
 from durus.connection import Connection
@@ -6,246 +6,67 @@ from durus.persistent import Persistent
 from copy import deepcopy
 import math, sys, os
 
-class cancelButtonException(Exception):
-    pass
-
-class variantRangeIndex(Persistent):
-    TICK_INTERVAL = 10000
-    
-    def __init__(self, name, data, key, forceCategorical = False, callback = None):
+class attributeIndex(Persistent):
+    def __init__(self, attributeName, forceCategorical = False):
         Persistent.__init__(self)
+        self.attributeName = attributeName
         
-        # TODO: throw this away when you update the vis bits of code
-        self.name = name
+        self.lookup = rangeDict()
+        self.categoricalKeys = set()
         
-        self.numerics = []
-        self.nonNumerics = {'Missing':set(),'Allele Masked':set()}
-        
-        self.key = key
         self.forceCategorical = forceCategorical
         
         self.minimum = None
         self.maximum = None
         
-        lineCount = 0
-        nextTick = variantRangeIndex.TICK_INTERVAL
-        keyList = list(data['variant keys'])
-        keyList.sort(key=lambda x:self.getAttribute(data[x]))
-        for k in keyList:
-            v = data[k]
-            lineCount += 1160
-            if callback != None and lineCount >= nextTick:
-                nextTick += 1
-                if callback():
-                    raise cancelButtonException('cancel pressed')
-            
-            values = self.getAttribute(v)
-            if not isinstance(values,list):
-                values = [values]
-            
-            for value in values:
-                if value == None or value == variant.MISSING or value == "":
-                    self.nonNumerics['Missing'].add(v)
-                elif value == variant.ALLELE_MASKED:
-                    self.nonNumerics['Allele Masked'].add(v)
-                elif self.forceCategorical:
-                    if not self.nonNumerics.has_key(value):
-                        self.nonNumerics[value] = set()
-                    self.nonNumerics[value].add(v)
-                else:
-                    try:
-                        value = float(value)
-                        if math.isinf(value):
-                            if not self.nonNumerics.has_key('Inf'):
-                                self.nonNumerics['Inf'] = set()
-                            self.nonNumerics['Inf'].add(v)
-                        elif math.isnan(value):
-                            if not self.nonNumerics.has_key('NaN'):
-                                self.nonNumerics['NaN'] = set()
-                            self.nonNumerics['NaN'].add(v)
-                        else:
-                            if self.minimum == None or value < self.minimum:
-                                self.minimum = value
-                            if self.maximum == None or value > self.maximum:
-                                self.maximum = value
-                            self.numerics.append(v)
-                    except ValueError:
-                        if not self.nonNumerics.has_key(value):
-                            self.nonNumerics[value] = set()
-                        self.nonNumerics[value].add(v)
-        self.findNaturalMinAndMax()
+        self.hasNumeric = False
+        self.hasMasked = False
+        self.hasMissing = False
     
-    def getAttribute(self, v):
-        if self.key == None:
-            return v.genomePosition
-        else:
-            return v.getAttribute(self.key)
-    
-    def selectRangeVariants(self, low, high):
-        lowIndex = 0
-        highIndex = len(self.numerics)
+    def add(self, position, values):
+        if not isinstance(values,list):
+            values = [values]
         
-        if high < low:
-            temp = high
-            high = low
-            low = temp
-        
-        while highIndex-lowIndex > 1:
-            midIndex = (highIndex+lowIndex)/2
-            if self.getAttribute(self.numerics[midIndex]) <= low:
-                lowIndex = midIndex
+        for value in values:
+            if value == None or value == variant.MISSING or value == "":
+                value = 'Missing'
+                #self.lookup['Missing'] = position  # this looks like things are being replaced, but that's the weirdness of rangeDict
+                #self.categoricalKeys.add('Missing')
+                #self.hasMissing = True
+            elif value == variant.ALLELE_MASKED:
+                value = 'Allele Masked'
+                #self.lookup['Allele Masked'] = position
+                #self.categoricalKeys.add('Allele Masked')
+                #self.hasMasked = True
+            if self.forceCategorical:
+                self.lookup[value] = position
+                self.categoricalKeys.add(value)
             else:
-                highIndex = midIndex
-        
-        results = set()
-        if self.getAttribute(self.numerics[lowIndex]) >= low:
-            results.add(self.numerics[lowIndex])
-        while highIndex < len(self.numerics) and self.getAttribute(self.numerics[highIndex]) <= high:
-            results.add(self.numerics[highIndex])
-            highIndex += 1
-        return results
-    
-    def selectRangeNames(self, low, high):
-        lowIndex = 0
-        highIndex = len(self.numerics)
-        
-        if high < low:
-            temp = high
-            high = low
-            low = temp
-        
-        while highIndex-lowIndex > 1:
-            midIndex = (highIndex+lowIndex)/2
-            if self.getAttribute(self.numerics[midIndex]) <= low:
-                lowIndex = midIndex
-            else:
-                highIndex = midIndex
-        
-        results = set()
-        if self.getAttribute(self.numerics[lowIndex]) >= low:
-            results.add(self.numerics[lowIndex].name)
-        while highIndex < len(self.numerics) and self.getAttribute(self.numerics[highIndex]) <= high:
-            results.add(self.numerics[highIndex].name)
-            highIndex += 1
-        return results
-    
-    def countIntersection(self, low, high, other, otherLow, otherHigh, maxCount = None):
-        '''
-        First searches the bounding indices on valid ranges for each
-        variantRangeIndex; then counts the number of intersecting elements
-        by iterating the shortest sublist, and searching the longer
-        sublist; to actually return elements, just replace incrementing
-        count with adding to a set
-        
-        Counting complexity (assuming lists M and N of size m and n):
-        
-        2log(m) + 2log(n) + min(|M'|, |N'|) log (max(|M'|, |N'|))
-        
-        where M' and N' are the sublists of M and N that fit the range criteria;
-        in theory, the final term could be m log n or n log m if the high and low
-        bounds are broad, though in practice these should be very narrow.
-        The final term can also be replaced by a constant maxCount if provided
-        (though the the returned value will be maxCount if maxCount is exceeded)
-        
-        '''
-        # find the start and end bounding indices for the subset of self
-        if high < low:
-            temp = high
-            high = low
-            low = temp
-        
-        lowIndex = 0
-        highIndex = len(self.numerics)
-        while highIndex-lowIndex > 1:
-            midIndex = (highIndex+lowIndex)/2
-            if self.getAttribute(self.numerics[midIndex]) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
-                lowIndex = midIndex
-            else:
-                highIndex = midIndex
-        startIndex = lowIndex if self.getAttribute(self.numerics[lowIndex]) >= low else lowIndex + 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
-        # can reuse lowIndex for a little speed gain, since we know high is bigger
-        highIndex = len(self.numerics)
-        while highIndex-lowIndex > 1:
-            midIndex = (highIndex+lowIndex)/2
-            if self.getAttribute(self.numerics[midIndex]) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
-                highIndex = midIndex
-            else:
-                lowIndex = midIndex
-        endIndex = highIndex if self.getAttribute(self.numerics[highIndex]) <= high else highIndex - 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
-        
-        # find the start and end bounding indices for the subset of other
-        if high < low:
-            temp = high
-            high = low
-            low = temp
-        
-        lowIndex = 0
-        highIndex = len(other.numerics)
-        while highIndex-lowIndex > 1:
-            midIndex = (highIndex+lowIndex)/2
-            if other.getAttribute(other.numerics[midIndex]) <= low:   # we want to be flexible on the endpoint, which we'll handle directly
-                lowIndex = midIndex
-            else:
-                highIndex = midIndex
-        otherStartIndex = lowIndex if other.getAttribute(other.numerics[lowIndex]) >= low else lowIndex + 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
-        # can reuse lowIndex for a little speed gain, since we know high is bigger
-        highIndex = len(other.numerics)
-        while highIndex-lowIndex > 1:
-            midIndex = (highIndex+lowIndex)/2
-            if other.getAttribute(other.numerics[midIndex]) >= high:  # we want to be flexible on the endpoint, which we'll handle directly
-                highIndex = midIndex
-            else:
-                lowIndex = midIndex
-        otherEndIndex = highIndex if other.getAttribute(other.numerics[highIndex]) <= high else highIndex - 1    # this disambiguates whether the endpoint is inclusive (it forces it to be)
-        
-        # Now we want to use the longer list as a binary search tree, and iterate the shorter one, counting matches
-        count = 0
-        if endIndex-startIndex > otherEndIndex-otherStartIndex:
-            # Search me, iterate him
-            i = otherStartIndex
-            while i <= otherEndIndex:
-                value = self.getAttribute(other.numerics[i])    # get the value that I'll be looking for
-                lowIndex = startIndex
-                highIndex = endIndex
-                while highIndex-lowIndex > 1:
-                    midIndex = (highIndex+lowIndex)/2
-                    if self.getAttribute(self.numerics[midIndex]) <= value:
-                        lowIndex = midIndex
+                try:
+                    value = float(value)
+                    if math.isinf(value):
+                        self.lookup['Inf'] = position
+                        self.categoricalKeys.add('Inf')
+                    elif math.isnan(value):
+                        self.lookup['NaN'] = position
+                        self.categoricalKeys.add('NaN')
                     else:
-                        highIndex = midIndex
-                # lowIndex now has the earliest possible place a match could be
-                while self.getAttribute(self.numerics[lowIndex]) <= value:
-                    if self.numerics[lowIndex] == other.numerics[i]:
-                        count += 1
-                        if maxCount != None and count >= maxCount:
-                            return count
-                        break
-                    lowIndex += 1
-        else:
-            # Search him, iterate me
-            i = startIndex
-            while i <= endIndex:
-                value = other.getAttribute(self.numerics[i])    # get the value that he'll be looking for
-                lowIndex = startIndex
-                highIndex = endIndex
-                while highIndex-lowIndex > 1:
-                    midIndex = (highIndex+lowIndex)/2
-                    if other.getAttribute(other.numerics[midIndex]) <= value:
-                        lowIndex = midIndex
-                    else:
-                        highIndex = midIndex
-                # lowIndex now has the earliest possible place a match could be
-                while other.getAttribute(other.numerics[lowIndex]) <= value:
-                    if other.numerics[lowIndex] == self.numerics[i]:
-                        count += 1
-                        if maxCount != None and count >= maxCount:
-                            return count
-                        break
-                    lowIndex += 1
-        return count
+                        self.lookup[value] = position
+                        self.hasNumeric = True
+                        if self.minimum == None or value < self.minimum:
+                            self.minimum = value
+                        if self.maximum == None or value > self.maximum:
+                            self.maximum = value
+                except ValueError:
+                    self.lookup[value] = position
+                    self.categoricalKeys.add(value)
     
     def findNaturalMinAndMax(self):
-        if len(self.numerics) == 0:
+        self.hasMissing = self.lookup.count('Missing') > 0
+        self.hasMasked = self.lookup.count('Allele Masked') > 0
+        if self.minimum == None or self.maximum == None:
+            self.minimum = None
+            self.maximum = None
             return
         else:
             if self.minimum == self.maximum:
@@ -285,36 +106,90 @@ class variantRangeIndex(Persistent):
             elif abs(self.minimum - nearestTenMin) < 0.25*span:
                 self.minimum = nearestTenMin
     
-    def query(self, ranges=[], labels={}):
+    def query(self, ranges=[], labels=set()):
         results = set()
-        if len(self.numerics) > 0:
+        if self.lookup.len() > 0:
             for low,high in ranges:
-                results.update(self.selectRangeNames(low, high))
-        for l,i in labels.iteritems():
-            if i:
-                for v in self.nonNumerics.get(l,set()):
-                    results.add(v.name)
+                results.update(self.lookup[low:high])
+        for l in labels:
+            results.update(self.lookup[l])
         return results
+
+class variantData:
+    COMMIT_FREQ = 1000
+    VARIANTS_ADDED = 0
+    def __init__(self, vcfPath, vcfAttributes, forcedCategoricals):
+        for fileToClear in ['Data.db','Data.db.lock','Data.db.tmp','Data.db.prepack','Axes.db','Axes.db.lock','Axes.db.tmp','Axes.db.prepack']:
+            if os.path.exists(fileToClear):
+                os.remove(fileToClear)
+        
+        self.forcedCategoricals = forcedCategoricals
+        
+        self.dataConnection = Connection(FileStorage("Data.db"))
+        self.data = self.dataConnection.get_root()
+        # I assume that there is only one variant line per genome position (I use str(genome position) as the key for this dict)
+        
+        #self.axisConnection = Connection(FileStorage("Axes.db"))
+        self.axisLookups = {}   #self.axisConnection.get_root()
+        for att in vcfAttributes['variant attributes']:
+            if att == 'Genome Position':
+                raise Exception('"Genome Position" attribute key is reserved in compreheNGSive')
+            else:
+                self.axisLookups[att] = attributeIndex(att, att in self.forcedCategoricals)
+        
+    def addVariant(self, variantObject):
+        self.data[str(variantObject.genomePosition)] = variantObject
+        
+        for k,a in self.axisLookups.iteritems():
+            a.add(str(variantObject.genomePosition), variantObject.getAttribute(k))
+        
+        variantData.VARIANTS_ADDED += 1
+        if variantData.VARIANTS_ADDED >= variantData.COMMIT_FREQ:
+            variantData.VARIANTS_ADDED = 0
+            self.dataConnection.commit()
+            #self.axisConnection.commit()
+        '''for k,v in variantObject.attributes.iteritems():
+            if not self.axisLookups.has_key(k):
+                print k, self.axisLookups.iterkeys()
+                self.axisLookups[k] = attributeIndex(k, k in self.forcedCategoricals)   # TODO: technically, I should throw an error (this is a .vcf file that doesn't define one of its INFO fields in the header)
+            self.axisLookups[k].add(variantObject.genomePosition, v)'''
     
-    def hasNumeric(self):
-        return len(self.numerics) > 0
+    def getData(self, positions, att):
+        if not isinstance(positions, list):
+            sys.stderr.write("WARNING: Results will be unordered!")
+        return ['Missing' if not self.data.has_key(p) else self.data[p].getAttribute(att) for p in positions]
     
-    def hasMasked(self):
-        return len(self.nonNumerics.get('Allele Masked',set())) > 0
+    def getDatum(self, position, att):
+        return 'Missing' if not self.data.has_key(position) else self.data[position].getAttribute(att)
     
-    def hasMissing(self):
-        return len(self.nonNumerics.get('Missing',set())) > 0
+    def get2dData(self, positions, att1, att2):
+        if not isinstance(positions,list):
+            positions = list(positions) # ensure the order is the same
+        return zip(self.getData(positions,att1),self.getData(positions,att2))
+    
+    def get2dDatum(self, position, att1, att2):
+        return (self.getDatum(position, att1),self.getDatum(position, att2))
+    
+    def query(self, att, ranges, labels):
+        return self.axisLookups[att].query(ranges,labels)
+    
+    def query2D(self, att1, ranges1, labels1, att2, ranges2, labels2):
+        return rangeDict.intersection((self.axisLookups[att1].lookup,ranges1,labels1),(self.axisLookups[att2].lookup,ranges2,labels2))
+    
+    def count(self, att, ranges, labels):
+        return self.axisLookups[att].count(ranges,labels)
+    
+    def count2D(self, att1, ranges1, labels1, att2, ranges2, labels2, limit=None):
+        return rangeDict.count2D(self.axisLookups[att1].lookup,ranges1,labels1,self.axisLookups[att2].lookup,ranges2,labels2,limit=limit)
 
 class selection:
-    namelessIndex = 1
+    NAMELESS_INDEX = 1
     def __init__(self, vdata, name=None, result=None, params=None, prefilters=None):
-        if not vdata.isFrozen:
-            vdata.freeze(None)
         self.vdata = vdata
         
         if name == None:
-            self.name = "Group %s" % selection.namelessIndex
-            selection.namelessIndex += 1
+            self.name = "Group %s" % selection.NAMELESS_INDEX
+            selection.NAMELESS_INDEX += 1
         else:
             self.name = name
         
@@ -322,42 +197,24 @@ class selection:
             self.result = set(result)
             self.params = params.copy()
         else:
-            self.params = {}    # {axis:([(low,high)],{str:bool})}
-            assert prefilters != None and len(prefilters) > 0
-            # build the selection from the prefiltered axes first... 
-            att_0,fil_0 = prefilters.iteritems().next()   # ugly way of grabbing one of the prefilters
-            ax = self.vdata.data[att_0]
-            self.applySelectAll(ax, applyImmediately=False)
-            self.applyCustomFilters(ax, fil_0, applyImmediately=False)
-            self.result = ax.query(self.params[ax][0],self.params[ax][1])
-            # now do the rest of the prefilters to cut that selection down
-            for att,fil in prefilters.iteritems():
-                if att == att_0:
-                    continue
-                else:
-                    if not self.vdata.data.has_key(att):
-                        print att
-                        print self.vdata.allAxes
-                    ax = self.vdata.data[att]
-                    self.applySelectAll(ax, applyImmediately=False)
-                    self.applyCustomFilters(ax, fil, applyImmediately=False)
-                    self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
-            # now do the rest of the attributes
-            for att in self.vdata.allAxes:
-                ax = self.vdata.data[att]
-                if att in prefilters.iterkeys():
-                    continue
-                else:
-                    self.applySelectAll(ax, applyImmediately=False)
-                    self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
+            if prefilters == None:
+                self.applySelectAll(applyImmediately=True)
+            else:
+                self.applyCustomFilters(prefilters, applyImmediately=True)
     
-    def findClosestEndpoints(self, axis, value):
+    def updateResult(self):
+        args = []
+        for att,p in self.params.iteritems():
+            args.append((self.vdata.axisLookups[att].lookup,p[0],p[1]))
+        self.result = rangeDict.intersection(*args)
+    
+    def findClosestEndpoints(self, att, value):
         highDiff = sys.float_info.max
         closestHigh = -1
         lowDiff = sys.float_info.min
         closestLow = -1
         
-        for i,(low,high) in enumerate(self.params[axis][0]):
+        for i,(low,high) in enumerate(self.params[att][0]):
             temp = abs(high-value)
             if temp < highDiff:
                 closestHigh = i
@@ -368,7 +225,7 @@ class selection:
                 lowDiff = temp
         return (closestHigh,highDiff,closestLow,lowDiff)
     
-    def findClosestRange(self, axis, value, isHigh=None):
+    def findClosestRange(self, att, value, isHigh=None):
         diff = sys.float_info.max
         closest = -1
         
@@ -379,7 +236,7 @@ class selection:
             repeat = 1
         
         while repeat < 2:
-            for i,(low,high) in enumerate(self.params[axis][0]):
+            for i,(low,high) in enumerate(self.params[att][0]):
                 if isHigh:
                     newDiff = abs(high-value)
                 else:
@@ -395,8 +252,8 @@ class selection:
         else:
             return closest
     
-    def simplifyNumericSelections(self, axis):
-        selectedRanges = self.params[axis][0]
+    def simplifyNumericSelections(self, att):
+        selectedRanges = self.params[att][0]
         if len(selectedRanges) == 0:
             return
         selectedRanges.sort()
@@ -412,202 +269,148 @@ class selection:
                 prevHigh = high
                 i += 1
         
-        self.params[axis] = (newRanges,self.params[axis][1])
+        self.params[att] = (newRanges,self.params[att][1])
     
-    def updateResult(self, axis=None):
-        if axis == None:
-            axis = self.params.itervalues().next()    # ugly way of pulling out one of the axes
-        self.result = axis.query(self.params[axis][0],self.params[axis][1])
-        for att in self.vdata.allAxes:
-            ax = self.vdata.data[att]
-            if ax == axis:
-                continue
-            self.result.intersection_update(ax.query(self.params[ax][0],self.params[ax][1]))
-    
-    def addNumericRange(self, axis, newLow, newHigh, applyImmediately=True):
-        self.params[axis][0].append((newLow,newHigh))
-        if applyImmediately:
-            self.simplifyNumericSelections(axis)
-            self.updateResult(axis)
-    
-    def removeNumericRange(self, axis, value, applyImmediately=True):
-        index = self.findClosestRange(axis, value, isHigh=None)
-        del self.param[axis][0][index]
-        if applyImmediately:
-            self.updateResult(axis)
-    
-    def applyNumericSelection(self, axis, index, isHigh, newValue, applyImmediately=True):
-        if isHigh:
-            self.params[axis][0][index] = (self.params[axis][0][index][0],newValue)
-        else:
-            self.params[axis][0][index] = (newValue,self.params[axis][0][index][1])
-        if applyImmediately:
-            self.simplifyNumericSelections(axis)
-            self.updateResult(axis)
-    
-    def applyLabelToggle(self, axis, label, applyImmediately=True):
-        self.params[axis][1][label] = not self.params[axis][1][label]
-        if applyImmediately:
-            self.updateResult(axis)
-    
-    def applyLabelSelection(self, axis, label, include, applyImmediately=True):
-        self.params[axis][1][label] = include
-        if applyImmediately:
-            self.updateResult(axis)
-    
-    def applySelectAllLabels(self, axis, include=True, applyImmediately=True):
-        for l in self.params[axis][1].iterkeys():
-            self.params[axis][1][l] = include
-        if applyImmediately:
-            self.updateResult(axis)
-    
-    def applySelectAll(self, axis, applyImmediately=True):
-        ranges = []
-        if axis.hasNumeric():
-            ranges.append((axis.minimum,axis.maximum))
-        labels = {}
-        for k in axis.nonNumerics.iterkeys():
-            labels[k] = True
-        self.params[axis] = (ranges,labels)
-        if applyImmediately:
-            self.updateResult(axis)
-    
-    def applySelectNone(self, axis, applyImmediately=True):
-        ranges = []
-        if axis.hasNumeric():
-            ranges.append((axis.maximum,axis.maximum))
-        labels = {}
-        for k in axis.nonNumerics.iterkeys():
-            labels[k] = False
-        self.params[axis] = (ranges,labels)
-        if applyImmediately:
-            self.updateResult(axis)
-    
-    def applySelectTopFivePercent(self, axis, applyImmediately=True):
-        if not axis.hasNumeric():
-            ranges = []
-        else:
-            fivePercent = (axis.maximum-axis.minimum) * 0.05
-            ranges = [(axis.maximum-fivePercent,axis.maximum)]
-        self.params[axis] = (ranges,self.params[axis][1])
-        if applyImmediately:
-            self.updateResult(axis)
-    
-    def applyCustomFilters(self, axis, fil, applyImmediately=True):
-        ranges = []
-        if axis.hasNumeric():
-            if fil.percentages == None or len(fil.percentages) == 0:
-                ranges.append((axis.minimum,axis.maximum))
+    def applyCustomFilters(self, prefilters, applyImmediately=True):
+        # If we're getting called, only select stuff that's been specified
+        self.params = {}
+        
+        for att in self.vdata.axisLookups.iterkeys():
+            if prefilters.has_key(att):
+                if prefilters[att].ranges == None:
+                    ranges = [(self.vdata.axisLookups[att].minimum,self.vdata.axisLookups[att].maximum)]
+                else:
+                    ranges = list(prefilters[att].ranges)
+                if prefilters[att].ranges == None:
+                    values = set(self.vdata.axisLookups[att].categoricalKeys)
+                else:
+                    values = set(prefilters[att].values)
             else:
-                for p in fil.percentages:
-                    if p < 0:
-                        ranges.append((axis.minimum,-(axis.maximum-axis.minimum)*p+axis.minimum))
-                    else:
-                        ranges.append((axis.maximum-(axis.maximum-axis.minimum)*p,axis.maximum))
-        labels = {}
-        # First limit to labels that exist, but deselect them all
-        if fil.values == None:
-            for l in self.params[axis][1].iterkeys():
-                labels[l] = True
-            if fil.excludeMissing and labels.has_key('Missing'):
-                labels['Missing'] = False
-            if fil.excludeMasked and labels.has_key('Allele Masked'):
-                labels['Allele Masked'] = False
-        else:
-            for l in self.params[axis][1].iterkeys():
-                labels[l] = False
-            for l in fil.values:
-                if labels.has_key(l):
-                    labels[l] = True
-            if not fil.excludeMissing and labels.has_key('Missing'):
-                labels['Missing'] = True
-            if not fil.excludeMasked and labels.has_key('Allele Masked'):
-                labels['Allele Masked'] = True
-        self.params[axis] = (ranges,labels)
-        self.simplifyNumericSelections(axis)
+                ranges = []
+                values = set()
+            self.params[att] = (ranges,values)
+        
         if applyImmediately:
-            self.updateResult(axis)
+            self.updateResult()
+    
+    def applySelectAll(self, applyImmediately=True):
+        self.params = {}    # {str:([(float,float)],set(str)}
+        
+        for att,axis in self.vdata.axisLookups.iteritems():
+            ranges = [(axis.minimum,axis.maximum)]
+            labels = set(axis.categoricalKeys)
+            self.params[att] = (ranges,labels)
+        
+        if applyImmediately:
+            self.updateResult()
+    
+    def applySelectNone(self, applyImmediately=True):
+        self.params = {}
+        self.result = set()
+    
+    def addNumericRange(self, att, newLow, newHigh, applyImmediately=True):
+        self.params[att][0].append((newLow,newHigh))
+        if applyImmediately:
+            self.simplifyNumericSelections(att)
+            self.updateResult()
+    
+    def removeNumericRange(self, att, value, applyImmediately=True):
+        index = self.findClosestRange(att, value, isHigh=None)
+        del self.param[att][0][index]
+        if applyImmediately:
+            self.updateResult()
+    
+    def applyNumericSelection(self, att, index, isHigh, newValue, applyImmediately=True):
+        if isHigh:
+            self.params[att][0][index] = (self.params[att][0][index][0],newValue)
+        else:
+            self.params[att][0][index] = (newValue,self.params[att][0][index][1])
+        if applyImmediately:
+            self.simplifyNumericSelections(att)
+            self.updateResult()
+    
+    def applyLabelToggle(self, att, label, applyImmediately=True):
+        if label in self.params[att][1]:
+            self.params[att][1].discard(label)
+        else:
+            self.params[att][1].add(label)
+        if applyImmediately:
+            self.updateResult()
+    
+    def applyLabelSelection(self, att, label, include, applyImmediately=True):
+        if include:
+            self.params[att][1].add(label)
+        else:
+            self.params[att][1].discard(label)
+        if applyImmediately:
+            self.updateResult()
+    
+    def applySelectAllLabels(self, att, include=True, applyImmediately=True):
+        self.params[att][1].update(self.vdata.axisLookups[att].categoricalKeys)
+        if applyImmediately:
+            self.updateResult()
     
     def getUnion(self, others):
         new = selection(self.vdata, name=None, result=self.result, params=self.params)
         
         for other in others:
-            for ax,(ranges,labels) in other.params.iteritems():
+            for att,(ranges,labels) in other.params.iteritems():
                 for low,high in ranges:
-                    new.addNumericRange(ax, low, high, applyImmediately=False)
-                for label,include in labels.iteritems():
-                    new.params[ax][1][label] = include or new.params[ax][1][label]
+                    new.addNumericRange(att, low, high, applyImmediately=False)
+                new.params[att][1].update(labels)
         
-        firstAxis = None
-        for ax in new.params.iterkeys():
-            new.simplifyNumericSelections(ax)
-            if firstAxis == None:
-                firstAxis = ax
+        for att in new.params.iterkeys():
+            new.simplifyNumericSelections(att)
         
-        new.updateResult(firstAxis)
+        new.updateResult()
         return new
     
     def getIntersection(self, others):
         new = selection(self.vdata, name=None, result=self.result, params=self.params)
-        
-        firstAxis = None
-        
-        for other in others:
-            for ax,(ranges,labels) in other.params.iteritems():
-                if firstAxis == None:
-                    firstAxis = ax
                 
+        for other in others:
+            for att,(ranges,labels) in other.params.iteritems():
                 newRanges = []
                 for low,high in ranges:
-                    for myLow,myHigh in new.params[ax][0]:
+                    for myLow,myHigh in new.params[att][0]:
                         newLow = max(myLow,low)
                         newHigh = min(myHigh,high)
                         if newLow <= newHigh:
                             newRanges.append((newLow,newHigh))
                 
-                newLabels = {}
-                for label,include in labels.iteritems():
-                    newLabels[label] = include and new.params[ax][1][label]
+                newLabels = self.params[att][1].intersection(labels)
                 
-                new.params[ax] = (newRanges,newLabels)
+                new.params[att] = (newRanges,newLabels)
         
-        new.updateResult(firstAxis)
+        new.updateResult()
         return new
     
     def getDifference(self, others):
         new = selection(self.vdata, name=None, result=self.result, params=self.params)
         
-        firstAxis = None
-        
         for other in others:
-            for ax,(ranges,labels) in other.params.iteritems():
-                if firstAxis == None:
-                    firstAxis = ax
-                
-                for i,(myLow,myHigh) in enumerate(new.params[ax][0]):
+            for att,(ranges,labels) in other.params.iteritems():
+                for i,(myLow,myHigh) in enumerate(new.params[att][0]):
                     for low,high in ranges:
                         if myLow >= low and myLow <= high:
                             myLow = high
                         if myHigh >= low and myHigh <= high:
                             myHigh = low
-                        new.params[ax][0][i] = (myLow,myHigh)
+                        new.params[att][0][i] = (myLow,myHigh)
                 
-                for label,include in labels.iteritems():
-                    new.params[ax][1][label] = new.params[ax][1][label] and not include
+                new.params[att][1].difference_update(labels)
         
-        new.updateResult(firstAxis)
+        new.updateResult()
         return new
     
     def getInverse(self):
-        newParams = {}
+        raise Exception('Not implemented yet.')
+        '''newParams = {}
         
-        for ax,(ranges,labels) in self.params.iteritems():
-            newLabels = {}
-            for label in labels.iterkeys():
-                newLabels[label] = True
-            newParams[ax] = ([(ax.minimum,ax.maximum)],newLabels)
-        new = selection(self.vdata, name=None, result=set(), params=([(self.minimum,self.maximum)],{}))
-        return new.getDifference(self)
+        for att in self.params.iterkeys():
+            newParams[att] = ([(att.minimum,att.maximum)],self.vdata.axisLookups[att].categoricalKeys.difference(self.params[att][1]))
+        new = selection(self.vdata, name=None, result=set(), params=([(self.minimum,self.maximum)],set()))
+        return new.getDifference(self)'''
     
     def previewUnion(self, others):
         tempResult = set(self.result)
@@ -617,24 +420,23 @@ class selection:
     
     def previewParameterUnion(self, others):
         tempResult = {}
-        for ax,(ranges,labels) in self.params.iteritems():
-            tempResult[ax] = (deepcopy(ranges),deepcopy(labels))
+        for att,(ranges,labels) in self.params.iteritems():
+            tempResult[att] = (list(ranges),set(labels))
         
         for o in others:
-            for ax,(ranges,labels) in o.params.iteritems():
-                tempResult[ax][0].extend(ranges)    # don't bother to consolidate... make it obvious that multiple selections are active
-                for label in tempResult[ax][1].iterkeys():
-                    tempResult[ax][1][label] = tempResult[ax][1][label] or labels[label]
+            for att,(ranges,labels) in o.params.iteritems():
+                tempResult[att][0].extend(ranges)    # don't bother to consolidate... make it obvious that multiple selections are active
+                tempResult[att][1].update(labels)
         return tempResult
     
-    def previewNumericSelection(self, axis, index, isHigh, newValue):
+    def previewNumericSelection(self, att, index, isHigh, newValue):
         if isHigh:
-            return axis.query((self.params[axis][0][index][0],newValue),{})
+            return self.vdata.axisLookups[att].query((self.params[att][0][index][0],newValue),set())
         else:
-            return axis.query((newValue,self.params[axis][0][index][1]),{})
+            return self.vdata.axisLookups[att].query((newValue,self.params[att][0][index][1]),set())
     
-    def previewLabelSelection(self, axis, label, include=True):
-        return axis.query((),{label:include})
+    def previewLabelSelection(self, att, label, include=True):
+        return self.vdata.axisLookups[att].query((),set(label))
 
 class selectionState:
     def __init__(self, vdata, prefilters=None):
@@ -711,7 +513,7 @@ class selectionState:
     def deactivateSelection(self, name):
         self.activeSelections.remove(self.allSelections[name])
     
-    def getActiveRsNumbers(self):
+    def getActivePoints(self):
         return self.activeSelections[0].previewUnion(self.activeSelections[1:])
     
     def getActiveParameters(self):
@@ -744,7 +546,7 @@ class operation:
     MULTIPLE_SELECTION_REQUIRED = set([SELECTION_UNION,SELECTION_DIFFERENCE,SELECTION_INTERSECTION])
     STATELESS = set([SELECTION_NEW,SELECTION_DELETE,SELECTION_INCLUDE,SELECTION_EXCLUDE,NO_OP,SELECTION_SWITCH])
     
-    AXIS_REQUIRED = set([NUMERIC_CHANGE,NUMERIC_ADD,MULTI_ADD,NUMERIC_REMOVE,NUMERIC_TOP_FIVE_PERCENT,LABEL_TOGGLE,ALL,NONE])
+    ATT_REQUIRED = set([NUMERIC_CHANGE,NUMERIC_ADD,MULTI_ADD,NUMERIC_REMOVE,NUMERIC_TOP_FIVE_PERCENT,LABEL_TOGGLE,ALL,NONE])
     
     SINGLE_LOSSY = set([NUMERIC_CHANGE,NUMERIC_ADD,MULTI_ADD,NUMERIC_REMOVE,NUMERIC_TOP_FIVE_PERCENT,ALL,NONE])
     
@@ -765,12 +567,12 @@ class operation:
                 assert self.opType not in operation.MULTIPLE_SELECTION_REQUIRED
                 self.activeSelection = self.selections.activeSelections[0]
                 
-                if self.opType in operation.AXIS_REQUIRED:
-                    assert self.kwargs.has_key('axis')
-                    self.axis = self.kwargs['axis']
+                if self.opType in operation.ATT_REQUIRED:
+                    assert self.kwargs.has_key('att')
+                    self.att = self.kwargs['att']
                     
                     if self.opType in operation.SINGLE_LOSSY:
-                        self.previousParams = deepcopy(self.activeSelection.params[self.axis])
+                        self.previousParams = deepcopy(self.activeSelection.params[self.att])
             
             else:
                 assert self.opType not in operation.SINGLE_SELECTION_REQUIRED
@@ -780,8 +582,8 @@ class operation:
                     self.previousParams = {}
                     for s in self.activeSelections:
                         self.previousParams[s.name] = {}
-                        for ax,(ranges,labels) in s.params.iteritems():
-                            self.previousParams[s.name][ax] = (deepcopy(ranges),deepcopy(labels))
+                        for att,(ranges,labels) in s.params.iteritems():
+                            self.previousParams[s.name][att] = (list(ranges),set(labels))
             
             # operation-specific inits
             if self.opType == operation.NUMERIC_CHANGE:
@@ -789,7 +591,7 @@ class operation:
                 self.start = self.kwargs['start']
                 self.end = self.kwargs['end']
                 self.isHigh = self.kwargs['isHigh']
-                self.rangeIndex = self.activeSelection.findClosestRange(self.axis, self.start, self.isHigh)
+                self.rangeIndex = self.activeSelection.findClosestRange(self.att, self.start, self.isHigh)
             elif self.opType == operation.LABEL_TOGGLE:
                 assert self.kwargs.has_key('label')
                 self.label = self.kwargs['label']
@@ -797,8 +599,8 @@ class operation:
                 assert self.kwargs.has_key('position')
                 self.position = self.kwargs['position']
             elif self.opType == operation.MULTI_ADD:
-                assert self.kwargs.has_key('secondAxis') and self.kwargs.has_key('position') and self.kwargs.has_key('secondPosition')
-                self.secondAxis = self.kwargs['secondAxis']
+                assert self.kwargs.has_key('secondAtt') and self.kwargs.has_key('position') and self.kwargs.has_key('secondPosition')
+                self.secondAtt = self.kwargs['secondAtt']
                 
                 self.position = self.kwargs['position']
                 self.secondPosition = self.kwargs['secondPosition']
@@ -806,7 +608,7 @@ class operation:
                 self.includeAllLabels = self.kwargs.get('includeAllLabels',False)
                 self.includeAllSecondLabels = self.kwargs.get('includeAllSecondLabels',False)
                 
-                self.secondPreviousParams = deepcopy(self.activeSelection.params[self.secondAxis])
+                self.secondPreviousParams = deepcopy(self.activeSelection.params[self.secondAtt])
             elif self.opType == operation.SELECTION_RENAME or self.opType == operation.SELECTION_INCLUDE:
                 assert self.kwargs.has_key('name')
                 self.oldName = self.activeSelection.name
@@ -825,9 +627,8 @@ class operation:
                     self.oldNames.append(s.name)
             elif self.opType == operation.SELECTION_COMPLEMENT:
                 self.previousParams = {}
-                for ax,(ranges,labels) in self.activeSelection.params.iteritems():
-                    self.previousParams[ax] = (deepcopy(ranges),deepcopy(labels))
-            
+                for att,(ranges,labels) in self.activeSelection.params.iteritems():
+                    self.previousParams[att] = (list(ranges),set(labels))
         except AssertionError:
             self.isLegal = False
         
@@ -843,26 +644,26 @@ class operation:
         self.finished = True
         
         if self.opType == operation.NUMERIC_CHANGE:
-            self.activeSelection.applyNumericSelection(self.axis, self.rangeIndex, self.isHigh, self.end)
+            self.activeSelection.applyNumericSelection(self.att, self.rangeIndex, self.isHigh, self.end)
         elif self.opType == operation.NUMERIC_ADD:
-            self.activeSelection.addNumericRange(self.axis, self.position)
+            self.activeSelection.addNumericRange(self.att, self.position)
         elif self.opType == operation.NUMERIC_REMOVE:
-            self.activeSelection.removeNumericRange(self.axis, self.position)
+            self.activeSelection.removeNumericRange(self.att, self.position)
         elif self.opType == operation.MULTI_ADD:
             if self.includeAllLabels:
-                self.activeSelection.applySelectAllLabels(self.axis, applyImmediately=False)
+                self.activeSelection.applySelectAllLabels(self.att, applyImmediately=False)
             if self.includeAllSecondLabels:
-                self.activeSelection.applySelectAllLabels(self.secondAxis, applyImmediately=False)
-            self.activeSelection.addNumericRange(self.axis, self.position, applyImmediately=False)
-            self.activeSelection.addNumericRange(self.secondAxis, self.secondPosition)
+                self.activeSelection.applySelectAllLabels(self.secondAtt, applyImmediately=False)
+            self.activeSelection.addNumericRange(self.att, self.position, applyImmediately=False)
+            self.activeSelection.addNumericRange(self.secondAtt, self.secondPosition)
         elif self.opType == operation.NUMERIC_TOP_FIVE_PERCENT:
-            self.activeSelection.applySelectTopFivePercent(self.axis)
+            self.activeSelection.applySelectTopFivePercent(self.att)
         elif self.opType == operation.ALL:
-            self.activeSelection.applySelectAll(self.axis)
+            self.activeSelection.applySelectAll(self.att)
         elif self.opType == operation.NONE:
-            self.activeSelection.applySelectNone(self.axis)
+            self.activeSelection.applySelectNone(self.att)
         elif self.opType == operation.LABEL_TOGGLE:
-            self.activeSelection.applyLabelToggle(self.axis,self.label)
+            self.activeSelection.applyLabelToggle(self.att,self.label)
         elif self.opType == operation.SELECTION_COMPLEMENT:
             self.selections.invertActiveSelection()
         elif self.opType == operation.SELECTION_DELETE:
@@ -904,18 +705,18 @@ class operation:
                 self.selections.activateSelection(name)
         elif self.opType == operation.SELECTION_COMPLEMENT:
             self.activeSelection.params = {}
-            for ax,(ranges,labels) in self.previousParams.iteritems():
-                self.activeSelection.params[ax] = (deepcopy(ranges),deepcopy(labels))
+            for att,(ranges,labels) in self.previousParams.iteritems():
+                self.activeSelection.params[att] = (deepcopy(ranges),deepcopy(labels))
             self.activeSelection.updateResult()
         elif self.opType in operation.SINGLE_LOSSY:
-            self.activeSelection.params[self.axis] = deepcopy(self.previousParams)
+            self.activeSelection.params[self.att] = deepcopy(self.previousParams)
             if self.opType == operation.MULTI_ADD:
-                self.activeSelection.params[self.secondAxis] = deepcopy(self.secondPreviousParams)
-            self.activeSelection.updateResult(self.axis)
+                self.activeSelection.params[self.secondAtt] = deepcopy(self.secondPreviousParams)
+            self.activeSelection.updateResult(self.att)
         
         # fix easy to restore operations
         if self.opType == operation.LABEL_TOGGLE:
-            self.axis.applyLabelToggle(self.axis,self.label)
+            self.activeSelection.applyLabelToggle(self.att,self.label)
         elif self.opType == operation.SELECTION_RENAME:
             self.selections.renameSelection(self.oldName)
         elif self.opType == operation.SELECTION_EXCLUDE:
@@ -927,241 +728,51 @@ class operation:
             for n in self.oldNames:
                 self.selections.activeSelections(n)
 
-class variantData:
-    COMMIT_FREQ=1000
-    COMMIT=0
-    def __init__(self, axisLabels, statisticLabels, forcedCategoricals, startingXattribute, startingYattribute):
-        for fileToClear in ['Data.db','Data.db.lock','Data.db.tmp','Data.db.prepack']:
-            if os.path.exists(fileToClear):
-                os.remove(fileToClear)
+class interactionManager:
+    def __init__(self, vData, prefilters):
+        self.vData = vData
+        self.app = None
         
-        self.dataConnection = Connection(FileStorage("Data.db"))
-        self.data = self.dataConnection.get_root()
-        # possible key:value pairs (this is a little bizarre, but I can only have one database (as objects reference each other),
-        # and for performance I want to keep all variant objects and axes on the root level:
+        # some final tidying up of the data object
+        for a in self.vData.axisLookups.itervalues():
+            a.findNaturalMinAndMax()
+        self.vData.dataConnection.commit()
+        #self.vData.axisConnection.commit()
         
-        # variant name : variant object
-        # 'variant keys' : a set of all variant names    (I would keep this in memory, but even it might get really big)
-        # axis name : variantRangeIndex object
+        self.selections = selectionState(self.vData, prefilters)
+        self.currentOperation = operation(operation.NO_OP, self.selections, previousOp = None)
         
-        self.data['variant keys'] = set()
-        
-        self.axisLabels = axisLabels
-        self.forcedCategoricals = forcedCategoricals
-        self.statisticLabels = statisticLabels
-        
-        self.allAxes = self.defaultAxisOrder()
-        
-        # TODO: throw these away when you update the vis bits of code
-        self.currentXattribute = startingXattribute
-        self.currentYattribute = startingYattribute
-        
-        self.isFrozen = False
+        self.highlightedPoints = set()
+        self.activePoints = self.selections.getActivePoints()
+        self.activeParams = self.selections.getActiveParameters()
     
-    def addVariant(self, variantObject):
-        if self.isFrozen:
-            self.thaw()
-        
-        if variantObject.attributes.has_key('Genome Position'):
-            raise Exception("Using \"Genome Position\" as an attribute key is reserved.")
-        
-        if variantObject.name in self.data['variant keys']:
-            self.data[variantObject.name].repair(variantObject)
-        else:
-            assert variantObject.name != 'variant keys'
-            self.data['variant keys'].add(variantObject.name)
-            self.data[variantObject.name] = variantObject
-        
-        variantData.COMMIT += 1
-        if variantData.COMMIT >= variantData.COMMIT_FREQ:
-            variantData.COMMIT = 0
-            self.dataConnection.commit()
+    def setApp(self, app):
+        self.app = app
+        self.app.notifyOperation(self.currentOperation)
+        self.app.notifySelection(self.activePoints,self.activeParams)
     
-    def performGroupCalculations(self, groupDict, statisticDict, callback, tickInterval):
-        from setupData import statistic
-        if self.isFrozen:
-            self.thaw()
-        
-        currentLine = 0
-        nextTick = tickInterval
-        
-        targetAlleleGroups = {}
-        for s in statisticDict.itervalues():
-            if s.statisticType == statistic.ALLELE_FREQUENCY:
-                if s.parameters.has_key('alleleGroup'):
-                    index = s.parameters['alleleMode']
-                    if index >= 1:
-                        index -= 1  # they'll specify 1 as the most frequent, but we're in 0-based computer land; -1 is still the same though
-                    targetAlleleGroups[s.parameters['alleleGroup']] = s.parameters['alleleMode']
-                else:
-                    targetAlleleGroups['vcf override'] = s.parameters['alleleMode']
-        if len(targetAlleleGroups) == 0:    # nothing to calculate
-            return
-        
-        for key in self.data['variant keys']:
-            variantObject = self.data[key]
-            currentLine += 1
-            if currentLine >= nextTick:
-                nextTick += tickInterval
-                self.dataConnection.commit()
-                if callback():  # abort?
-                    return "ABORTED"
-            
-            if variantObject == None or variantObject.poisoned:
-                continue
-            
-            # First find all the target alleles
-            targetAlleles = {}
-            for group,mode in targetAlleleGroups.iteritems():
-                if group == 'vcf override':
-                    alleles = variantObject.alleles
-                else:
-                    # First see if we can find a major allele with the people in basisGroup
-                    alleleCounts = countingDict()
-                    for i in groupDict[group].samples:
-                        if variantObject.genotypes.has_key(i):
-                            allele1 = variantObject.genotypes[i].allele1
-                            allele2 = variantObject.genotypes[i].allele2
-                            if allele1.text != None:
-                                alleleCounts[allele1] += 1
-                            if allele2.text != None:
-                                alleleCounts[allele2] += 1
-                    alleles = [x[0] for x in sorted(alleleCounts.iteritems(), key=lambda x: x[1])]
-                
-                if mode >= len(alleles) or mode < -len(alleles):
-                    targetAlleles[group] = None
-                else:
-                    targetAlleles[group] = variantObject.alleles[mode]
-            
-            for statisticID,s in statisticDict.iteritems():
-                targetAllele = targetAlleles[s.parameters.get('alleleGroup','vcf override')]
-                if s.statisticType == statistic.ALLELE_FREQUENCY:
-                    if targetAllele == None:
-                        variantObject.setAttribute(statisticID,variant.ALLELE_MASKED)    # the original group didn't have the allele, so we're masked
-                        continue
-                    
-                    allCount = 0
-                    targetCount = 0
-                    
-                    for i in groupDict[s.parameters['group']].samples:
-                        if variantObject.genotypes.has_key(i):
-                            allele1 = variantObject.genotypes[i].allele1
-                            allele2 = variantObject.genotypes[i].allele2
-                            if allele1 != None:
-                                allCount += 1
-                                if allele1 == targetAllele:
-                                    targetCount += 1
-                            if allele2 != None:
-                                allCount += 1
-                                if allele2 == targetAllele:
-                                    targetCount += 1
-                    if allCount == 0:
-                        variantObject.setAttribute(statisticID,variant.MISSING)    # We had no data for this variant, so this thing is undefined
-                    else:
-                        variantObject.setAttribute(statisticID,float(targetCount)/allCount)
-        self.dataConnection.commit()
+    def newOperation(self, opCode, **kwargs):
+        newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)
+        if newOp.isLegal:
+            self.currentOperation = newOp
+            if newOp.opType not in operation.DOESNT_DIRTY:
+                self.activePoints = self.selections.getActivePoints()
+                self.activeParams = self.selections.getActiveParameters()
+                self.app.notifySelection(self.activePoints,self.activeParams)
+            self.app.notifyOperation(newOp)
+        return newOp.isLegal
     
-    def estimateTicks(self):
-        return len(self.allAxes)*len(self.data['variant keys'])/variantRangeIndex.TICK_INTERVAL
+    def multipleSelected(self):
+        return False    # TODO
     
-    def freeze(self, callback=None):
-        '''
-        Builds query structures; prevents from loading more data. This is the longest process in the whole program - do this as little as possible (aka ONCE!)
-        '''
-        if self.isFrozen:
-            return True
-        self.isFrozen = True
-        
-        callback(numTicks=0,message='Cleaning...')
-        staleDataKeys = []
-        '''print len(self.data['variant keys'])
-        for k in self.data['variant keys']:
-            v = self.data[k]
-            if k != None and k != self.data[k].name:
-                staleDataKeys.append((k,v))
-        print len(staleDataKeys)
-        for k,v in staleDataKeys:
-            assert v.name != 'variant keys'
-            self.data[v.name]=v
-        self.dataConnection.commit()
-        
-        for k,v in staleDataKeys:
-            del self.data[k]
-        self.dataConnection.pack()'''
-                
-        try:
-            for att in self.allAxes:
-                callback(numTicks=0,message='Indexing %s' % att)
-                assert att not in self.data['variant keys']
-                key = None if att == 'Genome Position' else att # None is a sneaky key to help reduce the number of string compares when building an index for Genome Position
-                self.data[att] = variantRangeIndex(att,self.data,key=key,forceCategorical=att in self.forcedCategoricals,callback=callback)
-                self.dataConnection.commit()
-        except cancelButtonException:
-            self.thaw()
-        
-        return self.isFrozen
+    def undo(self):
+        assert self.currentOperation.previousOp != None and (self.currentOperation.nextOp == None or self.currentOperation.nextOp.finished == False)
+        self.currentOperation.undo()
+        self.currentOperation = self.currentOperation.previousOp
+        self.notifyOperation(self.currentOperation.nextOp)
     
-    def getFirstAxes(self):
-        temp = self.defaultAxisOrder()
-        if len(temp) < 2:
-            raise ValueError("You should have at least two data attributes (columns in your .csv file or INFO fields in your .vcf file)\n" +
-                             "to use this program (otherwise you probably should be using LibreOffice Calc or IGV to explore your data instead).")
-        return (temp[0],temp[1])
-    
-    def defaultAxisOrder(self):
-        # gives priority to axes (each subgroup is sorted alphabetically):
-        # program-generated allele frequencies are first
-        # numeric other values are next
-        # categorical other values are last
-        result = []
-        for a in sorted(self.statisticLabels):
-            result.append(a)
-        for a in sorted(self.axisLabels):
-            if not self.data.has_key(a):
-                result.append(a)    # if we haven't built the axes yet, just add them in order; we'll worry about numeric, etc next time
-            elif self.data[a].hasNumeric() and a not in self.statisticLabels:
-                result.append(a)
-        
-        for a in sorted(self.axisLabels):
-            if self.data.has_key(a) and not self.data[a].hasNumeric() and a not in self.statisticLabels:
-                result.append(a)
-        result.append('Genome Position')
-        return result
-    
-    def thaw(self):
-        '''
-        Throws out all query structures; allows us to load more data
-        '''
-        for a in self.allAxes:
-            if self.data.has_key(a):
-                del self.data[a]
-        self.dataConnection.pack()
-        
-        self.isFrozen = False
-        
-    def getData(self, rsNumbers, att):
-        if not isinstance(rsNumbers, list):
-            sys.stderr.write("WARNING: Results will be unordered!")
-        results = []
-        for rs in rsNumbers:
-            if not rs in self.data['variant keys']:
-                results.append(variant.MISSING)
-            else:
-                results.append(self.data[rs].getAttribute(att))
-        return results
-    
-    def getDatum(self, rsNumber, att):
-        if not rsNumber in self.data['variant keys']:
-            return None
-        else:
-            return self.data[rsNumber].getAttribute(att)
-    
-    def get2dData(self, rsNumbers, att1, att2):
-        if not isinstance(rsNumbers,list):
-            rsNumbers = list(rsNumbers) # ensure the order is the same
-        return zip(self.getData(rsNumbers,att1),self.getData(rsNumbers,att2))
-    
-    def get2dDatum(self, rsNumber, att1, att2):
-        return (self.getDatum(rsNumber, att1),self.getDatum(rsNumber, att2))
-
-        
+    def redo(self):
+        assert self.currentOperation.nextOp != None and self.currentOperation.nextOp.finished == False
+        self.currentOperation = self.currentOperation.nextOp
+        self.currentOperation.apply()
+        self.notifyOperation(self.currentOperation)

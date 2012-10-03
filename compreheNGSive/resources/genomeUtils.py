@@ -338,7 +338,10 @@ class genomeUtils:
         if build == genomeUtils.hg18:
             raise Exception("hg18 is not supported yet.")
             # TODO: wrap liftover?
-        return (position,position+genomeUtils.hg19chrOffsets[chromosome])
+        newPos = position+genomeUtils.hg19chrOffsets[chromosome]
+        if newPos >= sys.maxint:
+            raise Exception("You've got a genome position %s off the charts!" % str(newPos))
+        return (position,newPos)
     
     @staticmethod
     def getChromosomes(build):
@@ -881,7 +884,16 @@ class valueFilter:
     LIST_INCLUSIVE = 0
     LIST_EXCLUSIVE = 1
     LIST_MUTILATE = 2
-    def __init__(self, values=None, ranges=None, includeNone=True, includeBlank=True, includeInf=True, includeNaN=True, includeMissing=True, includeAlleleMasked=True, listMode=LIST_INCLUSIVE):
+    def __init__(self,
+                 values=None,
+                 ranges=None,
+                 includeNone=True,
+                 includeBlank=True,
+                 includeInf=True,
+                 includeNaN=True,
+                 includeMissing=True,
+                 includeAlleleMasked=True,
+                 listMode=LIST_INCLUSIVE):
         self.values = values
         self.multiValue = isinstance(self.values,list)
         self.ranges = ranges
