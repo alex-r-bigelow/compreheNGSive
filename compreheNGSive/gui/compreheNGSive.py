@@ -101,13 +101,14 @@ class setupWidget:
         return set()
 
 class appWidget:
-    MAX_LISTED_VARIANTS = 100
     def __init__(self, vData, fData, intMan, startingXattribute, startingYattribute):
         loader = QUiLoader()
         infile = QFile("gui/ui/compreheNGSive.ui")
         infile.open(QFile.ReadOnly)
         self.window = loader.load(infile, None)
-                
+        
+        self.resolution_threshold = 100
+        
         self.vData = vData
         self.fData = fData
         self.intMan = intMan
@@ -115,12 +116,17 @@ class appWidget:
         self.currentXattribute = startingXattribute
         self.currentYattribute = startingYattribute
         
-        #self.window.actionQuit.triggered.connect(self.window.close)
-        #self.window.actionExport_History.triggered.connect(self.exportHistory)
-        #self.window.actionExport.triggered.connect(self.exportActivePoints)
+        self.window.resolutionSpinBox.setMinimum(10)
+        self.window.resolutionSpinBox.setMaximum(len(self.vData.data))
+        self.window.resolutionSpinBox.setValue(self.resolution_threshold)
+        self.window.resolutionSpinBox.valueChanged.connect(self.changeResolution)
         
-        #self.window.actionUndo.triggered.connect(self.intMan.undo)
-        #self.window.actionRedo.triggered.connect(self.intMan.redo)
+        self.window.actionQuit.triggered.connect(self.window.close)
+        self.window.actionExport_History.triggered.connect(self.exportHistory)
+        self.window.actionExport.triggered.connect(self.exportActivePoints)
+        
+        self.window.actionUndo.triggered.connect(self.intMan.undo)
+        self.window.actionRedo.triggered.connect(self.intMan.redo)
         
         # TODO
         
@@ -140,6 +146,9 @@ class appWidget:
         
         #self.window.showMaximized()
         self.window.show()
+    
+    def changeResolution(self):
+        self.resolution_threshold = self.window.resolutionSpinBox.value()
     
     def exportHistory(self):
         print 'TODO: export history'
@@ -163,7 +172,7 @@ class appWidget:
     def notifySelection(self, activePoints, activeParams):
         self.window.groupList.clear()
         for i,p in enumerate(activePoints):
-            if i+1 >= appWidget.MAX_LISTED_VARIANTS:
+            if i+1 >= self.resolution_threshold:
                 self.window.groupList.addItem('... %i more not shown ...' % (len(activePoints)-i+1))
                 break
             else:
@@ -173,10 +182,10 @@ class appWidget:
         self.scatter.notifySelection(activePoints,activeParams)
     
     def notifyHighlight(self, points):
-        self.highlightedPoints = self.intMan.activePoints.intersection(points)
+        self.highlightedPoints = set(points)
         self.window.highlightList.clear()
         for i,p in enumerate(self.highlightedPoints):
-            if i+1 >= appWidget.MAX_LISTED_VARIANTS:
+            if i+1 >= self.resolution_threshold:
                 self.window.highlightList.addItem('... %i more not shown ...' % (len(self.highlightedPoints)-i+1))
                 break
             else:

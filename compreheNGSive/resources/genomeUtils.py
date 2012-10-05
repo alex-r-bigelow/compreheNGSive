@@ -963,6 +963,27 @@ class valueFilter:
                 return value in self.values
             else:
                 return value == self.values
+    
+    def getRanges(self):
+        return self.ranges
+    def getValues(self):
+        if not isinstance(self.values,list):
+            values = [self.values]
+        else:
+            values = list(self.values)
+        if self.includeNone:
+            values.append(None)
+        if self.includeInf:
+            values.append(float('Inf'))
+        if self.includeNaN:
+            values.append(float('NaN'))
+        if self.includeBlank:
+            values.append("")
+        if self.includeAlleleMasked:
+            values.append(variant.ALLELE_MASKED)
+        if self.includeMissing:
+            values.append(variant.MISSING)
+        return values
 
 class variantLoadingParameters:
     """

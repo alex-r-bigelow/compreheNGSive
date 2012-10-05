@@ -84,6 +84,9 @@
            <height>16777215</height>
           </size>
          </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -117,6 +120,39 @@
           <property name="isWrapping" stdset="0">
            <bool>false</bool>
           </property>
+         </widget>
+         <widget class="QWidget" name="widget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Show details when there are less than</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignBottom|Qt::AlignHCenter</set>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="resolutionSpinBox"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>selected variants (the program will slow down if this is big).</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignHCenter|Qt::AlignTop</set>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </widget>
        </item>
@@ -158,6 +194,10 @@
         </widget>
        </item>
       </layout>
+      <zorder>scatterWidget</zorder>
+      <zorder>splitter_2</zorder>
+      <zorder>label</zorder>
+      <zorder>widget_2</zorder>
      </widget>
     </item>
     <item>
@@ -174,7 +214,7 @@
       <widget class="QScrollArea" name="pcScrollArea">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>0</horstretch>
+         <horstretch>2</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
@@ -210,34 +250,25 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>293</width>
-          <height>794</height>
-         </rect>
-        </property>
-       </widget>
-      </widget>
-      <widget class="QScrollArea" name="groupScrollArea">
-       <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarAlwaysOn</enum>
-       </property>
-       <property name="widgetResizable">
-        <bool>true</bool>
-       </property>
-       <widget class="QWidget" name="scrollAreaWidgetContents_4">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>294</width>
+          <width>445</width>
           <height>794</height>
          </rect>
         </property>
        </widget>
       </widget>
       <widget class="QScrollArea" name="gbScrollArea">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="verticalScrollBarPolicy">
         <enum>Qt::ScrollBarAlwaysOff</enum>
        </property>
@@ -252,7 +283,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>293</width>
+          <width>444</width>
           <height>794</height>
          </rect>
         </property>
@@ -280,24 +311,15 @@
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
-   <widget class="QMenu" name="menuGroups">
+   <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>Group(s)</string>
+     <string>Edit</string>
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
-    <addaction name="separator"/>
-    <addaction name="actionNew"/>
-    <addaction name="actionDuplicate"/>
-    <addaction name="actionDelete"/>
-    <addaction name="separator"/>
-    <addaction name="actionUnion"/>
-    <addaction name="actionIntersection"/>
-    <addaction name="actionDifference"/>
-    <addaction name="actionComplement"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuGroups"/>
+   <addaction name="menuEdit"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionExport">

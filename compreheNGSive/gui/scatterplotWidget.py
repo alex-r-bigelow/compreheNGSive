@@ -71,7 +71,7 @@ class rasterLayer(layer):
             yDat = self.controller.currentYaxis.maximum
             while yPix <= self.controller.scatterBounds[3]:
                 weight = self.controller.vData.count2D(self.controller.app.currentXattribute,[],self.controller.vData.axisLookups[self.controller.app.currentXattribute].categoricalKeys,
-                                                       self.controller.app.currentYattribute,[(yDat-self.yRadius,yDat+self.yRadius)],set(),limit=len(self.dotColors))
+                                                       self.controller.app.currentYattribute,[(yDat-self.yRadius,yDat+self.yRadius)],set(),limit=len(self.dotColors)-1)
                 painter.setPen(self.dotColors[min(weight,len(self.dotColors)-1)])
                 painter.drawLine(self.xNonNumeric,yPix,self.xNonNumeric+self.dotWidth-1,yPix)
                 yPix += 1
@@ -82,11 +82,19 @@ class rasterLayer(layer):
             xDat = self.controller.currentXaxis.minimum
             while xPix <= self.controller.scatterBounds[2]:
                 weight = self.controller.vData.count2D(self.controller.app.currentXattribute,[(xDat-self.xRadius,xDat+self.xRadius)],set(),
-                                                       self.controller.app.currentYattribute,[],self.controller.vData.axisLookups[self.controller.app.currentYattribute].categoricalKeys,limit=len(self.dotColors))
+                                                       self.controller.app.currentYattribute,[],self.controller.vData.axisLookups[self.controller.app.currentYattribute].categoricalKeys,limit=len(self.dotColors)-1)
                 painter.setPen(self.dotColors[min(weight,len(self.dotColors)-1)])
                 painter.drawLine(xPix,self.yNonNumeric,xPix,self.yNonNumeric+self.dotHeight-1)
                 xPix += 1
                 xDat += self.xIncrement
+        # Draw the missing values in both
+        weight = self.controller.vData.count2D(self.controller.app.currentXattribute,[],self.controller.vData.axisLookups[self.controller.app.currentXattribute].categoricalKeys,
+                                               self.controller.app.currentYattribute,[],self.controller.vData.axisLookups[self.controller.app.currentYattribute].categoricalKeys,limit=len(self.dotColors)-1)
+        painter.fillRect(self.xNonNumeric,
+                         self.yNonNumeric,
+                         self.dotWidth,
+                         self.dotHeight,
+                         self.dotColors[min(weight,len(self.dotColors)-1)])
 
 class selectionLayer(layer):
     def __init__(self, size, dynamic, controller, prototypeDot):
@@ -122,16 +130,29 @@ class selectionLayer(layer):
         
         self.image.fill(Qt.transparent)
         for x,y in self.controller.vData.get2dData(self.points,self.controller.app.currentXattribute,self.controller.app.currentYattribute):
-            if x == None or (not isinstance(x,int) and not isinstance(x,float)) or math.isinf(x) or math.isnan(x):
-                x = self.xNonNumeric
+            valuePairs = []
+            if isinstance(x,list):
+                if isinstance(y,list):
+                    assert len(x) == len(y)
+                    valuePairs = zip(x,y)
+                else:
+                    valuePairs = [(x0,y) for x0 in x]
+            elif isinstance(y,list):
+                valuePairs = [(x,y0) for y0 in y]
             else:
-                x = self.xoffset + x*self.reverseXratio
+                valuePairs = [(x,y)]
             
-            if y == None or (not isinstance(y,int) and not isinstance(y,float)) or math.isinf(y) or math.isnan(y):
-                y = self.yNonNumeric
-            else:
-                y = self.yoffset + y*self.reverseYratio
-            painter.fillRect(x,y,self.dotWidth,self.dotHeight,self.dotColor)
+            for x0,y0 in valuePairs:
+                if x0 == None or (not isinstance(x0,int) and not isinstance(x0,float)) or math.isinf(x0) or math.isnan(x0):
+                    x0 = self.xNonNumeric
+                else:
+                    x0 = self.xoffset + x0*self.reverseXratio
+                
+                if y0 == None or (not isinstance(y0,int) and not isinstance(y0,float)) or math.isinf(y0) or math.isnan(y0):
+                    y0 = self.yNonNumeric
+                else:
+                    y0 = self.yoffset + y0*self.reverseYratio
+                painter.fillRect(x0,y0,self.dotWidth,self.dotHeight,self.dotColor)
     
     def getPoints(self, x, y):
         lowX=self.controller.screenToDataSpace(x-self.controller.cursorXradius, self.controller.scatterBounds[0], self.controller.currentXaxis.minimum, self.controller.xAxisRatio)

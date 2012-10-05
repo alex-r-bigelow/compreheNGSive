@@ -141,7 +141,7 @@ class variantData:
         self.data[str(variantObject.genomePosition)] = variantObject
         
         for k,a in self.axisLookups.iteritems():
-            a.add(str(variantObject.genomePosition), variantObject.getAttribute(k))
+            a.add(variantObject.genomePosition, variantObject.getAttribute(k))
         
         variantData.VARIANTS_ADDED += 1
         if variantData.VARIANTS_ADDED >= variantData.COMMIT_FREQ:
@@ -157,10 +157,10 @@ class variantData:
     def getData(self, positions, att):
         if not isinstance(positions, list):
             sys.stderr.write("WARNING: Results will be unordered!")
-        return ['Missing' if not self.data.has_key(p) else self.data[p].getAttribute(att) for p in positions]
+        return ['Missing' if not self.data.has_key(str(p)) else self.data[str(p)].getAttribute(att) for p in positions]
     
     def getDatum(self, position, att):
-        return 'Missing' if not self.data.has_key(position) else self.data[position].getAttribute(att)
+        return 'Missing' if not self.data.has_key(str(position)) else self.data[str(position)].getAttribute(att)
     
     def get2dData(self, positions, att1, att2):
         if not isinstance(positions,list):
@@ -173,7 +173,7 @@ class variantData:
     def query(self, att, ranges, labels):
         return self.axisLookups[att].query(ranges,labels)
     
-    def query2D(self, att1, ranges1, labels1, att2, ranges2, labels2):
+    def query2D(self, att1, ranges1, labels1, att2, ranges2, labels2, limit=None):
         return rangeDict.intersection((self.axisLookups[att1].lookup,ranges1,labels1),(self.axisLookups[att2].lookup,ranges2,labels2))
     
     def count(self, att, ranges, labels):
@@ -181,6 +181,55 @@ class variantData:
     
     def count2D(self, att1, ranges1, labels1, att2, ranges2, labels2, limit=None):
         return rangeDict.count2D(self.axisLookups[att1].lookup,ranges1,labels1,self.axisLookups[att2].lookup,ranges2,labels2,limit=limit)
+    
+    def getConstraintSatisfiers(self, constraints, limit=None):
+        '''
+        constraints: (att,resources.genomeUtils.valueFilter)
+        If limit is not None, returns early with an incomplete set once the set of passing variants exceeds size of limit
+        '''
+        ranges = [] # [[]]
+        minSize = sys.maxint
+        minIndex = None
+        for i,(att,fil) in enumerate(constraints):
+            ranges.append([])
+            size = 0
+            for l,h in fil.getRanges():
+                low = self.axisLookups[att].myList.bisect(l,rangeDict.MIN)
+                high = self.axisLookups[att].myList.bisect(h,rangeDict.MAX)
+                ranges[i].append((low,high))
+                size += high-low
+            for k in fil.getValues():
+                low = self.axisLookups[att].myList.bisect(k,rangeDict.MIN)
+                high = self.axisLookups[att].myList.bisect(k,rangeDict.MAX)
+                ranges[i].append((low,high))
+                size += high-low
+            if size < minSize:
+                minIndex = i
+                minSize = size
+        
+        if minIndex == None:
+            return set()
+        smallestDict = constraints[minIndex][0]
+        
+        results = set()
+        for r in ranges[minIndex]:
+            i = r[0]
+            while i <= r[1]:    # <= or < ?
+                pos = smallestDict[i]
+                v = self.data[str(pos)]
+                passedAll = True
+                for j,(att,fil) in enumerate(constraints):
+                    if j == i:
+                        continue
+                    if not fil.isValid(v.getAttribute(att)):
+                        passedAll = False
+                        break
+                if passedAll:
+                    results.add(pos)
+                i += 1
+                if len(results) >= limit:
+                    return results
+        return results
 
 class selection:
     NAMELESS_INDEX = 1
@@ -712,7 +761,7 @@ class operation:
             self.activeSelection.params[self.att] = deepcopy(self.previousParams)
             if self.opType == operation.MULTI_ADD:
                 self.activeSelection.params[self.secondAtt] = deepcopy(self.secondPreviousParams)
-            self.activeSelection.updateResult(self.att)
+            self.activeSelection.updateResult()
         
         # fix easy to restore operations
         if self.opType == operation.LABEL_TOGGLE:
@@ -769,10 +818,18 @@ class interactionManager:
         assert self.currentOperation.previousOp != None and (self.currentOperation.nextOp == None or self.currentOperation.nextOp.finished == False)
         self.currentOperation.undo()
         self.currentOperation = self.currentOperation.previousOp
-        self.notifyOperation(self.currentOperation.nextOp)
+        self.selections = self.currentOperation.selections
+        self.activePoints = self.selections.getActivePoints()
+        self.activeParams = self.selections.getActiveParameters()
+        self.app.notifyOperation(self.currentOperation)
+        self.app.notifySelection(self.activePoints,self.activeParams)
     
     def redo(self):
         assert self.currentOperation.nextOp != None and self.currentOperation.nextOp.finished == False
         self.currentOperation = self.currentOperation.nextOp
-        self.currentOperation.apply()
-        self.notifyOperation(self.currentOperation)
+        self.currentOperation.applyOp()
+        self.selections = self.currentOperation.selections
+        self.activePoints = self.selections.getActivePoints()
+        self.activeParams = self.selections.getActiveParameters()
+        self.app.notifyOperation(self.currentOperation)
+        self.app.notifySelection(self.activePoints,self.activeParams)

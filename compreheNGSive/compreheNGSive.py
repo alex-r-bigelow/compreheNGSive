@@ -67,7 +67,7 @@ def notifyRun(vcfPath, vcfAttributes, xAttribute, yAttribute, softFilters, force
     canceled = False
     
     vData = variantData(vcfPath, vcfAttributes, forcedCategoricals)
-    '''vParams = variantLoadingParameters(passFunction=vData.addVariant,
+    vParams = variantLoadingParameters(passFunction=vData.addVariant,
                                      rejectFunction=None,
                                      callbackArgs={},
                                      tickFunction=tick,
@@ -88,7 +88,7 @@ def notifyRun(vcfPath, vcfAttributes, xAttribute, yAttribute, softFilters, force
     except cancelButtonException:
         splash.close()
         window.show()
-        return'''
+        return
     
     if softFilters == None:
         softFilters = {}

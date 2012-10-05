@@ -411,6 +411,26 @@ class axisHandler:
             self.scrollDown()
             delta += 1
 
+'''class rasterLayer(layer):
+    def __init__(self, size, dynamic, controller, prototypeDot, opaqueBack = False):
+        layer.__init__(self,size,dynamic)
+        self.controller = controller
+        if opaqueBack:
+            self.backgroundColor = Qt.white
+        else:
+            self.backgroundColor = Qt.transparent
+        
+        dotColor = QColor()
+        dotColor.setNamedColor(prototypeDot.getAttribute('fill'))
+        dotColor.setAlphaF(float(prototypeDot.getAttribute('fill-opacity')))
+        self.pen = QPen(dotColor)
+        
+        self.dotWidth = prototypeDot.width()
+        self.dotHeight = prototypeDot.height()
+        
+        self.halfDotWidth = self.dotWidth/2
+        self.halfDotHeight = self.dotHeight/2'''
+
 class selectionLayer(layer):
     def __init__(self, size, dynamic, controller, prototypeLine, opaqueBack = False):
         layer.__init__(self,size,dynamic)
@@ -436,6 +456,8 @@ class selectionLayer(layer):
         self.setDirty()
     
     def draw(self,painter):
+        if len(self.points) >= self.controller.app.resolution_threshold:
+            return
         pointList = list(self.points)
         self.image.fill(self.backgroundColor)
         painter.setPen(self.pen)
@@ -451,9 +473,21 @@ class selectionLayer(layer):
             for y0,y1 in zip(lastValues,values):
                 y0 = self.controller.axes[lastA].dataToScreen(y0)
                 y1 = self.controller.axes[a].dataToScreen(y1)
-                for y00 in y0:
-                    for y11 in y1:
-                        painter.drawLine(lastX,y00,x,y11)
+                if len(y0) > len(y1):
+                    if len(y1) > 1:
+                        raise Exception("Mismatched number of values between attributes: %s %s" % (y0,y1))
+                    else:
+                        for y00 in y0:
+                            painter.drawLine(lastX,y00,x,y1[0])
+                elif len(y1) > len(y0):
+                    if len(y0) > 1:
+                        raise Exception("Mismatched number of values between attributes: %s %s" % (y0,y1))
+                    else:
+                        for y11 in y1:
+                            painter.drawLine(lastX,y0[0],x,y11)
+                else:
+                    for i,y00 in enumerate(y0):
+                        painter.drawLine(lastX,y00,x,y1[i])
             lastA = a
             lastValues = values
             lastX = x
@@ -627,7 +661,7 @@ class parallelCoordinateWidget(layeredWidget):
         
         self.lastMouseLabel = label
         self.lastMouseAxis = axis
-        self.app.notifyHighlight(axis.dataAxis.query(ranges=[],labels={label:True}))
+        self.app.notifyHighlight(self.app.intMan.activePoints.intersection(axis.dataAxis.query(ranges=[],labels={label:True})))
     
     def unMouseLabel(self):
         if self.lastMouseAxis == None and self.lastMouseLabel == None:
@@ -639,7 +673,7 @@ class parallelCoordinateWidget(layeredWidget):
     def mouseIn(self, x, y):
         self.setCursor(self.mouseOverCursor)
         self.lastMouseNumeric = self.axes[self.axisOrder[self.findAxisIndex(x)]]
-        self.app.notifyHighlight(self.lastMouseNumeric.queryPixelRange(y-self.mouseOverRadius,y+self.mouseOverRadius))
+        self.app.notifyHighlight(self.app.intMan.activePoints.intersection(self.lastMouseNumeric.queryPixelRange(y-self.mouseOverRadius,y+self.mouseOverRadius)))
     
     def mouseOut(self):
         if self.lastMouseNumeric == None:

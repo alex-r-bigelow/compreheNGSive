@@ -169,34 +169,29 @@ class rangeDict:
         if high == None:
             high = low
         return (self.myList.bisect((high,rangeDict.MAX)) - self.myList.bisect((low,rangeDict.MIN)))/step
+    
     @staticmethod
     def intersection(*vargs):
-        '''
-        Finds the values that are within the specified ranges or exactly matching values for a set of rangeDict objects;
-        vargs is any number of (rangeDict,list,set) tuples; the list is a list of (low,high)
-        tuples specifying ranges to include for that particular rangeDict, and the set is a set of exact values to include
-        for that particular rangeDict
-        '''
-        results = set()
-        first = True
-        for d,r,v in vargs:
-            if first:
-                for l,h in r:
-                    results.update(d[l:h])
-                for l in v:
-                    results.update(d[l])
-                first = False
-            else:
-                valids = set()
-                for l,h in r:
-                    valids.update(d[l:h])
-                for l in v:
-                    valids.update(d[l])
-                results.intersection_update(valids)
-            if len(results) == 0:
-                return results
-        return results
-    
+            results = set()
+            first = True
+            for d,r,v in vargs:
+                if first:
+                    for l,h in r:
+                        results.update(d[l:h])
+                    for l in v:
+                        results.update(d[l])
+                    first = False
+                else:
+                    valids = set()
+                    for l,h in r:
+                        valids.update(d[l:h])
+                    for l in v:
+                        valids.update(d[l])
+                    results.intersection_update(valids)
+                if len(results) == 0:
+                    return results
+            return results
+
     @staticmethod
     def count2D(d1,r1,v1,d2,r2,v2,limit=None):
         results = set()
@@ -212,10 +207,6 @@ class rangeDict:
         for value in v2:
             results2.update(d2[value])
         return len(results.intersection(results2))
-
-    @staticmethod
-    def countIntersection(d1, r1, v1, d2, r2, v2, limit = None):
-        pass
     
     def __setitem__(self, key, val):
         '''
@@ -266,7 +257,11 @@ class rangeDict:
 
 if __name__ == '__main__':
     a = rangeDict()
-    for k,v in [(0.0,1),(0.0,'b'),(0.0,3),(0.0,'d'),(0.0,5),(0.0,'f'),(0.0,7),(0.0,'h'),(0.0,9),(0.0,'j')]:
+    for k,v in [(0.1,1),(1.0,'b'),(2.3,3),(0.3,'d'),(0.7,5),(0.0,'f'),(3.0,7),(2.0,'h'),(1.0,9),(0.0,'j')]:
         a[k] = v
-    print a[0.0]    
-    print a[-1:1]
+    b = rangeDict()
+    for k,v in [(5.5,1),(5.5,'b'),(5.5,3),(5.5,'d'),(5.5,5),(5.5,'f'),(5.0,7),(5.0,'h'),(5.0,9),(5.0,'j')]:
+        b[k] = v
+    print a[0.0]
+    print b[5.0]
+    print rangeDict.intersection((a,[],set([0.0])),(b,[(5.0,5.0)],set()))
