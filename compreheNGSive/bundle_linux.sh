@@ -14,7 +14,7 @@ cd $SCRIPT_DIR
 rm -rf dist
 rm -rf build
 rm -rf compreheNGSive
-rm Data.fs*
+rm Data.db*
 echo 'Running build script...'
 python setup.py build
 
@@ -25,9 +25,9 @@ mv dist compreheNGSive
 cp -r gui compreheNGSive/gui
 cp -r dataModels compreheNGSive/dataModels
 cp -r resources compreheNGSive/resources
+cp -r bonusTools compreheNGSive/bonusTools
 rm -rf build
 # copy documentation and config files
-cp prefs.xml compreheNGSive/
 cp COPYING.txt compreheNGSive/
 cp COPYING.LESSER.txt compreheNGSive/
 cp README.txt compreheNGSive/

@@ -13,7 +13,7 @@ echo 'Cleaning...'
 cd $SCRIPT_DIR
 rm -rf dist
 rm -rf build
-rm Data.fs*
+rm Data.db*
 
 echo 'Cloning...'
 cd ..
