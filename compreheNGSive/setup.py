@@ -139,8 +139,8 @@ elif sys.platform == 'darwin':
     
     resources = ['gui/svg/parallelCoordinates.svg',
                  'gui/svg/scatterplot.svg',
-                 'gui/ui/Setup.ui',
-                 'gui/ui/SingleVariant.ui']
+                 'gui/ui/compreheNGSive_setup.ui',
+                 'gui/ui/compreheNGSive.ui']
     
     includes = ['gzip', 'lxml._elementpath', 'lxml.etree', 'PySide.QtXml',
                 'PySide.QtGui', 'PySide.QtCore']
