@@ -16,196 +16,119 @@ License along with this program. If not, see
 <http://www.gnu.org/licenses/>.
 '''
 
-from gui.scatterplotWidget import scatterplotWidget
-from gui.parallelCoordinateWidget import parallelCoordinateWidget
-from dataModels.setupData import prefs
-from dataModels.variantData import selectionState, operation
-from PySide.QtCore import QFile, Qt
-from PySide.QtGui import QFileDialog, QProgressDialog, QApplication
-from PySide.QtUiTools import *
-import sys
-
-PREFS_FILE = 'prefs.xml'
-
 '''
 Color scheme used in this app from colorbrewer2.org:
 
 http://colorbrewer2.org/index.php?type=qualitative&scheme=Dark2&n=8
 '''
+import sys, os
+from PySide.QtCore import Qt
+from PySide.QtGui import QApplication, QProgressDialog
+from gui.compreheNGSive import setupWidget, appWidget
+from dataModels.variantData import variantData, interactionManager
+from dataModels.featureData import featureData
+from resources.genomeUtils import variantFile, variantLoadingParameters, allele, valueFilter
 
 def trace(frame, event, arg):
     print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)
     return trace
 
-class setupApp:
-    def __init__(self, params):
-        loader = QUiLoader()
-        infile = QFile("gui/ui/Setup.ui")
-        infile.open(QFile.ReadOnly)
-        self.window = loader.load(infile, None)
-        
-        self.loadPrefs()
-        
-        self.window.quitButton.clicked.connect(self.closeApp)
-        self.window.saveButton.clicked.connect(self.savePrefs)
-        self.window.runButton.clicked.connect(self.runSV)
-        
-        self.splash = QProgressDialog("Loading", "Cancel", 0, 100, parent=None)
-        self.splash.setWindowModality(Qt.WindowModal)
-        self.splash.setAutoReset(False)
-        self.splash.setAutoClose(False)
-        self.splash.hide()
-        self.canceled = False
-        
-        self.window.show()
-        self.runningApp = None
-    
-    def loadPrefs(self):
-        infile = open(PREFS_FILE,'r')
-        self.window.textEdit.setPlainText(infile.read())
-        infile.close()
-    
-    def savePrefs(self):
-        outfile=open(PREFS_FILE,'w')
-        outfile.write(self.window.textEdit.toPlainText())
-        outfile.close()
-    
-    def showProgressWidget(self, estimate=100, message="Loading..."):
-        self.splash.setLabelText(message)
-        self.splash.setMaximum(estimate)
-        self.splash.setValue(0)
-        self.splash.show()
-    
-    def tickProgressWidget(self, numTicks=1, message=None):
-        if self.canceled:
-            return
-        if message != None:
-            self.splash.setLabelText(message)
-        newValue = min(self.splash.maximum(),numTicks+self.splash.value())
-        self.splash.setValue(newValue)
-        self.canceled = self.splash.wasCanceled()
-        return self.canceled
-    
-    def runSV(self, params=PREFS_FILE):
-        self.savePrefs()
-        self.window.hide()
-        
-        appPrefs = prefs.generateFromText(self.window.textEdit.toPlainText())
-        
-        self.showProgressWidget(appPrefs.maxTicks, "Loading files...")
-        
-        self.canceled = False
-        vData,fData = appPrefs.loadDataObjects(callback=self.tickProgressWidget)
-        if self.canceled:
-            self.splash.hide()
-            self.window.show()
-            return
-        
-        self.showProgressWidget(vData.estimateTicks(), "Building Query Structures...")
-        
-        success = vData.freeze(callback=self.tickProgressWidget)
-        if not success:
-            self.splash.hide()
-            self.window.show()
-            return
-        
-        self.splash.hide()
-        self.runningApp = singleVariantApp(vData,fData,appPrefs.getSoftFilters(),self)
-    
-    def closeApp(self):
-        self.window.reject()
+window = None
+appWindow = None
+splash = None
+canceled = False
 
-class singleVariantApp:
-    def __init__(self, vData, fData, prefilters, setupScreen):
-        self.vData = vData
-        self.fData = fData
-        self.setupScreen = setupScreen
-        
-        self.selections = selectionState(self.vData, prefilters)
-        self.currentOperation = operation(operation.NO_OP, self.selections, previousOp = None)
-        
-        self.highlightedRsNumbers = set()
-        self.activeRsNumbers = self.selections.getActiveRsNumbers()
-        self.activeParams = self.selections.getActiveParameters()
-        
-        loader = QUiLoader()
-        infile = QFile("gui/ui/SingleVariant.ui")
-        infile.open(QFile.ReadOnly)
-        self.window = loader.load(infile, None)
-        
-        self.pc = parallelCoordinateWidget(data=vData,app=self,parent=self.window.pcScrollArea)
-        self.window.pcScrollArea.setWidget(self.pc)
-        
-        #self.scatter = scatterplotWidget(data=vData,app=self,parent=self.window.scatterWidget)
-        
-        #for i in self.activeRsNumbers:
-        #    self.window.groupList.addItem(i)
-        
-        self.window.showMaximized()
-        #self.window.show()
-        #sys.settrace(trace)
+class cancelButtonException(Exception):
+    pass
+
+def tick(numTicks=1, setMax=None, message=None):
+    global canceled, splash
+    if canceled or splash == None:
+        return
+    if message != None:
+        splash.setLabelText(message)
+    elif setMax != None:
+        splash.setMaximum(setMax)
+        splash.setValue(0)
+    else:
+        newValue = min(splash.maximum(),numTicks+splash.value())
+        splash.setValue(newValue)
+    canceled = splash.wasCanceled()
+    if canceled:
+        raise cancelButtonException()
+
+def notifyRun(vcfPath, vcfAttributes, xAttribute, yAttribute, softFilters, forcedCategoricals, featurePaths):
+    global canceled, splash, window
+    splash = QProgressDialog("Loading %s" % os.path.split(vcfPath)[1], "Cancel", 0, 1000, parent=None)
+    splash.setWindowModality(Qt.WindowModal)
+    splash.setAutoReset(False)
+    splash.setAutoClose(False)
+    splash.show()
+    canceled = False
     
-    def newOperation(self, opCode, **kwargs):
-        newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)
-        if newOp.isLegal:
-            self.currentOperation = newOp
-            self.notifyOperation(newOp)
-        return newOp.isLegal
+    vData = variantData(vcfPath, vcfAttributes, forcedCategoricals)
+    vParams = variantLoadingParameters(passFunction=vData.addVariant,
+                                     rejectFunction=None,
+                                     callbackArgs={},
+                                     tickFunction=tick,
+                                     tickInterval=0.1,
+                                     individualsToInclude=[],
+                                     individualAppendString="",
+                                     lociToInclude=None,
+                                     mask=None,
+                                     invertMask=False,
+                                     attributesToInclude=None,
+                                     attributeAppendString="",
+                                     skipGenotypeAttributes=True,
+                                     returnFileObject=False,
+                                     alleleMatching=allele.STRICT,
+                                     attemptRepairsWhenComparing=True)
+    try:
+        variantFile.parseVcfFile(vcfPath, vParams)
+    except cancelButtonException:
+        splash.close()
+        window.show()
+        return
     
-    def undo(self):
-        assert self.currentOperation.previousOp != None and (self.currentOperation.nextOp == None or self.currentOperation.nextOp.finished == False)
-        self.currentOperation.undo()
-        self.currentOperation = self.currentOperation.previousOp
-        self.notifyOperation(self.currentOperation.nextOp)
-    
-    def redo(self):
-        assert self.currentOperation.nextOp != None and self.currentOperation.nextOp.finished == False
-        self.currentOperation = self.currentOperation.nextOp
-        self.currentOperation.apply()
-        self.notifyOperation(self.currentOperation)
-    
-    def notifyOperation(self, op):
-        if op.opType not in operation.DOESNT_DIRTY:
-            self.activeRsNumbers = self.selections.getActiveRsNumbers()
-            #self.window.groupList.clear()
-            #for i in self.activeRsNumbers:
-            #    self.window.groupList.addItem(i)
-            self.activeParams = self.selections.getActiveParameters()
-            if hasattr(op,'axis'):
-                self.notifySelection(op.axis)
+    if softFilters == None:
+        softFilters = {}
+        for k in vData.axisLookups.iterkeys():
+            if k == xAttribute or k == yAttribute:
+                if vData.axisLookups[k].hasNumeric:
+                    fivePercent = 0.05*(vData.axisLookups[k].maximum-vData.axisLookups[k].minimum)
+                    ranges = [(vData.axisLookups[k].maximum-fivePercent,vData.axisLookups[k].maximum)]
+                else:
+                    ranges = None
+                values = []
             else:
-                self.notifySelection()
-        if self.multipleSelected():
-            pass    # TODO: show/hide menus and stuff
-        else:
-            pass    # TODO: show/hide menus and stuff
+                ranges = None
+                values = None
+            softFilters[k] = valueFilter(values=values,
+                                         ranges=ranges,
+                                         includeNone=True,
+                                         includeBlank=True,
+                                         includeInf=True,
+                                         includeNaN=True,
+                                         includeMissing=True,
+                                         includeAlleleMasked=True,
+                                         listMode=valueFilter.LIST_INCLUSIVE)
+    intMan = interactionManager(vData,softFilters)
     
-    def multipleSelected(self):
-        return len(self.selections.activeSelections) > 1
-    
-    def notifySelection(self, axis=None):
-        self.pc.notifySelection(self.activeRsNumbers,self.activeParams,axis)
-        #self.scatter.notifySelection(self.activeRsNumbers,self.activeParams,axis)
-    
-    def notifyHighlight(self, rsNumbers):
-        self.highlightedRsNumbers = set(rsNumbers)
-        self.window.highlightList.clear()
-        for i in self.highlightedRsNumbers:
-            self.window.highlightList.addItem(i)
-        self.pc.notifyHighlight(self.highlightedRsNumbers)
-        #self.scatter.notifyHighlight(self.highlightedRsNumbers)
-    
-    def notifyAxisChange(self, xAxis=True):
-        #self.scatter.notifyAxisChange(xAxis)
-        pass
+    # TODO
+    fData = featureData(featurePaths)
+    if canceled:
+        splash.close()
+        window.show()
+        return
+
+    splash.close()
+    appWindow = appWidget(vData,fData,intMan,xAttribute,yAttribute)
+    intMan.setApp(appWindow)
 
 def runProgram():
-    if len(sys.argv) == 2:
-        params = sys.argv.pop(1)
-    else:
-        params = None
+    global window
     app = QApplication(sys.argv)
-    w = setupApp(params)
+    window = setupWidget(notifyRun)
     sys.exit(app.exec_())
 
 if __name__ == "__main__": 
@@ -213,4 +136,4 @@ if __name__ == "__main__":
     runProgram()
     
     #import cProfile
-    #cProfile.run('runProgram()')
+    #cProfile.run('runProgram()',filename="compreheNGSive.profile")

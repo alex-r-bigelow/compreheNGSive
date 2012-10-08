@@ -338,7 +338,10 @@ class genomeUtils:
         if build == genomeUtils.hg18:
             raise Exception("hg18 is not supported yet.")
             # TODO: wrap liftover?
-        return (position,position+genomeUtils.hg19chrOffsets[chromosome])
+        newPos = position+genomeUtils.hg19chrOffsets[chromosome]
+        if newPos >= sys.maxint:
+            raise Exception("You've got a genome position %s off the charts!" % str(newPos))
+        return (position,newPos)
     
     @staticmethod
     def getChromosomes(build):
@@ -484,14 +487,26 @@ class genotype:
         second = str(self.allele2)
         return first + slash + second
 
+class dummy:
+    def __init__(self, value):
+        self.value = value
+    
+    def __eq__(self, other):
+        return isinstance(other,dummy) and self.value == other.value
+    
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+
 class variant(Persistent):
     """
     An object representing a variant (potentially with data from multiple sources)
     """
     NUM_TWINS = 0
     
-    MISSING = object()  # special variant attributes I'll use internally (these discrete objects will only match themselves)
-    ALLELE_MASKED = object()
+    MISSING = dummy(0)  # special variant attributes I'll use internally (these discrete objects will only match themselves)
+    ALLELE_MASKED = dummy(1)
     
     def __init__(self, chromosome, position, matchMode, attemptRepairsWhenComparing, ref=".*", alt=".*", name=None, build=genomeUtils.hg19, attributeFilters=None):
         temp = genomeUtils.standardizeChromosome(chromosome, build)
@@ -601,6 +616,7 @@ class variant(Persistent):
         return self.attributes.get(key,None)
     
     def poison(self):
+        return
         self.poisoned = True
         self.attributes = None
         self.genotypes = None
@@ -868,7 +884,16 @@ class valueFilter:
     LIST_INCLUSIVE = 0
     LIST_EXCLUSIVE = 1
     LIST_MUTILATE = 2
-    def __init__(self, values=None, ranges=None, includeNone=True, includeBlank=True, includeInf=True, includeNaN=True, includeMissing=True, includeAlleleMasked=True, listMode=LIST_INCLUSIVE):
+    def __init__(self,
+                 values=None,
+                 ranges=None,
+                 includeNone=True,
+                 includeBlank=True,
+                 includeInf=True,
+                 includeNaN=True,
+                 includeMissing=True,
+                 includeAlleleMasked=True,
+                 listMode=LIST_INCLUSIVE):
         self.values = values
         self.multiValue = isinstance(self.values,list)
         self.ranges = ranges
@@ -938,6 +963,27 @@ class valueFilter:
                 return value in self.values
             else:
                 return value == self.values
+    
+    def getRanges(self):
+        return self.ranges
+    def getValues(self):
+        if not isinstance(self.values,list):
+            values = [self.values]
+        else:
+            values = list(self.values)
+        if self.includeNone:
+            values.append(None)
+        if self.includeInf:
+            values.append(float('Inf'))
+        if self.includeNaN:
+            values.append(float('NaN'))
+        if self.includeBlank:
+            values.append("")
+        if self.includeAlleleMasked:
+            values.append(variant.ALLELE_MASKED)
+        if self.includeMissing:
+            values.append(variant.MISSING)
+        return values
 
 class variantLoadingParameters:
     """
@@ -1245,13 +1291,16 @@ class variantFile:
                         newVariant.poison()
                         break
             
+            
             if not newVariant.poisoned:
                 # Now for genotypes - first let's figure out the columns we care about
                 if (parameters.individualsToInclude == None or len(parameters.individualsToInclude) > 0) and fileAttributes.has_key("INDIVIDUALS"):
+                    
                     formatPattern = columns[8].split(":")
                     if len(formatPattern) > 0:
                         if formatPattern[0] != "GT":
                             raise parseException("Bad .vcf file (GT FORMAT field must exist and must be first):\n%s" % line)
+                    
                     for i,p in enumerate(fileAttributes["INDIVIDUALS"]):
                         if parameters.individualsToInclude != None and p + parameters.individualAppendString not in parameters.individualsToInclude:
                             continue
@@ -1262,6 +1311,7 @@ class variantFile:
                         newGenotype = genotype(text=temp[0],
                                                alleles=newVariant.alleles,
                                                matchMode=parameters.alleleMatching)
+                        
                         if not parameters.skipGenotypeAttributes:
                             for i,a in enumerate(formatPattern):
                                 if a == "GT":
@@ -1272,7 +1322,7 @@ class variantFile:
                                 if i < len(temp) and temp[i] != ".":
                                     newGenotype.attributes[a] = temp[i]
                         newVariant.addGenotype(p + parameters.individualAppendString, newGenotype)
-            
+                        
             # We've built the variant object... call the appropriate function if we need to
             if not newVariant.poisoned and parameters.passFunction != None:
                 parameters.passFunction(newVariant,**parameters.callbackArgs)
@@ -1390,8 +1440,21 @@ class variantFile:
             
             for i in fileAttributes["INDIVIDUALS"]:
                 outString += "\t"
-                outString += str(v.genotypes[i])
+                if v.genotypes[i].allele1 not in v.alleles:
+                    outString += '.'
+                else:
+                    outString += str(v.alleles.index(v.genotypes[i].allele1))
+                if v.genotypes[i].isPhased:
+                    outString += "|"
+                else:
+                    outString += "/"
+                if v.genotypes[i].allele2 not in v.alleles:
+                    outString += '.'
+                else:
+                    outString += str(v.alleles.index(v.genotypes[i].allele2))
                 for k in formatList:
+                    if k == "GT":
+                        continue
                     outString += ":%s" % (v.genotypes[i].attributes.get(k,""))
         return outString
     

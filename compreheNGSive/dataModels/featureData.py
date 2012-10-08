@@ -1,2 +1,3 @@
 class featureData:
-    pass
+    def __init__(self, paths):
+        pass

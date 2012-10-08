@@ -50,7 +50,7 @@ def runApp(mask="",m="",vcf="",v="",out="",o=""):
                                      invertMask=True,
                                      attributesToInclude=None,
                                      attributeAppendString="",
-                                     skipGenotypeAttributes=False,
+                                     skipGenotypeAttributes=True,   # TODO: there's actually a bug here (you should turn this back off
                                      returnFileObject=True,
                                      alleleMatching=allele.STRICT,
                                      attemptRepairsWhenComparing=True)
@@ -62,7 +62,6 @@ def runApp(mask="",m="",vcf="",v="",out="",o=""):
     for v in newFile.variants:
         newName = v.attributes.get('RSID',v.name)
         if isinstance(newName,list):
-            print newName
             newName = newName[1]
         #if newName.startswith('dbsnp'):
         #    newName = newName.split(':')[1]
