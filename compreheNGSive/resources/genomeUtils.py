@@ -1408,7 +1408,7 @@ class variantFile:
         return outString
     
     @staticmethod
-    def composeVcfLine(v,fileAttributes):
+    def composeVcfLine(v,fileAttributes):        
         outString = ""
         rsNumber = v.name
         if v.basicName == v.name:
@@ -1418,15 +1418,24 @@ class variantFile:
         
         # variant attributes
         info = ""
+        
+        filterstr = ""
+        qualstr = ""
+        
         for k,val in v.attributes.iteritems():
-            if k == "QUAL" or k == "FILTER":
-                continue
-            info += "%s=%s;" % (k,val)
+            if k.startswith("QUAL"):
+                qualstr = k
+            elif k.startswith("FILTER"):
+                filterstr = k
+            elif k == val:
+                info += "%s;" % k
+            else:
+                info += "%s=%s;" % (k,val)
         info = info[:-1]    # strip last semicolon
-        filters = v.attributes["FILTER"]
+        filters = v.attributes[filterstr]
         if not isinstance(filters,list):
             filters = [filters]
-        outString += "\t%s\t%s\t%s"%(v.attributes["QUAL"],";".join(filters),info)
+        outString += "\t%s\t%s\t%s"%(v.attributes[qualstr],";".join(filters),info)
         
         # We'll stick on the genotypes after we've seen all the possible format fields
         if fileAttributes.has_key("INDIVIDUALS"):

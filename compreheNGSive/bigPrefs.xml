@@ -4,13 +4,13 @@
 <root>
 	<startingXaxis statistic="CASES3" />
 	<startingYaxis statistic="CONTROLS_IND_EXTREME" />
-	<!--file id="Annotations" path="/Users/Home/Desktop/data/chr3-ann-out.csv" build="hg19">
+	<!--file id="Annotations" path="/Users/Home/Desktop/temp/data/chr3-ann-out.csv" build="hg19">
 		<attribute id="SIFT_score"/>
 		<attribute id="LRT_score"/>
 		<attribute id="MutationTaster_pred"/>
 		<attribute id="phyloP"/>
 	</file-->
-	<file id="chr3-seq.vcf" path="/Users/Home/Desktop/gaw.vcf" build="hg19">
+	<file id="chr3-seq.vcf" path="/Users/Home/Desktop/temp/data/chr3-seq.vcf" build="hg19">
 		<attribute id="FILTER"/>
 	</file>
 	<group id="CASES3">

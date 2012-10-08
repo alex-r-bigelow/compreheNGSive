@@ -1,9 +1,6 @@
 import os, math
 from lxml import etree
 from resources.genomeUtils import genomeUtils, variantLoadingParameters, variantFile, featureFile, valueFilter, parseException
-from bonusTools.tempVariantData import tempVariantData
-from durus.file_storage import FileStorage
-from durus.connection import Connection
 
 class prefs:
     def __init__(self, startingXsource, startingYsource, startingXaxis, startingYaxis, files={}, groups={}, statistics={}):
@@ -59,7 +56,8 @@ class prefs:
             elif f.format == '.bed':
                 bedFiles.append(fileID)
         
-        vData = tempVariantData(axisLabels,set(self.statistics.iterkeys()),forcedCategoricals,self.startingXaxis,self.startingYaxis)
+        vData = variantData(axisLabels,set(self.statistics.iterkeys()),forcedCategoricals,self.startingXaxis,self.startingYaxis)
+        fData = featureData()
         
         for fileID in gff3Files:
             pass
@@ -107,7 +105,7 @@ class prefs:
         callback(numTicks=0,message='Calculating group statistics')
         vData.performGroupCalculations(self.groups, self.statistics, callback, self.loadingPercentages[None])
         
-        return vData
+        return (vData,fData)
     
     def getSoftFilters(self):
         filters = {}    # att:[softfilter,...]
