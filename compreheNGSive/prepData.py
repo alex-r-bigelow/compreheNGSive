@@ -103,7 +103,7 @@ class setupApp:
         
         self.showProgressWidget(vData.estimateTicks(), "Writing files...")
         
-        success = vData.dumpVcfFile(path='/Users/Home/Desktop/dump.vcf',callback=self.tickProgressWidget)
+        success = vData.dumpVcfFile(path='/export/home/alex/Desktop/chr3-seq.vcf',callback=self.tickProgressWidget)
         if not success:
             self.splash.hide()
             self.window.show()

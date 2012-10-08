@@ -32,6 +32,8 @@ class tempVariantData:
         self.allAxes = self.defaultAxisOrder()
     
     def addVariant(self, variantObject):
+        if variantObject.attributes.has_key('RSID'):
+            variantObject.name = variantObject.attributes['RSID']
         if variantObject.name in self.data['variant keys']:
             self.data[variantObject.name].repair(variantObject)
         else:
