@@ -3,22 +3,22 @@
 KGP=/raid1/sequencing/reference/background/KGP
 TEMP=/export/home/alex/Desktop
 
-#python mapToBed.py $TEMP/HDJ-3-SNP_Map.txt $TEMP/hg18snpMap.bed
-#/raid1/sequencing/apps/other/ucsc/liftOver $TEMP/hg18snpMap.bed /raid1/sequencing/apps/other/ucsc/chainFiles/hg18ToHg19.over.chain $TEMP/hg19snpMap.bed $TEMP/liftover_removed.txt
-#python bedToLoci.py $TEMP/hg19snpMap.bed $KGP/extracted/hg19snpMap.csv
-#python liftoverFailReformat.py $TEMP/liftover_removed.txt $KGP/extracted/liftover_removed.csv
+python mapToBed.py $KGP/extracted/popInference/snpMap_hg18.csv $TEMP/hg18snpMap.bed
+/raid1/sequencing/apps/other/ucsc/liftOver $TEMP/hg18snpMap.bed /raid1/sequencing/apps/other/ucsc/chainFiles/hg18ToHg19.over.chain $TEMP/hg19snpMap.bed $TEMP/liftover_removed.txt
+python bedToLoci.py $TEMP/hg19snpMap.bed $KGP/extracted/popInference/snpMap_hg19.csv
+python liftoverFailReformat.py $TEMP/liftover_removed.txt $KGP/extracted/popInference/liftover_removed.csv
 
 f=""
 for i in `ls /raid1/sequencing/reference/background/KGP/compressed_vcfs/ALL.chr*.vcf`
 do
 	f="$f ${i}"
-	#echo Decompressing $i
-	#gunzip $i
 done
-echo Extracting genotypes...
-python extractGenotypes.py --vcf $f --loci $KGP/extracted/hg19snpMap.csv --individuals $KGP/populationLists/CEU_2.txt --out $KGP/extracted/results.csv --remove $KGP/extracted/extraction_removed.csv
-#for i in `ls /raid1/sequencing/reference/background/KGP/compressed_vcfs/*.vcf`
-#do
-	#echo Recompressing $i
-	#gzip $i
-#done
+echo Extracting CEU...
+python extractGenotypes.py --vcf $f --loci $KGP/extracted/popInference/snpMap_hg19.csv --individuals $KGP/populationLists/CEU.txt --out $KGP/extracted/popInference/CEU_results.csv --remove $KGP/extracted/popInference/CEU_removed.csv
+echo Extracting JPT...
+python extractGenotypes.py --vcf $f --loci $KGP/extracted/popInference/snpMap_hg19.csv --individuals $KGP/populationLists/JPT.txt --out $KGP/extracted/popInference/JPT_results.csv --remove $KGP/extracted/popInference/JPT_removed.csv
+echo Extracting CHB...
+python extractGenotypes.py --vcf $f --loci $KGP/extracted/popInference/snpMap_hg19.csv --individuals $KGP/populationLists/CHB.txt --out $KGP/extracted/popInference/CHB_results.csv --remove $KGP/extracted/popInference/CHB_removed.csv
+echo Extracting YRI...
+python extractGenotypes.py --vcf $f --loci $KGP/extracted/popInference/snpMap_hg19.csv --individuals $KGP/populationLists/YRI.txt --out $KGP/extracted/popInference/YRI_results.csv --remove $KGP/extracted/popInference/YRI_removed.csv
+echo Done

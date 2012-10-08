@@ -8,6 +8,6 @@ for line in infile:
         isFirst = False
         continue
     columns = line.split()
-    outfile.write("chr%s %s %i %s\n" % (columns[2],columns[3],int(columns[3])+1,columns[1]))
+    outfile.write("chr%s %s %i %s\n" % (columns[0],columns[1],int(columns[1])+1,columns[2]))
 infile.close()
 outfile.close()
