@@ -26,6 +26,9 @@ cp -r gui compreheNGSive/gui
 cp -r dataModels compreheNGSive/dataModels
 cp -r resources compreheNGSive/resources
 cp -r bonusTools compreheNGSive/bonusTools
+cd build/exe*
+mv * ../../compreheNGSive
+cd ../..
 rm -rf build
 # copy documentation and config files
 cp COPYING.txt compreheNGSive/

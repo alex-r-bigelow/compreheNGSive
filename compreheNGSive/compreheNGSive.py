@@ -87,7 +87,7 @@ def notifyRun(vcfPath, vcfAttributes, xAttribute, yAttribute, softFilters, force
         variantFile.parseVcfFile(vcfPath, vParams)
     except cancelButtonException:
         splash.close()
-        window.show()
+        window.window.show()
         return
     
     if softFilters == None:
@@ -118,7 +118,7 @@ def notifyRun(vcfPath, vcfAttributes, xAttribute, yAttribute, softFilters, force
     fData = featureData(featurePaths)
     if canceled:
         splash.close()
-        window.show()
+        window.window.show()
         return
 
     splash.close()

@@ -33,12 +33,10 @@ if sys.platform == 'win32':
     # the setup call at the end of this file. So, I put all the big lists
     # here and I wrap them using the textwrap module.
     
-    data_files = [('gui/svg', ['gui\\svg\\fileTags.svg',
-                               'gui\\svg\\groupTags.svg',
-                               'gui\\svg\\parallelCoordinates.svg',
+    data_files = [('gui/svg', ['gui\\svg\\parallelCoordinates.svg',
                                'gui\\svg\\scatterplot.svg']),
-                  ('gui/ui', ['gui\\ui\\Setup.ui',
-                              'gui\\ui\\SingleVariant.ui'])]
+                  ('gui/ui', ['gui\\ui\\compreheNGSive_setup.ui',
+                              'gui\\ui\\compreheNGSive.ui'])]
     
     includes = ['gzip', 'lxml._elementpath', 'lxml.etree', 'PySide.QtCore',
                 'PySide.QtGui', 'PySide.QtXml']
@@ -139,9 +137,7 @@ elif sys.platform == 'darwin':
     # the setup call at the end of this file. So, I put all the big lists
     # here and I wrap them using the textwrap module.
     
-    resources = ['gui/svg/fileTags.svg',
-                 'gui/svg/groupTags.svg',
-                 'gui/svg/parallelCoordinates.svg',
+    resources = ['gui/svg/parallelCoordinates.svg',
                  'gui/svg/scatterplot.svg',
                  'gui/ui/Setup.ui',
                  'gui/ui/SingleVariant.ui']
@@ -221,7 +217,7 @@ elif sys.platform == 'linux2':
     # Let's start with some default (for me) imports...
     
     from cx_Freeze import setup, Executable
-    
+    import PySide.QtCore
     
     
     # Process the includes, excludes and packages first
@@ -263,14 +259,13 @@ elif sys.platform == 'linux2':
     # That's serious now: we have all (or almost all) the options cx_Freeze
     # supports. I put them all even if some of them are usually defaulted
     # and not used. Some of them I didn't even know about.
-    
+    print includes
     setup(
         
         version = "0.1",
         description = "No Description",
         author = "Alex Bigelow",
         name = "compreheNGSive",
-        
         options = {"build_exe": {"includes": includes,
                                  "excludes": excludes,
                                  "packages": packages,
