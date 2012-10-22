@@ -389,7 +389,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="xAxisChooser"/>
+          <widget class="QComboBox" name="yAxisChooser"/>
          </item>
          <item>
           <widget class="QLabel" name="label_3">
@@ -402,7 +402,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="yAxisChooser"/>
+          <widget class="QComboBox" name="xAxisChooser"/>
          </item>
         </layout>
        </widget>
@@ -453,10 +453,6 @@
     </widget>
    </item>
   </layout>
-  <zorder>widget_3</zorder>
-  <zorder>widget_4</zorder>
-  <zorder>widget_8</zorder>
-  <zorder>widget_9</zorder>
  </widget>
  <resources/>
  <connections/>

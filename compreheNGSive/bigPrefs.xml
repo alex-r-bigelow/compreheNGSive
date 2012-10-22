@@ -4,12 +4,22 @@
 <root>
 	<startingXaxis statistic="CASES3" />
 	<startingYaxis statistic="CONTROLS_IND_EXTREME" />
-	<!--file id="Annotations" path="/Users/Home/Desktop/temp/data/chr3-ann-out.csv" build="hg19">
+	<file id="Annotations" path="/Users/Home/Desktop/temp/data/chr3-ann-out.csv" build="hg19">
 		<attribute id="SIFT_score"/>
 		<attribute id="LRT_score"/>
 		<attribute id="MutationTaster_pred"/>
 		<attribute id="phyloP"/>
-	</file-->
+		<attribute id="SLR_test_statistic"/>
+		<attribute id="LRT_pred"/>
+		<attribute id="MutationTaster_score"/>
+		<attribute id="MutationTaster_pred"/>
+		<attribute id="GERP++_NR"/>
+		<attribute id="GERP++_RS"/>
+		<attribute id="phyloP"/>
+		<attribute id="29way_logOdds"/>
+		<attribute id="LRT_Omega"/>
+		<attribute id="1000Gp1_AF"/>
+	</file>
 	<file id="chr3-seq.vcf" path="/Users/Home/Desktop/temp/data/chr3-seq.vcf" build="hg19">
 		<attribute id="FILTER"/>
 	</file>

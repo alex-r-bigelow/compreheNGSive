@@ -616,7 +616,6 @@ class variant(Persistent):
         return self.attributes.get(key,None)
     
     def poison(self):
-        return
         self.poisoned = True
         self.attributes = None
         self.genotypes = None
@@ -1304,6 +1303,8 @@ class variantFile:
                     for i,p in enumerate(fileAttributes["INDIVIDUALS"]):
                         if parameters.individualsToInclude != None and p + parameters.individualAppendString not in parameters.individualsToInclude:
                             continue
+                        if len(columns) <= 9+i:
+                            continue
                         temp = columns[9+i].split(":")
                         if len(temp) > len(formatPattern) and temp[0] != "./." and temp[0] != ".|.":
                             raise parseException("Bad .vcf file (too many values in FORMAT column):\n%s" % line)
@@ -1357,7 +1358,7 @@ class variantFile:
         else:
             return
     
-    def writeVcfFile(self, path, sortMethod=None, includeScriptLine=True):
+    def writeVcfFile(self, path, sortMethod=None, includeScriptLine=True, skipPoisoned=True):
         if includeScriptLine:
             scriptNumber = 0
             while self.fileAttributes['file attributes'].has_key("compreheNGSive script %i" % scriptNumber):
@@ -1375,6 +1376,8 @@ class variantFile:
         fileObject.write(variantFile.composeVcfHeader(self.fileAttributes) + "\n")
         
         for v in variantList:
+            if skipPoisoned and v.poisoned:
+                continue
             fileObject.write(variantFile.composeVcfLine(v, self.fileAttributes) + "\n")
         fileObject.close()
     
@@ -1414,16 +1417,20 @@ class variantFile:
         if v.basicName == v.name:
             rsNumber = "."
         # basics
+        while len(v.alleles) < 2:
+            v.alleles.append(allele(None,allele.STRICT,False))
         outString += "%s\t%i\t%s\t%s\t%s"%(v.chromosome,v.position,rsNumber,str(v.alleles[0]),",".join([str(a) for a in v.alleles[1:]]))
         
         # variant attributes
         info = ""
         
-        filterstr = ""
-        qualstr = ""
+        filterstr = "QUAL"
+        qualstr = "FILTER"
         
         for k,val in v.attributes.iteritems():
-            if k.startswith("QUAL"):
+            if isinstance(val,list):
+                info += "%s=%s;"%(k,",".join([str(value) for value in val]))
+            elif k.startswith("QUAL"):
                 qualstr = k
             elif k.startswith("FILTER"):
                 filterstr = k
@@ -1432,10 +1439,10 @@ class variantFile:
             else:
                 info += "%s=%s;" % (k,val)
         info = info[:-1]    # strip last semicolon
-        filters = v.attributes[filterstr]
+        filters = v.attributes.get(filterstr,"")
         if not isinstance(filters,list):
             filters = [filters]
-        outString += "\t%s\t%s\t%s"%(v.attributes[qualstr],";".join(filters),info)
+        outString += "\t%s\t%s\t%s"%(v.attributes.get(qualstr,""),";".join(filters),info)
         
         # We'll stick on the genotypes after we've seen all the possible format fields
         if fileAttributes.has_key("INDIVIDUALS"):

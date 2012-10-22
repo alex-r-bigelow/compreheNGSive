@@ -66,7 +66,7 @@ class axisHandler:
             self.pixelToDataRatio = float(self.numericDataHigh-self.numericDataLow)/float(self.numericPixelHigh-self.numericPixelLow)
             self.dataToPixelRatio = 1.0/self.pixelToDataRatio
             self.visAxis.numeric.scrollUpBar.label.setText(fitInSevenChars(self.dataAxis.maximum))
-            self.visAxis.numeric.scrollDownBar.label.setText(fitInSevenChars(self.dataAxis.maximum))
+            self.visAxis.numeric.scrollDownBar.label.setText(fitInSevenChars(self.dataAxis.minimum))
             self.numericRanges.append(self.visAxis.numeric.selectionGroup.selectionRange)
         
         self.draggedHandle = None
@@ -270,12 +270,7 @@ class axisHandler:
                     value = 'Allele Masked'
             
             if isinstance(value,str):
-                # TODO: this is where the missing-when-not-expected error is occurring... looks like it's happening with allele mode frequency column
-                #if not self.cats.has_key(value):
-                #    print self.cats
-                #    print value
-                #    return 0
-                index = self.cats.get(value,0)
+                index = self.cats.get(value,len(self.cats)-1)
                 if index < 0:
                     results.append(self.labelTop)
                 elif index > self.latticeLength:
@@ -314,7 +309,7 @@ class axisHandler:
                 topPixel = max(topPixel,self.numericPixelHigh)
                 topPixel = min(topPixel,self.numericPixelLow)
                 
-                if bottomPixel > self.numericPixelLow or bottomPixel + v.bottomHandle.height() < self.numericPixelHigh:
+                if bottomPixel > self.numericPixelLow+1 or bottomPixel + v.bottomHandle.height() < self.numericPixelHigh:
                     v.bottomHandle.hide()
                 else:
                     v.bottomHandle.label.setText(fitInSevenChars(low))

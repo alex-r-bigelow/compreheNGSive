@@ -65,7 +65,9 @@ class tempVariantData:
         if len(targetAlleleGroups) == 0:    # nothing to calculate
             return
         
-        for key in self.data['variant keys']:
+        for key in self.data.iterkeys():
+            if key == 'variant keys':
+                continue
             variantObject = self.data[key]
             currentLine += 1
             if currentLine >= nextTick:
@@ -104,7 +106,7 @@ class tempVariantData:
                 targetAllele = targetAlleles[s.parameters.get('alleleGroup','vcf override')]
                 if s.statisticType == statistic.ALLELE_FREQUENCY:
                     if targetAllele == None:
-                        variantObject.setAttribute(statisticID,variant.ALLELE_MASKED)    # the original group didn't have the allele, so we're masked
+                        variantObject.setAttribute(statisticID,"Masked")    # the original group didn't have the allele, so we're masked
                         continue
                     
                     allCount = 0
@@ -123,9 +125,12 @@ class tempVariantData:
                                 if allele2 == targetAllele:
                                     targetCount += 1
                     if allCount == 0:
-                        variantObject.setAttribute(statisticID,variant.MISSING)    # We had no data for this variant, so this thing is undefined
+                        variantObject.setAttribute(statisticID,None)    # We had no data for this variant, so this thing is undefined
                     else:
                         variantObject.setAttribute(statisticID,float(targetCount)/allCount)
+            self.data[variantObject.name].attributes = variantObject.attributes   # a way to force durus to acknowledge the change
+            self.data._p_note_change()
+            self.dataConnection.commit()
         self.dataConnection.commit()
     
     def estimateTicks(self):
@@ -159,12 +164,14 @@ class tempVariantData:
         return result
     
     def dumpVcfFile(self, path, callback):
+        self.dataConnection.commit()
+        
         outfile = open(path,'w')
         outfile.write('##fileformat=VCFv4.0\n')
         outfile.write('##FILTER=<ID=s50,Description="Less than 50% of samples are fully called">\n')
-        outfile.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">')
+        outfile.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
         for a in self.allAxes:
-            if a.startswith('FILTER') or a.startswith('QUAL'):
+            if a.startswith('FILTER') or a.startswith('QUAL') or a == 'Genome Position':
                 continue
             outfile.write('##INFO=<ID=%s,Number=1,Type=Float,Description="%s">\n' % (a,a))
         outfile.write('#CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT\n')

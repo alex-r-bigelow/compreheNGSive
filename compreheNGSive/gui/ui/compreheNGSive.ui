@@ -126,7 +126,7 @@
            <item>
             <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>Show details when there are less than</string>
+              <string>Detail threshold:</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignBottom|Qt::AlignHCenter</set>
@@ -140,15 +140,9 @@
             <widget class="QSpinBox" name="resolutionSpinBox"/>
            </item>
            <item>
-            <widget class="QLabel" name="label_3">
+            <widget class="QPushButton" name="refreshButton">
              <property name="text">
-              <string>selected variants (the program will slow down if this is big).</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignHCenter|Qt::AlignTop</set>
-             </property>
-             <property name="wordWrap">
-              <bool>true</bool>
+              <string>Refresh</string>
              </property>
             </widget>
            </item>
@@ -194,10 +188,6 @@
         </widget>
        </item>
       </layout>
-      <zorder>scatterWidget</zorder>
-      <zorder>splitter_2</zorder>
-      <zorder>label</zorder>
-      <zorder>widget_2</zorder>
      </widget>
     </item>
     <item>
@@ -250,7 +240,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>445</width>
+          <width>593</width>
           <height>794</height>
          </rect>
         </property>
@@ -283,7 +273,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>444</width>
+          <width>296</width>
           <height>794</height>
          </rect>
         </property>

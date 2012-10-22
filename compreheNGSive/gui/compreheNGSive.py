@@ -107,7 +107,7 @@ class appWidget:
         infile.open(QFile.ReadOnly)
         self.window = loader.load(infile, None)
         
-        self.resolution_threshold = 100
+        self.resolution_threshold = 1000
         
         self.vData = vData
         self.fData = fData
@@ -120,6 +120,8 @@ class appWidget:
         self.window.resolutionSpinBox.setMaximum(len(self.vData.data))
         self.window.resolutionSpinBox.setValue(self.resolution_threshold)
         self.window.resolutionSpinBox.valueChanged.connect(self.changeResolution)
+        
+        self.window.refreshButton.clicked.connect(self.refreshResolution)
         
         self.window.actionQuit.triggered.connect(self.window.close)
         self.window.actionExport_History.triggered.connect(self.exportHistory)
@@ -149,6 +151,9 @@ class appWidget:
     
     def changeResolution(self):
         self.resolution_threshold = self.window.resolutionSpinBox.value()
+    
+    def refreshResolution(self):
+        self.notifySelection(self.intMan.activePoints, self.intMan.activeParams);
     
     def exportHistory(self):
         print 'TODO: export history'
