@@ -1,4 +1,5 @@
-import os
+import os, web
+from threading import Thread
 from PySide.QtCore import QFile
 from PySide.QtUiTools import QUiLoader
 from PySide.QtGui import QFileDialog, QMessageBox
@@ -15,17 +16,13 @@ class setupWidget:
         self.window = loader.load(infile, None)
         self.notifyRun = notifyRun
         
-        self.vcfAttributes = None
+        self.cvfFile = None
         
         self.window.quitButton.clicked.connect(self.closeApp)
         self.window.runButton.clicked.connect(self.run)
-        self.window.browseButton.clicked.connect(self.browseVcf)
+        self.window.browseButton.clicked.connect(self.browseCvf)
         self.window.addButton.clicked.connect(self.browseFeature)
         self.window.removeButton.clicked.connect(self.removeFeature)
-        self.window.loadButton.clicked.connect(self.loadFilters)
-        self.window.saveButton.clicked.connect(self.saveFilters)
-        
-        # TODO: handle the schema view
                 
         self.window.show()
     
@@ -34,43 +31,36 @@ class setupWidget:
     
     def run(self):
         self.window.hide()
-        vcfPath = self.window.pathBox.text()
-        if not os.path.exists(vcfPath):
-            QMessageBox.information(self.window,"Error","You must choose a valid variant file.",QMessageBox.Ok)
+        cvfPath = self.window.pathBox.text()
+        if not os.path.exists(cvfPath):
+            QMessageBox.information(self.window,"Error","You must choose a valid .cvf file.",QMessageBox.Ok)
             self.window.show()
             return
         
         featurePaths = self.getFeatureList()
         for f in featurePaths:
             if not os.path.exists(f):
-                QMessageBox.information(self.window,"Error","One of your feature files doesn't exist anymore. Try again.",QMessageBox.Ok)
+                QMessageBox.information(self.window,"Error","One of your feature files doesn't exist. Try again.",QMessageBox.Ok)
                 self.window.show()
                 self.window.featureList.clear()
                 return
         
         xAttribute = self.window.xAxisChooser.currentText()
         yAttribute = self.window.yAxisChooser.currentText()
-        
-        softFilters = None  # TODO
-        forcedCategoricals = self.getForcedCategoricals()
-        
-        self.notifyRun(vcfPath, self.vcfAttributes, xAttribute, yAttribute, softFilters, forcedCategoricals, featurePaths)
+                
+        self.notifyRun(cvfPath, self.cvfFile, xAttribute, yAttribute, featurePaths)
     
-    def browseVcf(self):
-        newPath = QFileDialog.getOpenFileName(filter=u'VCF Files (*.vcf)')[0]
+    def browseCvf(self):
+        newPath = QFileDialog.getOpenFileName(filter=u'CompreheNGSive Variant Files (*.cvf)')[0]
         if newPath == None or newPath == "":
             return
-        self.vcfAttributes = variantFile.extractVcfFileInfo(newPath)
-        allAttributes = sorted(self.vcfAttributes['variant attributes'])
+        self.cvfFile = variantFile(newPath)
         self.window.pathBox.setText(newPath)
         
         self.window.xAxisChooser.clear()
         self.window.yAxisChooser.clear()
-        self.window.xAxisChooser.addItems(allAttributes)
-        self.window.yAxisChooser.addItems(allAttributes)
-        
-        # TODO: build a default schema
-        # self.window.schemaView.clear()
+        self.window.xAxisChooser.addItems(self.cvfFile.attributeOrder)
+        self.window.yAxisChooser.addItems(self.cvfFile.attributeOrder)
     
     def browseFeature(self):
         existingItems = set(self.getFeatureList())
@@ -82,12 +72,6 @@ class setupWidget:
         for i in self.window.featureList.selectedItems():
             self.window.featureList.takeItem(self.window.featureList.row(i))
     
-    def loadFilters(self):
-        pass
-    
-    def saveFilters(self):
-        pass
-    
     def getFeatureList(self):
         i = 0
         items = []
@@ -95,10 +79,75 @@ class setupWidget:
             items.append(self.window.featureList.item(i).text())
             i += 1
         return items
+
+
+class dataInterface:
+    URLS = ('*','dataInterface')
+    PORT = 5390
     
-    def getForcedCategoricals(self):
-        # TODO
-        return set()
+    def __init__(self, vData):
+        self.vData = vData
+        self.app = None
+        
+        self.selections = selectionState(self.vData)
+        self.currentOperation = operation(operation.NO_OP, self.selections, previousOp = None)
+        
+        self.highlightedPoints = set()
+        self.activePoints = self.selections.getActivePoints()
+        self.activeParams = self.selections.getActiveParameters()
+        
+        # will start a local server at http://0.0.0.0 on dataInterface.PORT; all queries will be directed as specified by dataInterface.URLS
+        server = web.application(dataInterface.URLS, globals())
+        sys.argv.append(str(dataInterface.PORT))   # ugly...
+        serverThread = Thread(target=server.run)
+        serverThread.setDaemon(True)
+        serverThread.start()
+    
+    def GET(self):
+        return 'called GET'
+    
+    def POST(self):
+        return 'called POST'
+    
+    def setApp(self, app):
+        self.app = app
+        self.app.notifyOperation(self.currentOperation)
+        self.app.notifySelection(self.activePoints,self.activeParams)
+    
+    def newOperation(self, opCode, **kwargs):
+        newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)
+        if newOp.isLegal:
+            self.currentOperation = newOp
+            if newOp.opType not in operation.DOESNT_DIRTY:
+                self.activePoints = self.selections.getActivePoints()
+                self.activeParams = self.selections.getActiveParameters()
+                self.app.notifySelection(self.activePoints,self.activeParams)
+            self.app.notifyOperation(newOp)
+        return newOp.isLegal
+    
+    def multipleSelected(self):
+        return False    # TODO
+    
+    def undo(self):
+        assert self.currentOperation.previousOp != None and (self.currentOperation.nextOp == None or self.currentOperation.nextOp.finished == False)
+        self.currentOperation.undo()
+        self.currentOperation = self.currentOperation.previousOp
+        self.selections = self.currentOperation.selections
+        self.activePoints = self.selections.getActivePoints()
+        self.activeParams = self.selections.getActiveParameters()
+        self.app.notifyOperation(self.currentOperation)
+        self.app.notifySelection(self.activePoints,self.activeParams)
+    
+    def redo(self):
+        assert self.currentOperation.nextOp != None and self.currentOperation.nextOp.finished == False
+        self.currentOperation = self.currentOperation.nextOp
+        self.currentOperation.applyOp()
+        self.selections = self.currentOperation.selections
+        self.activePoints = self.selections.getActivePoints()
+        self.activeParams = self.selections.getActiveParameters()
+        self.app.notifyOperation(self.currentOperation)
+        self.app.notifySelection(self.activePoints,self.activeParams)
+
 
 class appWidget:
     def __init__(self, vData, fData, intMan, startingXattribute, startingYattribute):

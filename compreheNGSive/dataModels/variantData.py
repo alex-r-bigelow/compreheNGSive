@@ -1,233 +1,206 @@
-from resources.structures import rangeDict
-from resources.genomeUtils import variant
+from resources.structures import categoricalIndex, numericIndex, mixedIndex
+from resources.genomeUtils import variantFile
 from durus.file_storage import FileStorage
 from durus.connection import Connection
-from durus.persistent import Persistent
 from copy import deepcopy
-import math, sys, os
+import sys, tempfile
 
-class attributeIndex(Persistent):
-    def __init__(self, attributeName, forceCategorical = False):
-        Persistent.__init__(self)
-        self.attributeName = attributeName
-        
-        self.lookup = rangeDict()
-        self.categoricalKeys = set()
-        
-        self.forceCategorical = forceCategorical
-        
-        self.minimum = None
-        self.maximum = None
-        
-        self.hasNumeric = False
-        self.hasMasked = False
-        self.hasMissing = False
-    
-    def add(self, position, values):
-        if not isinstance(values,list):
-            values = [values]
-        
-        for value in values:
-            if value == None or value == variant.MISSING or value == "":
-                value = 'Missing'
-                #self.lookup['Missing'] = position  # this looks like things are being replaced, but that's the weirdness of rangeDict
-                #self.categoricalKeys.add('Missing')
-                #self.hasMissing = True
-            elif value == variant.ALLELE_MASKED:
-                value = 'Allele Masked'
-                #self.lookup['Allele Masked'] = position
-                #self.categoricalKeys.add('Allele Masked')
-                #self.hasMasked = True
-            if self.forceCategorical:
-                self.lookup[value] = position
-                self.categoricalKeys.add(value)
-            else:
-                try:
-                    value = float(value)
-                    if math.isinf(value):
-                        self.lookup['Inf'] = position
-                        self.categoricalKeys.add('Inf')
-                    elif math.isnan(value):
-                        self.lookup['NaN'] = position
-                        self.categoricalKeys.add('NaN')
-                    else:
-                        self.lookup[value] = position
-                        self.hasNumeric = True
-                        if self.minimum == None or value < self.minimum:
-                            self.minimum = value
-                        if self.maximum == None or value > self.maximum:
-                            self.maximum = value
-                except ValueError:
-                    self.lookup[value] = position
-                    self.categoricalKeys.add(value)
-    
-    def findNaturalMinAndMax(self):
-        self.hasMissing = self.lookup.count('Missing') > 0
-        self.hasMasked = self.lookup.count('Allele Masked') > 0
-        if self.minimum == None or self.maximum == None:
-            self.minimum = None
-            self.maximum = None
-            return
-        else:
-            if self.minimum == self.maximum:
-                self.minimum = 0
-                if self.maximum == 0:
-                    self.minimum = -1
-                    self.maximum = 1
-                    return
-            elif self.minimum > self.maximum:
-                temp = self.maximum
-                self.maximum = self.minimum
-                self.minimum = temp
-            
-            span = self.maximum - self.minimum
-            
-            if self.maximum > 0:
-                nearestTenMax = 10**math.ceil(math.log10(self.maximum))
-            elif self.maximum == 0:
-                nearestTenMax = 0
-            else:
-                nearestTenMax = -10**math.floor(math.log10(-self.maximum))
-            
-            if self.minimum > 0:
-                nearestTenMin = 10**math.floor(math.log10(self.minimum))
-            elif self.minimum == 0:
-                nearestTenMin = 0
-            else:
-                nearestTenMin = -10**math.ceil(math.log10(-self.minimum))
-            
-            # prefer nearestTenMax if the gap between it and self.maximum is less than 25% the span of the data
-            if abs(nearestTenMax - self.maximum) < 0.25*span:
-                self.maximum = nearestTenMax
-            
-            # prefer zero if the gap between it and self.minimum is less than 50% the span of the data, then 25% for nearestTenMin
-            if self.minimum > 0 and self.minimum < 0.5*span:
-                self.minimum = 0
-            elif abs(self.minimum - nearestTenMin) < 0.25*span:
-                self.minimum = nearestTenMin
-    
-    def query(self, ranges=[], labels=set()):
-        results = set()
-        if self.lookup.len() > 0:
-            for low,high in ranges:
-                results.update(self.lookup[low:high])
-        for l in labels:
-            results.update(self.lookup[l])
-        return results
-
-class variantData:
+class variantData(variantFile):
     COMMIT_FREQ = 1000
     VARIANTS_ADDED = 0
-    def __init__(self, vcfPath, vcfAttributes, forcedCategoricals):
-        for fileToClear in ['Data.db','Data.db.lock','Data.db.tmp','Data.db.prepack','Axes.db','Axes.db.lock','Axes.db.tmp','Axes.db.prepack']:
-            if os.path.exists(fileToClear):
-                os.remove(fileToClear)
+    GENOME_LABEL = "#genome_position#"
+    AXIS_TYPES = {variantFile.cvfAttributeDetails.CATEGORICAL:categoricalIndex,
+                  variantFile.cvfAttributeDetails.NUMERIC:numericIndex,
+                  variantFile.cvfAttributeDetails.MIXED:mixedIndex,
+                  variantFile.cvfAttributeDetails.IGNORE:None,
+                  variantFile.cvfAttributeDetails.CHR:None,
+                  variantFile.cvfAttributeDetails.POS:None,
+                  variantFile.cvfAttributeDetails.ID:None
+                  }
+    
+    def __init__(self, path, tickFunction, columnsToIndex):
+        variantFile.__init__(self,path)
         
-        self.forcedCategoricals = forcedCategoricals
+        # Set up disk-based storage
+        tempFile = tempfile.NamedTemporaryFile()
+        tempPath = tempFile.name
+        tempFile.close()
         
-        self.dataConnection = Connection(FileStorage("Data.db"))
+        self.dataConnection = Connection(FileStorage(tempPath))
         self.data = self.dataConnection.get_root()
-        # I assume that there is only one variant line per genome position (I use str(genome position) as the key for this dict)
         
-        #self.axisConnection = Connection(FileStorage("Axes.db"))
-        self.axisLookups = {}   #self.axisConnection.get_root()
-        for att in vcfAttributes['variant attributes']:
-            if att == 'Genome Position':
-                raise Exception('"Genome Position" attribute key is reserved in compreheNGSive')
-            else:
-                self.axisLookups[att] = attributeIndex(att, att in self.forcedCategoricals)
+        # set up query structures
+        self.data[variantData.GENOME_LABEL] = numericIndex()   # GENOME_LABEL references ALL per-variant lists; other indexes just map values to position
+        self.columnIndices = {}
+        for att in columnsToIndex:
+            if att == variantData.GENOME_LABEL:
+                raise Exception("Can not use reserved column header: %s" % variantData.GENOME_LABEL)
+            indexType = variantData.AXIS_TYPES[self.variantAttributes[att].columnType]
+            self.data[att] = indexType(att,self.variantAttributes[att].low,self.variantAttributes[att].high,self.variantAttributes[att].values)
+            self.columnIndices[att] = self.variantAttributeOrder.index(att)
         
-    def addVariant(self, variantObject):
-        self.data[str(variantObject.genomePosition)] = variantObject
-        
-        for k,a in self.axisLookups.iteritems():
-            a.add(variantObject.genomePosition, variantObject.getAttribute(k))
-        
-        variantData.VARIANTS_ADDED += 1
-        if variantData.VARIANTS_ADDED >= variantData.COMMIT_FREQ:
-            variantData.VARIANTS_ADDED = 0
-            self.dataConnection.commit()
-            #self.axisConnection.commit()
-        '''for k,v in variantObject.attributes.iteritems():
-            if not self.axisLookups.has_key(k):
-                print k, self.axisLookups.iterkeys()
-                self.axisLookups[k] = attributeIndex(k, k in self.forcedCategoricals)   # TODO: technically, I should throw an error (this is a .vcf file that doesn't define one of its INFO fields in the header)
-            self.axisLookups[k].add(variantObject.genomePosition, v)'''
+        # Load the cvf file
+        if self.lengthEstimate == None:
+            self.lengthEstimate = 10000000
+        tickInterval = self.lengthEstimate/variantData.COMMIT_FREQ
+        nextTick = tickInterval
+        for i,(attributes,genomePos) in enumerate(self.readCvfLines()):
+            self.data[genomePos] = attributes
+            for att in columnsToIndex:
+                self.data[att] = attributes[self.columnIndices[att]]
+                self.axisLookups[att][genomePos] = attributes[self.columnIndices[att]]
+            if i >= nextTick:
+                tickFunction()
+                self.dataConnection.commit()
+                nextTick += tickInterval
+        self.dataConnection.commit()
+        self.findNaturalMinsAndMaxes()
+    
+    def getRange(self, att):
+        if isinstance(self.data[att],numericIndex):
+            return (self.data[att].minimum,self.data[att].maximum)
+        elif isinstance(self.data[att],mixedIndex):
+            return (self.data[att].numerics.minimum,self.data[att].maximum)
+        else:
+            return None
+    
+    def getKeys(self, att):
+        if isinstance(self.data[att],categoricalIndex):
+            return self.data[att].data.keys()
+        elif isinstance(self.data[att],mixedIndex):
+            return self.data[att].categoricals.data.keys()
+        else:
+            return set()
+    
+    def findNaturalMinsAndMaxes(self):
+        for att in self.columnIndices.iterkeys():
+            if isinstance(self.data[att],numericIndex):
+                self.data[att].findNaturalMinAndMax()
+            elif isinstance(self.data[att],mixedIndex):
+                self.data[att].numerics.findNaturalMinAndMax()
+        self.dataConnection.commit()
     
     def getData(self, positions, att):
         if not isinstance(positions, list):
             sys.stderr.write("WARNING: Results will be unordered!")
-        return ['Missing' if not self.data.has_key(str(p)) else self.data[str(p)].getAttribute(att) for p in positions]
+        return [self.getDatum(p, att) for p in positions]
     
     def getDatum(self, position, att):
-        return 'Missing' if not self.data.has_key(str(position)) else self.data[str(position)].getAttribute(att)
+        return 'Missing' if not self.data[variantData.GENOME_LABEL].has_key(position) else self.data[variantData.GENOME_LABEL][position][self.columnIndices[att]]
     
     def get2dData(self, positions, att1, att2):
-        if not isinstance(positions,list):
-            positions = list(positions) # ensure the order is the same
-        return zip(self.getData(positions,att1),self.getData(positions,att2))
+        return [self.get2dDatum(position, att1, att2) for position in positions]
     
     def get2dDatum(self, position, att1, att2):
         return (self.getDatum(position, att1),self.getDatum(position, att2))
     
-    def query(self, att, ranges, labels):
-        return self.axisLookups[att].query(ranges,labels)
+    def query(self, att, ranges=None, labels=None):
+        temp = set()
+        if ranges != None:
+            for low,high in ranges:
+                temp.update(self.data[att][low:high])
+        if labels != None:
+            temp.update(self.data[att][labels])
+        return temp
     
-    def query2D(self, att1, ranges1, labels1, att2, ranges2, labels2, limit=None):
-        return rangeDict.intersection((self.axisLookups[att1].lookup,ranges1,labels1),(self.axisLookups[att2].lookup,ranges2,labels2))
+    def query2D(self, att1, att2, ranges1=None, ranges2=None, labels1=None, labels2=None):
+        temp = set()
+        if ranges1 == None:
+            for low,high in ranges1:
+                temp.update(self.data[att1][low:high])
+        if labels1 == None:
+            temp.update(self.data[att1][labels1])
+        if ranges2 != None:
+            for low,high in ranges2:
+                temp.intersection_update(self.data[att2][low:high])
+        if labels2 != None:
+            temp.intersection_update(self.data[att2][labels2])
+        return temp
     
-    def count(self, att, ranges, labels):
-        return self.axisLookups[att].count(ranges,labels)
+    def count(self, att, ranges=None, labels=None):
+        temp = 0
+        if ranges == None:
+            return self.data[att].count(labels)
+        elif labels == None:
+            temp = 0
+            for low,high in ranges:
+                temp += self.data[att].count(low,high)
+            return temp
+        else:
+            return self.data[att].count(low,high,keys=labels)
     
-    def count2D(self, att1, ranges1, labels1, att2, ranges2, labels2, limit=None):
-        return rangeDict.count2D(self.axisLookups[att1].lookup,ranges1,labels1,self.axisLookups[att2].lookup,ranges2,labels2,limit=limit)
-    
-    def getConstraintSatisfiers(self, constraints, limit=None):
-        '''
-        constraints: (att,resources.genomeUtils.valueFilter)
-        If limit is not None, returns early with an incomplete set once the set of passing variants exceeds size of limit
-        '''
-        ranges = [] # [[]]
-        minSize = sys.maxint
-        minIndex = None
-        for i,(att,fil) in enumerate(constraints):
-            ranges.append([])
-            size = 0
-            for l,h in fil.getRanges():
-                low = self.axisLookups[att].myList.bisect(l,rangeDict.MIN)
-                high = self.axisLookups[att].myList.bisect(h,rangeDict.MAX)
-                ranges[i].append((low,high))
-                size += high-low
-            for k in fil.getValues():
-                low = self.axisLookups[att].myList.bisect(k,rangeDict.MIN)
-                high = self.axisLookups[att].myList.bisect(k,rangeDict.MAX)
-                ranges[i].append((low,high))
-                size += high-low
-            if size < minSize:
-                minIndex = i
-                minSize = size
-        
-        if minIndex == None:
-            return set()
-        smallestDict = constraints[minIndex][0]
-        
-        results = set()
-        for r in ranges[minIndex]:
-            i = r[0]
-            while i <= r[1]:    # <= or < ?
-                pos = smallestDict[i]
-                v = self.data[str(pos)]
-                passedAll = True
-                for j,(att,fil) in enumerate(constraints):
-                    if j == i:
+    def count2D(self, att1, att2, ranges1=None, ranges2=None, labels1=None, labels2=None, limit=None):
+        return self.countConstraintSatisfiers({att1:(ranges1,labels1),att2:(ranges2,labels2)}, limit)
+        '''count = 0
+        for pos in self.query(att1,ranges1,labels1):
+            value2 = self.data[variantData.GENOME_LABEL][pos][self.columnIndices[att2]]
+            if value2 in labels2:
+                count += 1
+                if limit != None and count >= limit:
+                    return count
+                continue
+            elif ranges2 != None:
+                for low,high in ranges2:
+                    if value2 >= low and value2 <= high:
+                        count += 1
+                        if limit != None and count >= limit:
+                            return count
                         continue
-                    if not fil.isValid(v.getAttribute(att)):
+        return count'''
+    
+    def countConstraintSatisfiers(self, params, limit=None):
+        # params {str:([(float,float)],set(str)}
+        
+        # TODO: find the cheapest, smallest set of positions to iterate over
+        paramItems = params.iteritems()
+        att,(ranges,labels) = paramItems.next()    # cheap and dirty way of pulling an arbitrary attribute
+        
+        count = 0
+        for pos in self.query(att,ranges,labels):
+            values = self.data[variantData.GENOME_LABEL][pos]
+            passedAll = True
+            for att2,(ranges2,labels2) in paramItems:
+                value2 = values[self.columnIndices[att2]]
+                if value2 not in labels2:
+                    passedThis = False
+                    for low,high in ranges2:
+                        if value2 >= low and value2 <= high:
+                            passedThis = True
+                            break
+                    if not passedThis:
                         passedAll = False
                         break
-                if passedAll:
-                    results.add(pos)
-                i += 1
-                if len(results) >= limit:
+            if passedAll:
+                count += 1
+                if limit != None and count >= limit:
+                    return count
+        return count
+    
+    def getConstraintSatisfiers(self, params, limit=None):
+        # params {str:([(float,float)],set(str)}
+        
+        # TODO: find the cheapest, smallest set of positions to iterate over
+        paramItems = params.iteritems()
+        att,(ranges,labels) = paramItems.next()    # cheap and dirty way of pulling an arbitrary attribute
+        
+        results = set()
+        for pos in self.query(att,ranges,labels):
+            values = self.data[variantData.GENOME_LABEL][pos]
+            passedAll = True
+            for att2,(ranges2,labels2) in paramItems:
+                value2 = values[self.columnIndices[att2]]
+                if value2 not in labels2:
+                    passedThis = False
+                    for low,high in ranges2:
+                        if value2 >= low and value2 <= high:
+                            passedThis = True
+                            break
+                    if not passedThis:
+                        passedAll = False
+                        break
+            if passedAll:
+                results.add(pos)
+                if limit != None and len(results) >= limit:
                     return results
         return results
 
@@ -249,13 +222,11 @@ class selection:
             if prefilters == None:
                 self.applySelectAll(applyImmediately=True)
             else:
+                raise Exception('Prefilters no longer supported')
                 self.applyCustomFilters(prefilters, applyImmediately=True)
     
     def updateResult(self):
-        args = []
-        for att,p in self.params.iteritems():
-            args.append((self.vdata.axisLookups[att].lookup,p[0],p[1]))
-        self.result = rangeDict.intersection(*args)
+        self.result = self.vdata.getConstraintSatisfiers(self.params)
     
     def findClosestEndpoints(self, att, value):
         highDiff = sys.float_info.max
@@ -320,34 +291,15 @@ class selection:
         
         self.params[att] = (newRanges,self.params[att][1])
     
-    def applyCustomFilters(self, prefilters, applyImmediately=True):
-        # If we're getting called, only select stuff that's been specified
-        self.params = {}
-        
-        for att in self.vdata.axisLookups.iterkeys():
-            if prefilters.has_key(att):
-                if prefilters[att].ranges == None:
-                    ranges = [(self.vdata.axisLookups[att].minimum,self.vdata.axisLookups[att].maximum)]
-                else:
-                    ranges = list(prefilters[att].ranges)
-                if prefilters[att].ranges == None:
-                    values = set(self.vdata.axisLookups[att].categoricalKeys)
-                else:
-                    values = set(prefilters[att].values)
-            else:
-                ranges = []
-                values = set()
-            self.params[att] = (ranges,values)
-        
-        if applyImmediately:
-            self.updateResult()
-    
     def applySelectAll(self, applyImmediately=True):
         self.params = {}    # {str:([(float,float)],set(str)}
         
-        for att,axis in self.vdata.axisLookups.iteritems():
-            ranges = [(axis.minimum,axis.maximum)]
-            labels = set(axis.categoricalKeys)
+        for att in self.vdata.columnIndices.iterkeys():
+            ranges = []
+            r = self.vdata.getRange(att)
+            if r != None:
+                ranges.append(r)
+            labels = set(self.vdata.getKeys(att))
             self.params[att] = (ranges,labels)
         
         if applyImmediately:
@@ -395,7 +347,7 @@ class selection:
             self.updateResult()
     
     def applySelectAllLabels(self, att, include=True, applyImmediately=True):
-        self.params[att][1].update(self.vdata.axisLookups[att].categoricalKeys)
+        self.params[att][1].update(self.vdata.getKeys(att))
         if applyImmediately:
             self.updateResult()
     
@@ -479,13 +431,15 @@ class selection:
         return tempResult
     
     def previewNumericSelection(self, att, index, isHigh, newValue):
-        if isHigh:
+        raise Exception('Not implemented yet.')
+        '''if isHigh:
             return self.vdata.axisLookups[att].query((self.params[att][0][index][0],newValue),set())
         else:
-            return self.vdata.axisLookups[att].query((newValue,self.params[att][0][index][1]),set())
+            return self.vdata.axisLookups[att].query((newValue,self.params[att][0][index][1]),set())'''
     
     def previewLabelSelection(self, att, label, include=True):
-        return self.vdata.axisLookups[att].query((),set(label))
+        raise Exception('Not implemented yet.')
+        #return self.vdata.axisLookups[att].query((),set(label))
 
 class selectionState:
     def __init__(self, vdata, prefilters=None):
@@ -776,60 +730,3 @@ class operation:
             self.selections.deactivateSelection(self.name)
             for n in self.oldNames:
                 self.selections.activeSelections(n)
-
-class interactionManager:
-    def __init__(self, vData, prefilters):
-        self.vData = vData
-        self.app = None
-        
-        # some final tidying up of the data object
-        for a in self.vData.axisLookups.itervalues():
-            a.findNaturalMinAndMax()
-        self.vData.dataConnection.commit()
-        #self.vData.axisConnection.commit()
-        
-        self.selections = selectionState(self.vData, prefilters)
-        self.currentOperation = operation(operation.NO_OP, self.selections, previousOp = None)
-        
-        self.highlightedPoints = set()
-        self.activePoints = self.selections.getActivePoints()
-        self.activeParams = self.selections.getActiveParameters()
-    
-    def setApp(self, app):
-        self.app = app
-        self.app.notifyOperation(self.currentOperation)
-        self.app.notifySelection(self.activePoints,self.activeParams)
-    
-    def newOperation(self, opCode, **kwargs):
-        newOp = operation(opCode, self.selections, previousOp=self.currentOperation, **kwargs)
-        if newOp.isLegal:
-            self.currentOperation = newOp
-            if newOp.opType not in operation.DOESNT_DIRTY:
-                self.activePoints = self.selections.getActivePoints()
-                self.activeParams = self.selections.getActiveParameters()
-                self.app.notifySelection(self.activePoints,self.activeParams)
-            self.app.notifyOperation(newOp)
-        return newOp.isLegal
-    
-    def multipleSelected(self):
-        return False    # TODO
-    
-    def undo(self):
-        assert self.currentOperation.previousOp != None and (self.currentOperation.nextOp == None or self.currentOperation.nextOp.finished == False)
-        self.currentOperation.undo()
-        self.currentOperation = self.currentOperation.previousOp
-        self.selections = self.currentOperation.selections
-        self.activePoints = self.selections.getActivePoints()
-        self.activeParams = self.selections.getActiveParameters()
-        self.app.notifyOperation(self.currentOperation)
-        self.app.notifySelection(self.activePoints,self.activeParams)
-    
-    def redo(self):
-        assert self.currentOperation.nextOp != None and self.currentOperation.nextOp.finished == False
-        self.currentOperation = self.currentOperation.nextOp
-        self.currentOperation.applyOp()
-        self.selections = self.currentOperation.selections
-        self.activePoints = self.selections.getActivePoints()
-        self.activeParams = self.selections.getActiveParameters()
-        self.app.notifyOperation(self.currentOperation)
-        self.app.notifySelection(self.activePoints,self.activeParams)

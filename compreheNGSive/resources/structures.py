@@ -1,4 +1,8 @@
 from blist import sortedlist
+from durus.persistent import Persistent
+from durus.persistent_dict import PersistentDict
+from durus.persistent_set import PersistentSet
+from resources.duplicatebtree import BTree
 import math, sys
 
 class twinDict(dict):
@@ -151,7 +155,7 @@ class rangeDict:
         - ALL queries will return a sorted list (there is no additional cost for the sorting; it's a natural by-product of
           the structure); if there are no values in the range of keys, the list will be empty (normally an exception
           would be raised)
-        Complexity is sigma(m log^2 n) operations or sigma(m log n) comparisons, where n is the size of the whole dict and m is the number
+        Complexity is m log^2 n operations or m log n comparisons, where n is the size of the whole dict and m is the number
         of elements between 'a' and 'b'. Note that if step
         is supplied (e.g. myDict['a':'b':4]), the step must still be an integer (e.g. every fourth value from 'a' to 'b')
         '''
@@ -219,18 +223,12 @@ class rangeDict:
             if key.step != None:
                 errorstr += ":%s" % str(key.step)
             if errorstr != None:
-                if isinstance(val,str):
-                    val = "'%s'" % val
                 raise KeyError('You can not slice when setting a value: %s] = %s' % (errorstr,str(val)))
             else:
                 key = key.start
         try:
             self.myList.add((key,val))
         except TypeError:
-            if isinstance(key,str):
-                key = "'%s'" % key
-            if isinstance(val,str):
-                val = "'%s'" % val
             errorstr = str("keys and values must be universally comparable: %s, %s" % (str(key), str(val)))
             raise TypeError(errorstr)
     
@@ -254,6 +252,166 @@ class rangeDict:
         for k,v in self.myList:
             outstr += str(k) + ":" + str(v) + ","
         return outstr[:-1] + "}"
+
+class categoricalIndex(Persistent):
+    def __init__(self, name, low, high, legalValues):
+        self.name = name
+        self.data = PersistentDict()
+        for l in legalValues:
+            self.data[l] = PersistentSet()
+    
+    def __getitem__(self, keys):
+        if isinstance(keys,slice):
+            raise Exception('A categorical index cannot be sliced.')
+        elif isinstance(keys,set):
+            keys = list(keys)
+        elif not isinstance(keys,list):
+            keys = [keys]
+        
+        # start with the smallest set
+        smallestSize=sys.maxint
+        smallestKey=None
+        for k in keys:
+            if len(self.data[k]) < smallestSize:
+                smallestSize = len(self.data[k])
+            smallestKey = k
+        if smallestKey == None:
+            return set()
+        
+        results = set(self.data[smallestKey])
+        for k in keys:
+            if k == smallestKey:
+                continue
+            results.intersection_update(self.data[k])
+        return results
+    
+    def __setitem__(self, key, value):
+        if not self.data.has_key(key):
+            raise Exception('Unknown categorical key: %s' % key)
+        else:
+            self.data[key].add(value)
+    
+    def count(self, keys):
+        if isinstance(keys,slice):
+            raise Exception('A categorical index cannot be sliced.')
+        elif isinstance(keys,set):
+            keys = list(keys)
+        elif not isinstance(keys,list):
+            keys = [keys]
+        
+        count = 0
+        for k in keys:
+            count += len(self.data[k])
+        return count
+    
+    def has_key(self, key):
+        return self.data.has_key(key)
+
+class numericIndex(Persistent):
+    '''
+    Essentially an extension of durus.btree.BTree that accepts duplicate keys (via chaining)
+    '''
+    def __init__(self, name, low, high, legalValues):
+        self.name = name
+        
+        self.minimum = low
+        self.maximum = high
+        
+        self.data = BTree()
+    
+    def __getItem__(self, key):
+        return self.data.get(key,[])
+    
+    def __setItem__(self, key, value):
+        if self.minimum == None or key < self.minimum:
+            self.minimum = key
+        if self.maximum == None or key > self.maximum:
+            self.maximum = key
+        self.data[key] = value
+    
+    def count(self, low, high):
+        return self.data.count_range(low,high,closed_start=True,closed_end=True)
+    
+    def has_key(self, key):
+        return self.data.has_key(key)
+    
+    def findNaturalMinAndMax(self):
+        if self.minimum == self.maximum:
+            self.minimum = 0
+            if self.maximum == 0:
+                self.minimum = -1
+                self.maximum = 1
+                self._p_note_change()
+                return
+        elif self.minimum > self.maximum:
+            temp = self.maximum
+            self.maximum = self.minimum
+            self.minimum = temp
+        
+        span = self.maximum - self.minimum
+        
+        if self.maximum > 0:
+            nearestTenMax = 10**math.ceil(math.log10(self.maximum))
+        elif self.maximum == 0:
+            nearestTenMax = 0
+        else:
+            nearestTenMax = -10**math.floor(math.log10(-self.maximum))
+        
+        if self.minimum > 0:
+            nearestTenMin = 10**math.floor(math.log10(self.minimum))
+        elif self.minimum == 0:
+            nearestTenMin = 0
+        else:
+            nearestTenMin = -10**math.ceil(math.log10(-self.minimum))
+        
+        # prefer nearestTenMax if the gap between it and self.maximum is less than 25% the span of the data
+        if abs(nearestTenMax - self.maximum) < 0.25*span:
+            self.maximum = nearestTenMax
+        
+        # prefer zero if the gap between it and self.minimum is less than 50% the span of the data, then 25% for nearestTenMin
+        if self.minimum > 0 and self.minimum < 0.5*span:
+            self.minimum = 0
+        elif abs(self.minimum - nearestTenMin) < 0.25*span:
+            self.minimum = nearestTenMin
+        self._p_note_change()
+    
+class mixedIndex(Persistent):
+    def __init__(self, name, low, high, legalValues):
+        self.numerics = numericIndex(name, low, high)
+        self.categoricals = numericIndex(name, legalValues)
+    
+    def __getItem__(self, keys):
+        if isinstance(keys,slice):
+            return self.numerics.__getItem__(keys)
+        elif isinstance(keys,set):
+            keys = list(keys)
+        elif not isinstance(keys,list):
+            keys = [keys]
+        
+        results = []
+        catKeys = set()
+        for k in keys:
+            if self.categoricals.has_key(k):
+                catKeys.add(k)
+            else:
+                results.extend(self.numerics.__getItem__(k))
+        results.extend(self.categoricals.__getItem__(catKeys))
+        return results
+    
+    def __setItem__(self, key, value):
+        if self.categoricals.has_key(key):
+            self.categoricals[key] = value
+        else:
+            self.numerics[key] = value
+    
+    def count(self, low=None, high=None, keys=[]):
+        count = self.categoricals.count(keys)
+        if low != None:
+            count += self.numerics.count(low,high)
+        return count
+    
+    def has_key(self, key):
+        return self.categoricals.has_key(key) or self.numerics.has_key(key)
 
 if __name__ == '__main__':
     a = rangeDict()
